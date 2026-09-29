@@ -22,7 +22,7 @@ public class GameManager {
     public List<Projectile> projectiles;
     
     public int sun = 50; 
-    private int spawnTimer = 0;
+    private int spawnTimer = 0; private int passiveSunTimer = 0;
     
     public int mouseX = 0, mouseY = 0;
     public int hoverCol = -1, hoverRow = -1;
@@ -50,12 +50,15 @@ public class GameManager {
 
     public void resetGame() {
         plants.clear(); zombies.clear(); projectiles.clear();
-        sun = 50; spawnTimer = 0; selectedPlant = 0;
+        sun = 50; spawnTimer = 0; passiveSunTimer = 0; selectedPlant = 0;
         state = GameState.PLAYING;
     }
 
     public void update() {
         if (state != GameState.PLAYING) return; // Chỉ chạy Logic khi đang PLAYING
+
+        passiveSunTimer++;
+        if (passiveSunTimer >= 600) { sun += 25; passiveSunTimer = 0; }
 
         spawnTimer++; 
         if (spawnTimer >= 220) {
