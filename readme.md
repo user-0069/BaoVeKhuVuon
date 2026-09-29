@@ -3,7 +3,9 @@
 [SYSTEM INSTRUCTION FOR ANTIGRAVITY AI]
 
 Hello Antigravity. Đây là tài liệu mô tả kiến trúc dự án. Hãy đóng vai trò là một Senior Java Developer. 
-**QUAN TRỌNG: MỖI LẦN CẬP NHẬT CODE HAY THÊM TÍNH NĂNG MỚI (PLANT, ZOMBIE,...), BẠN PHẢI TỰ ĐỘNG CẬP NHẬT LUÔN FILE README NÀY ĐỂ ĐẢM BẢO TÀI LIỆU LUÔN ĐỒNG BỘ VỚI TÍNH NĂNG THỰC TẾ.**
+**QUAN TRỌNG: MỖI LẦN CẬP NHẬT CODE, THÊM TÍNH NĂNG MỚI (PLANT, ZOMBIE,...), HOẶC THÊM BẤT KỲ FILE/FOLDER NÀO MỚI, BẠN PHẢI TỰ ĐỘNG:**
+1. **CẬP NHẬT FILE README VÀ LEVEL_DESIGN_GUIDE NÀY ĐỂ ĐẢM BẢO ĐỒNG BỘ TÍNH NĂNG.**
+2. **CẬP NHẬT LẠI SƠ ĐỒ FOLDER TREE Ở MỤC 5 BÊN DƯỚI ĐỂ PHẢN ÁNH ĐÚNG CẤU TRÚC HIỆN TẠI.**
 
 ## 1. Tổng quan dự án
 - **Thể loại:** Tower Defense (Kết hợp Carrot Defense và Plants vs Zombies).
@@ -35,3 +37,37 @@ Toàn bộ dữ liệu màn chơi đã được tách riêng ra file JSON (ví d
 
 ## 4. Hướng dẫn phát triển tiếp
 - Để tạo màn chơi mới: Chỉ cần copy file `level_1.json`, đổi tên, chỉnh sửa mảng `map`, mảng `waypoints` (để bẻ góc cua) và thiết kế lại danh sách `waves`. Mã nguồn sẽ tự động thích ứng!
+
+## 5. Cấu trúc thư mục (Folder Tree)
+```text
+BaoVeKhuVuon/
+├── pom.xml
+├── readme.md
+└── src/
+    └── main/
+        ├── java/
+        │   └── com/team/gardendefense/
+        │       ├── controller/          # Quản lý logic chính của game
+        │       │   ├── GameManager.java
+        │       │   ├── InputHandler.java
+        │       │   └── WaveManager.java
+        │       ├── model/               # Các mô hình dữ liệu và thực thể
+        │       │   ├── entity/
+        │       │   │   ├── monster/     # Abstract Monster, Zombie, ShooterZombie
+        │       │   │   ├── plant/       # Abstract Plant, Hướng Dương, Peashooter, vv.
+        │       │   │   └── projectile/  # Đạn của Cây (Pea) và Đạn của Quái (ZombieBone)
+        │       │   ├── level/           # Các POJO hứng dữ liệu từ JSON (Level, Wave, Waypoint)
+        │       │   └── map/             # Bản đồ (Grid)
+        │       ├── utils/
+        │       │   └── Constants.java   # Nơi chứa các hằng số, chỉ số Game (Config / Balancing)
+        │       ├── view/
+        │       │   └── GamePanel.java   # Vòng lặp Game (Game Loop / UI Frame)
+        │       └── GameLauncher.java    # Điểm chạy chương trình (Main)
+        └── resources/
+            ├── assets/                  # Nơi chứa tài nguyên đa phương tiện (Media)
+            │   ├── images/              # Hình ảnh (Sprites, Background, UI)
+            │   └── sounds/              # Âm thanh (BGM, SFX)
+            └── data/                    # Nơi chứa dữ liệu Levels
+                ├── LEVEL_DESIGN_GUIDE.md
+                └── level_1.json
+```
