@@ -4,79 +4,47 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.controller.GameManager;
+import com.team.gardendefense.model.level.Waypoint;
 
 public class Zombie extends Monster {
-    private float baseSpeed = 1.0f;
-    private float speed = 1.0f;
+    private float baseSpeed = Constants.SPEED_ZOMBIE_RED;
+    private float speed = Constants.SPEED_ZOMBIE_RED;
     private int freezeTimer = 0;
     private int attackTimer = 0;
-    
-    private float targetX1 = 10 * Constants.TILE_SIZE; 
-    private float targetY1 = 9 * Constants.TILE_SIZE;
+    private int maxHp;
 
-    public Zombie() {
-        this.x = -Constants.TILE_SIZE;
-        this.y = 5 * Constants.TILE_SIZE;
-        this.health = 5; // Tăng xíu máu
+    public Zombie(float startY, Waypoint[] wps) {
+        this.x = -Constants.TILE_SIZE; this.y = startY;
+        this.waypoints = wps; this.health = Constants.HP_ZOMBIE_RED; this.maxHp = Constants.HP_ZOMBIE_RED;
     }
 
-    @Override
-    public void applyFreeze() {
-        freezeTimer = 180; // Đóng băng 3 giây (3 * 60 FPS)
-    }
+    @Override public void applyFreeze() { freezeTimer = Constants.FREEZE_DURATION; }
 
     @Override
     public void update(GameManager gm) {
-        // Cập nhật trạng thái đóng băng
-        if (freezeTimer > 0) {
-            freezeTimer--;
-            speed = baseSpeed * 0.4f; // Chậm đi nhiều
-        } else {
-            speed = baseSpeed;
-        }
+        if (freezeTimer > 0) { freezeTimer--; speed = baseSpeed * Constants.FREEZE_SPEED_MULTI; } 
+        else { speed = baseSpeed; }
 
-        // Cập nhật trạng thái tấn công
         if (attackTarget != null) {
-            if (attackTarget.isDead()) {
-                attackTarget = null; // Cây đã chết, đi tiếp
-            } else {
-                // Đứng yên cắn cây
+            if (attackTarget.isDead()) { attackTarget = null; } 
+            else {
                 attackTimer++;
-                if (attackTimer >= 60) { // Cắn 1 phát mỗi giây
-                    attackTarget.takeDamage(1);
-                    attackTimer = 0;
+                if (attackTimer >= Constants.RATE_ZOMBIE_RED_ATK) { 
+                    attackTarget.takeDamage(Constants.DMG_ZOMBIE_RED); 
+                    attackTimer = 0; 
                 }
-                return; // Dừng việc di chuyển
+                return;
             }
         }
-
-        // Di chuyển
-        if (y == 5 * Constants.TILE_SIZE && x < targetX1) {
-            x += speed; if (x > targetX1) x = targetX1; 
-        } 
-        else if (x == targetX1 && y < targetY1) {
-            y += speed; if (y > targetY1) y = targetY1; 
-        } 
-        else if (y == targetY1) {
-            x += speed; 
-        }
-        else { x += speed; }
+        moveAlongWaypoints(speed); 
     }
 
     @Override
     public void draw(Graphics2D g) {
-        if (freezeTimer > 0) g.setColor(new Color(173, 216, 230)); // Xanh lơ nhạt nếu bị đóng băng
-        else g.setColor(Color.RED);
-        
+        g.setColor(freezeTimer > 0 ? new Color(173, 216, 230) : Color.RED);
         g.fillRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
-        g.setColor(Color.BLACK);
-        g.drawRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
-        
-        // Máu
-        g.setColor(Color.GREEN);
-        g.fillRect((int)x + 15, (int)y - 5, (Constants.TILE_SIZE - 30) * health / 5, 5);
+        g.setColor(Color.BLACK); g.drawRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
+        g.setColor(Color.GREEN); g.fillRect((int)x + 15, (int)y - 5, (Constants.TILE_SIZE - 30) * health / maxHp, 5);
     }
-    
-    @Override
-    public Rectangle getBounds() { return new Rectangle((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20); }
+    @Override public Rectangle getBounds() { return new Rectangle((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20); }
 }
