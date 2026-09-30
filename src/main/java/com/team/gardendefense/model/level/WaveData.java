@@ -1,6 +1,5 @@
 package com.team.gardendefense.model.level;
 public class WaveData {
     public int delayBefore;
-    public int spawnInterval;
-    public int[] zombies; // Mảng ID Zombie
+    public SpawnerData[] spawners; // 1 Wave có thể chứa nhiều Cửa đẻ quái đồng thời
 }

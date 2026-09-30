@@ -13,9 +13,14 @@ public class Zombie extends Monster {
     private int attackTimer = 0;
     private int maxHp;
 
-    public Zombie(float startY, Waypoint[] wps) {
-        this.x = -Constants.TILE_SIZE; this.y = startY;
-        this.waypoints = wps; this.health = Constants.HP_ZOMBIE_RED; this.maxHp = Constants.HP_ZOMBIE_RED;
+    public Zombie(Waypoint[] wps) {
+        this.waypoints = wps;
+        if (wps != null && wps.length > 0) {
+            this.x = wps[0].col * Constants.TILE_SIZE;
+            this.y = wps[0].row * Constants.TILE_SIZE;
+        } else { this.x = -Constants.TILE_SIZE; this.y = 0; }
+        
+        this.health = Constants.HP_ZOMBIE_RED; this.maxHp = Constants.HP_ZOMBIE_RED;
     }
 
     @Override public void applyFreeze() { freezeTimer = Constants.FREEZE_DURATION; }

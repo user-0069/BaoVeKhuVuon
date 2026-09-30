@@ -2,8 +2,7 @@
   "id": 1,
   "name": "Level 1: The Beginning",
   "initialSun": 100,
-  "startY": 320,
-  "allowedPlants": [1, 2, 4],
+  "allowedPlants": [1, 2, 4, 5],
   "map": [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -18,26 +17,49 @@
     [0,0,0,0,0,0,0,0,0,0,0,0,2,0,2,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
   ],
-  "waypoints": [
-    {"x": 640, "y": 320},
-    {"x": 640, "y": 576},
-    {"x": 1024, "y": 576}
-  ],
   "waves": [
     {
       "delayBefore": 300,
-      "spawnInterval": 150,
-      "zombies": [1, 1]
+      "spawners": [
+        {
+          "spawnInterval": 150,
+          "zombies": [1, 1],
+          "waypoints": [
+            {"col": -1, "row": 5}, {"col": 10, "row": 5}, {"col": 10, "row": 9}, {"col": 16, "row": 9}
+          ]
+        }
+      ]
     },
     {
       "delayBefore": 500,
-      "spawnInterval": 120,
-      "zombies": [1, 2, 1]
+      "spawners": [
+        {
+          "spawnInterval": 120,
+          "zombies": [1, 2, 1],
+          "waypoints": [
+            {"col": -1, "row": 5}, {"col": 10, "row": 5}, {"col": 10, "row": 9}, {"col": 16, "row": 9}
+          ]
+        }
+      ]
     },
     {
       "delayBefore": 600,
-      "spawnInterval": 90,
-      "zombies": [1, 1, 2, 1, 2]
+      "spawners": [
+        {
+          "spawnInterval": 90,
+          "zombies": [1, 1, 2],
+          "waypoints": [
+            {"col": -1, "row": 5}, {"col": 10, "row": 5}, {"col": 10, "row": 9}, {"col": 16, "row": 9}
+          ]
+        },
+        {
+          "spawnInterval": 120,
+          "zombies": [2, 1, 2],
+          "waypoints": [
+            {"col": -1, "row": 5}, {"col": 10, "row": 5}, {"col": 10, "row": 9}, {"col": 16, "row": 9}
+          ]
+        }
+      ]
     }
   ]
 }

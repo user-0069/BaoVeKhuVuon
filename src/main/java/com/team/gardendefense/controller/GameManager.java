@@ -78,7 +78,7 @@ public class GameManager {
         
         if (currentLevel != null) {
             sun = currentLevel.initialSun;
-            waveManager = new WaveManager(this, currentLevel.waves, currentLevel.waypoints, currentLevel.startY);
+            waveManager = new WaveManager(this, currentLevel.waves);
             uiCards.clear();
             int startX = 120;
             for (int pId : currentLevel.allowedPlants) {
