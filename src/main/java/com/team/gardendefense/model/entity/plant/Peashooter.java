@@ -1,5 +1,6 @@
 package com.team.gardendefense.model.entity.plant;
 import java.awt.Graphics2D;
+import com.team.gardendefense.utils.ImageLoader;
 import java.awt.Color;
 import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.controller.GameManager;
@@ -12,7 +13,9 @@ public class Peashooter extends Plant {
     public Peashooter(int col, int row) { 
         super(col, row); 
         this.health = Constants.HP_PEASHOOTER; this.maxHealth = Constants.HP_PEASHOOTER;
+        this.image = ImageLoader.getImage("src/main/resources/assets/images/Peashooter_full.png");
     }
+
     
     @Override
     public void update(GameManager gm) {
@@ -20,8 +23,14 @@ public class Peashooter extends Plant {
         if (shootTimer >= Constants.RATE_PEASHOOTER) { 
             Monster target = getClosestZombie(gm);
             if (target != null) {
+                float tx = x + 32; float ty = y + 32;
+                if (direction == 0) ty -= 100;
+                else if (direction == 1) tx += 100;
+                else if (direction == 2) ty += 100;
+                else if (direction == 3) tx -= 100;
+                
                 gm.projectiles.add(new Pea(
-                    x + 32, y + 32, target.x + 32, target.y + 32, 
+                    x + 32, y + 32, tx, ty, 
                     Constants.DMG_PEASHOOTER, new Color(144, 238, 144), Constants.SPEED_PEA, false
                 ));
                 shootTimer = 0; 
@@ -32,14 +41,17 @@ public class Peashooter extends Plant {
     private Monster getClosestZombie(GameManager gm) {
         Monster closest = null; float minDist = Constants.RANGE_PEASHOOTER;
         for(Monster z : gm.zombies) {
-            float dist = (float) Math.hypot(z.x - x, z.y - y);
-            if (dist <= minDist) { minDist = dist; closest = z; }
+            float dx = z.x - x; float dy = z.y - y;
+            boolean inLine = false; float dist = 0;
+            if (direction == 0 && dy < 0 && Math.abs(dx) < 30) { inLine = true; dist = -dy; }
+            else if (direction == 1 && dx > 0 && Math.abs(dy) < 30) { inLine = true; dist = dx; }
+            else if (direction == 2 && dy > 0 && Math.abs(dx) < 30) { inLine = true; dist = dy; }
+            else if (direction == 3 && dx < 0 && Math.abs(dy) < 30) { inLine = true; dist = -dx; }
+            
+            if (inLine && dist <= minDist) { minDist = dist; closest = z; }
         }
         return closest;
     }
 
-    @Override
-    public void draw(Graphics2D g) {
-        g.setColor(new Color(34, 139, 34)); g.fillOval(x + 10, y + 10, Constants.TILE_SIZE - 20, Constants.TILE_SIZE - 20);
-    }
+    
 }

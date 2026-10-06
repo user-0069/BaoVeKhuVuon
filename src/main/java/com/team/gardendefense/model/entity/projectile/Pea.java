@@ -1,5 +1,6 @@
 package com.team.gardendefense.model.entity.projectile;
 import java.awt.Graphics2D;
+import com.team.gardendefense.utils.ImageLoader;
 import java.awt.Color;
 import java.awt.Rectangle;
 
@@ -18,17 +19,18 @@ public class Pea extends Projectile {
         if (distance == 0) distance = 1;
         this.vx = (dx / distance) * speed;
         this.vy = (dy / distance) * speed;
+        if (isFreeze) {
+            this.image = ImageLoader.getImage("src/main/resources/assets/images/ProjectileSnowPea.png");
+        } else {
+            this.image = ImageLoader.getImage("src/main/resources/assets/images/ProjectilePea.png");
+        }
     }
     
     @Override
     public void move() { x += vx; y += vy; }
     @Override
     public void hit() { active = false; }
-    @Override
-    public void draw(Graphics2D g) {
-        g.setColor(color); g.fillOval((int)x - 8, (int)y - 8, 16, 16); 
-        g.setColor(Color.WHITE); g.drawOval((int)x - 8, (int)y - 8, 16, 16);
-    }
+    
     @Override
     public Rectangle getBounds() { return new Rectangle((int)x - 8, (int)y - 8, 16, 16); }
 }

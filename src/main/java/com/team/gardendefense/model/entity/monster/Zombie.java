@@ -1,5 +1,6 @@
 package com.team.gardendefense.model.entity.monster;
 import java.awt.Graphics2D;
+import com.team.gardendefense.utils.ImageLoader;
 import java.awt.Color;
 import java.awt.Rectangle;
 import com.team.gardendefense.utils.Constants;
@@ -21,6 +22,7 @@ public class Zombie extends Monster {
         } else { this.x = -Constants.TILE_SIZE; this.y = 0; }
         
         this.health = Constants.HP_ZOMBIE_RED; this.maxHp = Constants.HP_ZOMBIE_RED;
+        this.image = ImageLoader.getImage("src/main/resources/assets/images/Zombie_full.png");
     }
 
     @Override public void applyFreeze() { freezeTimer = Constants.FREEZE_DURATION; }
@@ -44,12 +46,5 @@ public class Zombie extends Monster {
         moveAlongWaypoints(speed); 
     }
 
-    @Override
-    public void draw(Graphics2D g) {
-        g.setColor(freezeTimer > 0 ? new Color(173, 216, 230) : Color.RED);
-        g.fillRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
-        g.setColor(Color.BLACK); g.drawRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
-        g.setColor(Color.GREEN); g.fillRect((int)x + 15, (int)y - 5, (Constants.TILE_SIZE - 30) * health / maxHp, 5);
-    }
     @Override public Rectangle getBounds() { return new Rectangle((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20); }
 }

@@ -1,5 +1,6 @@
 package com.team.gardendefense.model.entity.monster;
 import java.awt.Graphics2D;
+import com.team.gardendefense.utils.ImageLoader;
 import java.awt.Color;
 import java.awt.Rectangle;
 import com.team.gardendefense.utils.Constants;
@@ -22,6 +23,7 @@ public class ShooterZombie extends Monster {
         } else { this.x = -Constants.TILE_SIZE; this.y = 0; }
 
         this.health = Constants.HP_ZOMBIE_SHOOTER; this.maxHp = Constants.HP_ZOMBIE_SHOOTER;
+        this.image = ImageLoader.getImage("src/main/resources/assets/images/Zombie_full.png");
     }
 
     @Override public void applyFreeze() { freezeTimer = Constants.FREEZE_DURATION; }
@@ -30,6 +32,19 @@ public class ShooterZombie extends Monster {
     public void update(GameManager gm) {
         if (freezeTimer > 0) { freezeTimer--; speed = baseSpeed * Constants.FREEZE_SPEED_MULTI; } 
         else { speed = baseSpeed; }
+
+        if (attackTarget != null) {
+            if (attackTarget.isDead()) { attackTarget = null; }
+            else {
+                // Đứng lại cắn nếu đụng trúng cây
+                shootTimer++;
+                if (shootTimer >= Constants.RATE_ZOMBIE_SHOOTER) {
+                    attackTarget.takeDamage(Constants.DMG_ZOMBIE_SHOOTER);
+                    shootTimer = 0;
+                }
+                return; // Dừng lại không đi tiếp, không bắn xa
+            }
+        }
 
         Plant closestPlant = null; float minDist = Constants.RANGE_ZOMBIE_SHOOTER;
         for(Plant p : gm.plants) {
@@ -46,18 +61,9 @@ public class ShooterZombie extends Monster {
                 ));
                 shootTimer = 0;
             }
-            return; 
         }
         moveAlongWaypoints(speed);
     }
 
-    @Override
-    public void draw(Graphics2D g) {
-        g.setColor(freezeTimer > 0 ? new Color(173, 216, 230) : new Color(255, 140, 0));
-        g.fillRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
-        g.setColor(Color.BLACK); g.drawRect((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20);
-        g.setColor(Color.BLACK); g.fillOval((int)x + 25, (int)y + 20, 10, 10);
-        g.setColor(Color.GREEN); g.fillRect((int)x + 15, (int)y - 5, (Constants.TILE_SIZE - 30) * health / maxHp, 5);
-    }
     @Override public Rectangle getBounds() { return new Rectangle((int)x + 15, (int)y + 10, Constants.TILE_SIZE - 30, Constants.TILE_SIZE - 20); }
 }

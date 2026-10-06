@@ -1,8 +1,8 @@
 {
   "id": 1,
   "name": "Level 1: The Beginning",
-  "initialSun": 100,
-  "allowedPlants": [1, 2, 4, 5],
+  "initialSun": 450,
+  "allowedPlants": [1, 2, 8, 3, 9, 4, 5, 10, 6, 7],
   "map": [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],

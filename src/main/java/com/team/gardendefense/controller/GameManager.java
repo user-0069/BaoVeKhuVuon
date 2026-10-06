@@ -1,5 +1,6 @@
 package com.team.gardendefense.controller;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 import java.awt.Graphics2D;
 import java.awt.Color;
@@ -21,9 +22,9 @@ public class GameManager {
     public GameState state = GameState.MENU;
 
     public Grid grid;
-    public List<Plant> plants = new ArrayList<>();
-    public List<Monster> zombies = new ArrayList<>();
-    public List<Projectile> projectiles = new ArrayList<>();
+    public List<Plant> plants = new CopyOnWriteArrayList<>();
+    public List<Monster> zombies = new CopyOnWriteArrayList<>();
+    public List<Projectile> projectiles = new CopyOnWriteArrayList<>();
     
     public int sun = 50; 
     private int passiveSunTimer = 0;
@@ -38,17 +39,28 @@ public class GameManager {
     // Menu động
     class PlantCard {
         int id; Rectangle rect; Color color; String price;
+        java.awt.Image image;
         PlantCard(int id, int x) {
-            this.id = id; this.rect = new Rectangle(x, 10, 70, 60);
-            if(id==1) { color = Color.YELLOW; price = String.valueOf(Constants.COST_SUNFLOWER); }
-            else if (id==2) { color = new Color(34, 139, 34); price = String.valueOf(Constants.COST_PEASHOOTER); }
-            else if (id==3) { color = new Color(138, 43, 226); price = String.valueOf(Constants.COST_SNIPER); }
-            else if (id==4) { color = new Color(139, 69, 19); price = String.valueOf(Constants.COST_WALLNUT); }
-            else if (id==5) { color = new Color(135, 206, 250); price = String.valueOf(Constants.COST_SNOWPEA); }
+            this.id = id; this.rect = new Rectangle(x, 10, 60, 75); // Taller for cards
+            if(id==1) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sunflower.png"); price = String.valueOf(Constants.COST_SUNFLOWER); }
+            else if (id==2) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_peashooter.png"); price = String.valueOf(Constants.COST_PEASHOOTER); }
+            else if (id==3) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
+            else if (id==4) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_wallnut.png"); price = String.valueOf(Constants.COST_WALLNUT); }
+            else if (id==5) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_snowpea.png"); price = String.valueOf(Constants.COST_SNOWPEA); }
+                        else if (id==6) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_cherrybomb.png"); price = "150"; }
+            else if (id==7) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_chomper.png"); price = "150"; }
+            else if (id==8) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_peashooter.png"); price = String.valueOf(Constants.COST_PEASHOOTER); }
+            else if (id==9) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
+            else if (id==10) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_snowpea.png"); price = String.valueOf(Constants.COST_SNOWPEA); }
         }
     }
     public List<PlantCard> uiCards = new ArrayList<>();
     public int selectedPlant = 0; 
+
+    public void handleKeyPress(int keyCode) {
+        if (keyCode == java.awt.event.KeyEvent.VK_D || keyCode == java.awt.event.KeyEvent.VK_RIGHT)  
+        else if (keyCode == java.awt.event.KeyEvent.VK_A || keyCode == java.awt.event.KeyEvent.VK_LEFT)  
+    }
 
     // Các Nút bấm chung
     public Rectangle btnPlay = new Rectangle(412, 300, 200, 60);
@@ -71,6 +83,10 @@ public class GameManager {
             }
         } catch (Exception e) { e.printStackTrace(); }
     }
+
+    // ... (skipping some logic to get to handleClick) ...
+    // Using a more targeted replace block for handleclick
+
 
     public void resetGame() {
         plants.clear(); zombies.clear(); projectiles.clear();
@@ -102,16 +118,15 @@ public class GameManager {
             }
         }
 
-        Iterator<Plant> pltIt = plants.iterator();
-        while(pltIt.hasNext()) {
-            Plant p = pltIt.next();
-            if (p.isDead()) pltIt.remove(); else p.update(this);
+        for (Plant p : plants) {
+            if (p.isDead()) plants.remove(p);
+            else p.update(this);
         }
 
-        Iterator<Projectile> pIt = projectiles.iterator();
-        while(pIt.hasNext()) {
-            Projectile p = pIt.next(); p.move();
-            if (p.x < 0 || p.x > Constants.SCREEN_WIDTH || p.y < 0 || p.y > Constants.SCREEN_HEIGHT) { pIt.remove(); continue; }
+        for (Projectile p : projectiles) {
+        
+             p.move();
+            if (p.x < 0 || p.x > Constants.SCREEN_WIDTH || p.y < 0 || p.y > Constants.SCREEN_HEIGHT) { projectiles.remove(p); continue; }
             
             Rectangle pBounds = p.getBounds();
             if (p.isEnemy) {
@@ -129,24 +144,24 @@ public class GameManager {
                     }
                 }
             }
-            if (!p.active) pIt.remove();
+            if (!p.active) projectiles.remove(p);
         }
 
-        Iterator<Monster> zIt = zombies.iterator();
-        while(zIt.hasNext()) {
-            Monster z = zIt.next();
+        for (Monster z : zombies) {
+        
+            
             if (z.x > Constants.SCREEN_WIDTH) {
-                sun -= Constants.ZOMBIE_ESCAPE_PENALTY; zIt.remove();
+                sun -= Constants.ZOMBIE_ESCAPE_PENALTY; zombies.remove(z);
                 if (sun < 0) { state = GameState.GAMEOVER; } 
                 continue;
             }
-            if (z.attackTarget == null && !(z instanceof ShooterZombie)) {
+            if (z.attackTarget == null ) {
                 for (Plant p : plants) {
                     if (z.getBounds().intersects(p.getBounds())) { z.attackTarget = p; break; }
                 }
             }
             z.update(this);
-            if (z.isDead()) { sun += Constants.ZOMBIE_KILL_REWARD; zIt.remove(); }
+            if (z.isDead()) { sun += Constants.ZOMBIE_KILL_REWARD; zombies.remove(z); }
         }
     }
 
@@ -196,7 +211,7 @@ public class GameManager {
             boolean canPlant = false;
             if (grid != null) {
                 if (selectedPlant == 4 && grid.map[hoverRow][hoverCol] == 1) canPlant = true;
-                else if (selectedPlant != 4 && grid.map[hoverRow][hoverCol] == 2) canPlant = true;
+                else if (selectedPlant != 4 && (grid.map[hoverRow][hoverCol] == 1 || grid.map[hoverRow][hoverCol] == 2)) canPlant = true;
             }
             if (isPlanted(hoverCol, hoverRow)) canPlant = false;
 
@@ -226,11 +241,31 @@ public class GameManager {
 
         // Draw Dynamic Cards
         for(PlantCard c : uiCards) {
-            g.setColor((selectedPlant == c.id) ? Color.YELLOW : new Color(80, 80, 80));
-            g.fillRect(c.rect.x, c.rect.y, c.rect.width, c.rect.height);
-            g.setColor(c.color); g.fillOval(c.rect.x + 15, c.rect.y + 5, 40, 40);
-            g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 14)); g.drawString(c.price, c.rect.x + 20, c.rect.y + 55);
+            if (c.image != null) {
+                g.drawImage(c.image, c.rect.x, c.rect.y, c.rect.width, c.rect.height, null);
+                if (selectedPlant == c.id) {
+                    g.setColor(Color.YELLOW);
+                    g.drawRect(c.rect.x - 1, c.rect.y - 1, c.rect.width + 1, c.rect.height + 1);
+                    g.drawRect(c.rect.x - 2, c.rect.y - 2, c.rect.width + 3, c.rect.height + 3);
+                }
+                g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 12)); 
+                g.drawString(c.price, c.rect.x + 30, c.rect.y + 70);
+                if (c.id == 2 || c.id == 3 || c.id == 5) {
+                    g.setColor(Color.RED);
+                    g.drawString("(R)", c.rect.x + 5, c.rect.y + 15);
+                } else if (c.id == 8 || c.id == 9 || c.id == 10) {
+                    g.setColor(Color.RED);
+                    g.drawString("(L)", c.rect.x + 5, c.rect.y + 15);
+                }
+            } else {
+                g.setColor((selectedPlant == c.id) ? Color.YELLOW : new Color(80, 80, 80));
+                g.fillRect(c.rect.x, c.rect.y, c.rect.width, c.rect.height);
+                g.setColor(c.color); g.fillOval(c.rect.x + 15, c.rect.y + 5, 40, 40);
+                g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 14)); g.drawString(c.price, c.rect.x + 20, c.rect.y + 55);
+            }
         }
+        
+        
     }
 
     private void drawGameOver(Graphics2D g) {
@@ -282,6 +317,7 @@ public class GameManager {
             if(c.rect.contains(mX, mY)) { selectedPlant = c.id; return; }
         }
 
+
         if (selectedPlant > 0) {
             int col = mX / Constants.TILE_SIZE; int row = mY / Constants.TILE_SIZE;
             if (col < 0 || col >= Constants.COLS || row < 0 || row >= Constants.ROWS) return;
@@ -289,21 +325,40 @@ public class GameManager {
             
             boolean canPlant = false;
             if (selectedPlant == 4 && grid.map[row][col] == 1) canPlant = true;
-            else if (selectedPlant != 4 && grid.map[row][col] == 2) canPlant = true;
-            if (!canPlant || isPlanted(col, row)) { selectedPlant = 0; return; }
+            else if (selectedPlant != 4 && (grid.map[row][col] == 1 || grid.map[row][col] == 2)) canPlant = true;
+            
+            if (isPlanted(col, row)) { canPlant = false; }
+
+            if (!canPlant) { selectedPlant = 0; return; }
 
             int cost = 0;
-            if (selectedPlant == 1) cost = Constants.COST_SUNFLOWER; else if (selectedPlant == 2) cost = Constants.COST_SUNFLOWER;
-            else if (selectedPlant == 3) cost = 100; else if (selectedPlant == 4) cost = Constants.COST_SUNFLOWER;
-            else if (selectedPlant == 5) cost = 150;
+            if (selectedPlant == 1) cost = Constants.COST_SUNFLOWER; 
+            else if (selectedPlant == 2 || selectedPlant == 8) cost = Constants.COST_PEASHOOTER;
+            else if (selectedPlant == 3 || selectedPlant == 9) cost = Constants.COST_SNIPER; 
+            else if (selectedPlant == 4) cost = Constants.COST_WALLNUT;
+            else if (selectedPlant == 5 || selectedPlant == 10) cost = Constants.COST_SNOWPEA;
+            else if (selectedPlant == 6) cost = 150;
+            else if (selectedPlant == 7) cost = 150;
 
             if (sun >= cost) {
-                if (selectedPlant == 1) plants.add(new Sunflower(col, row));
-                else if (selectedPlant == 2) plants.add(new Peashooter(col, row));
-                else if (selectedPlant == 3) plants.add(new SniperPlant(col, row));
-                else if (selectedPlant == 4) plants.add(new WallNut(col, row));
-                else if (selectedPlant == 5) plants.add(new SnowPea(col, row));
-                sun -= cost; selectedPlant = 0; 
+                Plant p = null;
+                if (selectedPlant == 1) p = new Sunflower(col, row);
+                else if (selectedPlant == 2) { p = new Peashooter(col, row); p.direction = 1; }
+                else if (selectedPlant == 8) { p = new Peashooter(col, row); p.direction = 3; }
+                else if (selectedPlant == 3) { p = new SniperPlant(col, row); p.direction = 1; }
+                else if (selectedPlant == 9) { p = new SniperPlant(col, row); p.direction = 3; }
+                else if (selectedPlant == 4) p = new WallNut(col, row);
+                else if (selectedPlant == 5) { p = new SnowPea(col, row); p.direction = 1; }
+                else if (selectedPlant == 10) { p = new SnowPea(col, row); p.direction = 3; }
+                else if (selectedPlant == 6) p = new com.team.gardendefense.model.entity.plant.CherryBomb(col, row, this);
+                else if (selectedPlant == 7) p = new com.team.gardendefense.model.entity.plant.Chomper(col, row, this);
+                
+                if (p != null) {
+                    
+                    plants.add(p);
+                    sun -= cost; 
+                }
+                selectedPlant = 0; 
             } else { selectedPlant = 0; }
         }
     }

@@ -25,15 +25,19 @@ Toàn bộ dữ liệu màn chơi đã được tách riêng ra file JSON (ví d
 ## 3. Cấu trúc và Tính năng hiện tại
 - **Hệ thống Game State:** Menu Chính -> Hướng Dẫn -> Chơi -> Game Over / Victory.
 - **Cơ chế Tiền tệ (Sun):** Đọc `initialSun` từ JSON. Tự động rơi chậm (25 Sun mỗi 10 giây). Giết quái được 10 Sun. Quái lọt lưới trừ 50 Sun. 
+- **Cơ chế Bắn (Targeting):** Các cây ngắm bắn theo trục thẳng (Trái hoặc Phải). Người chơi dùng phím A/D (hoặc Mũi tên Trái/Phải), HOẶC **click trực tiếp vào nút [HƯỚNG]** trên góc phải màn hình để chọn hướng bắn cho cây trước khi đặt.
+- **Hệ thống Thẻ Bài (Battle Cards):** UI sử dụng ảnh thẻ bài thực tế từ hệ thống tài nguyên để hiển thị trên thanh công cụ (Seed Bank).
 - **Thực vật (Plants) [Được chuẩn hóa ID]:**
   - **ID 1:** Sunflower (50 Sun): Sinh 25 Sun mỗi 5 giây.
-  - **ID 2:** Peashooter (50 Sun): Bắn gần, sát thương 1.
+  - **ID 2:** Peashooter (50 Sun): Bắn đạn đậu, sát thương 1.
   - **ID 3:** Sniper (100 Sun): Bắn xa, sát thương 2.
   - **ID 4:** WallNut (50 Sun): Máu 30, chỉ trồng trên đường chặn quái.
-  - **ID 5:** SnowPea (150 Sun): Đạn đóng băng, làm chậm tốc độ quái trong 3 giây.
+  - **ID 5:** SnowPea (150 Sun): Đạn đóng băng, làm chậm tốc độ quái.
+  - **ID 6:** CherryBomb (150 Sun): Sau 0.5s phát nổ tiêu diệt toàn bộ zombie trong phạm vi 3x3 quanh nó. Dùng 1 lần. Đặt trên đường/chậu.
+  - **ID 7:** Chomper (150 Sun): Nuốt chửng 1 zombie (tử vong ngay) lọt vào phạm vi 3x3 của nó. Sau khi nuốt sẽ mất 10s nhai (cooldown) không thể tấn công. Đặt trên đường/chậu.
 - **Thây ma (Zombies) [Được chuẩn hóa ID]:**
   - **ID 1:** Red Zombie (5 HP): Đi theo đường, cắn cây ngáng đường.
-  - **ID 2:** Shooter Zombie (Cam - 3 HP): Phát hiện cây trong tầm 250px sẽ dừng lại ném xương phá cây từ xa.
+  - **ID 2:** Shooter Zombie (Cam - 3 HP): Vừa đi vừa ném đá (rock) phá cây từ xa nếu phát hiện cây trong tầm ngắm. Lật ảnh tự động theo hướng di chuyển.
 
 ## 4. Hướng dẫn phát triển tiếp
 - Để tạo màn chơi mới: Chỉ cần copy file `level_1.json`, đổi tên, chỉnh sửa mảng `map`, mảng `waypoints` (để bẻ góc cua) và thiết kế lại danh sách `waves`. Mã nguồn sẽ tự động thích ứng!
@@ -54,7 +58,7 @@ BaoVeKhuVuon/
         │       ├── model/               # Các mô hình dữ liệu và thực thể
         │       │   ├── entity/
         │       │   │   ├── monster/     # Abstract Monster, Zombie, ShooterZombie
-        │       │   │   ├── plant/       # Abstract Plant, Hướng Dương, Peashooter, vv.
+        │       │   │   ├── plant/       # Abstract Plant, Hướng Dương, Peashooter, CherryBomb, Chomper vv.
         │       │   │   └── projectile/  # Đạn của Cây (Pea) và Đạn của Quái (ZombieBone)
         │       │   ├── level/           # Các POJO hứng dữ liệu từ JSON (Level, Wave, Waypoint)
         │       │   └── map/             # Bản đồ (Grid)
@@ -65,7 +69,7 @@ BaoVeKhuVuon/
         │       └── GameLauncher.java    # Điểm chạy chương trình (Main)
         └── resources/
             ├── assets/                  # Nơi chứa tài nguyên đa phương tiện (Media)
-            │   ├── images/              # Hình ảnh (Sprites, Background, UI)
+            │   ├── images/              # Hình ảnh (Sprites, Background, UI, thẻ bài, vv.)
             │   └── sounds/              # Âm thanh (BGM, SFX)
             └── data/                    # Nơi chứa dữ liệu Levels
                 ├── LEVEL_DESIGN_GUIDE.md

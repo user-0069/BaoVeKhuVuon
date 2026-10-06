@@ -1,9 +1,11 @@
 package com.team.gardendefense.controller;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import com.team.gardendefense.utils.Constants;
 
-public class InputHandler extends MouseAdapter {
+public class InputHandler extends MouseAdapter implements KeyListener {
     private GameManager gm;
     public InputHandler(GameManager gm) { this.gm = gm; }
 
@@ -19,4 +21,15 @@ public class InputHandler extends MouseAdapter {
         gm.hoverCol = e.getX() / Constants.TILE_SIZE;
         gm.hoverRow = e.getY() / Constants.TILE_SIZE;
     }
+    
+    @Override
+    public void keyPressed(KeyEvent e) {
+        gm.handleKeyPress(e.getKeyCode());
+    }
+    
+    @Override
+    public void keyReleased(KeyEvent e) {}
+    
+    @Override
+    public void keyTyped(KeyEvent e) {}
 }

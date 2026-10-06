@@ -1,5 +1,6 @@
 package com.team.gardendefense.model.entity.projectile;
 import java.awt.Graphics2D;
+import com.team.gardendefense.utils.ImageLoader;
 import java.awt.Color;
 import java.awt.Rectangle;
 
@@ -17,18 +18,14 @@ public class ZombieBone extends Projectile {
         if (distance == 0) distance = 1;
         this.vx = (dx / distance) * speed;
         this.vy = (dy / distance) * speed;
+        this.image = ImageLoader.getImage("src/main/resources/assets/reanim/Zombie_hand_rock2.png");
     }
     
     @Override
     public void move() { x += vx; y += vy; }
     @Override
     public void hit() { active = false; }
-    @Override
-    public void draw(Graphics2D g) {
-        g.setColor(Color.WHITE); 
-        g.fillRoundRect((int)x - 6, (int)y - 4, 12, 8, 4, 4); // Cục xương/đá nhỏ
-        g.setColor(Color.BLACK); g.drawRoundRect((int)x - 6, (int)y - 4, 12, 8, 4, 4);
-    }
+    
     @Override
     public Rectangle getBounds() { return new Rectangle((int)x - 6, (int)y - 4, 12, 8); }
 }
