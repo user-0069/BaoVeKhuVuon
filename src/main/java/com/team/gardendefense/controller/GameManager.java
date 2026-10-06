@@ -58,8 +58,7 @@ public class GameManager {
     public int selectedPlant = 0; 
 
     public void handleKeyPress(int keyCode) {
-        if (keyCode == java.awt.event.KeyEvent.VK_D || keyCode == java.awt.event.KeyEvent.VK_RIGHT)  
-        else if (keyCode == java.awt.event.KeyEvent.VK_A || keyCode == java.awt.event.KeyEvent.VK_LEFT)  
+        // Implement keyboard panning or card selection if needed
     }
 
     // Các Nút bấm chung
@@ -151,8 +150,7 @@ public class GameManager {
         
             
             if (z.x > Constants.SCREEN_WIDTH) {
-                sun -= Constants.ZOMBIE_ESCAPE_PENALTY; zombies.remove(z);
-                if (sun < 0) { state = GameState.GAMEOVER; } 
+                state = GameState.GAMEOVER;
                 continue;
             }
             if (z.attackTarget == null ) {
@@ -186,20 +184,25 @@ public class GameManager {
 
     private void drawInstructions(Graphics2D g) {
         g.setColor(new Color(30, 30, 40)); g.fillRect(0, 0, Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT);
-        g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 40)); g.drawString("HƯỚNG DẪN CHƠI", 330, 80);
-        g.setFont(new Font("Arial", Font.PLAIN, 20)); int y = 140;
-        g.drawString("Quy tắc: Quái đi lọt trừ 50 Sun. Dưới 0 Sun -> Thua. Tiêu diệt hết Quái -> Thắng.", 50, y);
-        y += 50; g.setColor(Color.YELLOW); g.drawString("THỰC VẬT (PLANTS):", 50, y);
+        g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 40)); g.drawString("HƯỚNG DẪN CHƠI", 330, 60);
+        g.setFont(new Font("Arial", Font.PLAIN, 18)); int y = 100;
+        
+        g.drawString("Quy tắc: Tiêu diệt hết Quái -> Thắng. Để 1 con Zombie lọt qua cửa -> THUA NGAY LẬP TỨC!", 50, y);
+        
+        y += 40; g.setColor(Color.YELLOW); g.drawString("CÁCH TRỒNG & THỰC VẬT:", 50, y);
         g.setColor(Color.WHITE);
-        y += 30; g.drawString("- 1. Hướng Dương (Vàng - 50 Sun): Tạo 25 Sun mỗi 5 giây.", 70, y);
-        y += 30; g.drawString("- 2. Peashooter (Xanh lá - 50 Sun): Sát thương 1.", 70, y);
-        y += 30; g.drawString("- 3. Sniper (Tím - 100 Sun): Bắn xa, sát thương 2.", 70, y);
-        y += 30; g.drawString("- 4. WallNut (Nâu - 50 Sun): Máu 30. (Trồng trực tiếp trên đường quái đi).", 70, y);
-        y += 30; g.drawString("- 5. SnowPea (Xanh lơ - 150 Sun): Bắn đạn đóng băng.", 70, y);
-        y += 50; g.setColor(Color.RED); g.drawString("THÂY MA (ZOMBIES):", 50, y);
+        y += 25; g.drawString("- Bạn chỉ có thể trồng cây trên Chậu (Pot) hoặc trực tiếp trên Đường (Path).", 70, y);
+        y += 25; g.drawString("- 1. Hướng Dương (50 Sun): Tạo 25 Sun mỗi 5 giây.", 70, y);
+        y += 25; g.drawString("- 2/3/5. Peashooter, Sniper, SnowPea: Có 2 thẻ bài riêng biệt cho hướng bắn Trái (L) và Phải (R).", 70, y);
+        y += 25; g.drawString("- 4. WallNut (50 Sun): Siêu trâu bò (30 HP), dùng để chặn đường quái.", 70, y);
+        y += 25; g.drawString("- 6. CherryBomb (150 Sun): Nổ banh xác toàn bộ Zombie trong ô 3x3 rồi biến mất.", 70, y);
+        y += 25; g.drawString("- 7. Chomper (150 Sun): Nuốt 1 Zombie trong ô 3x3, mất 10s để nhai (không thể đánh lúc nhai).", 70, y);
+        
+        y += 40; g.setColor(Color.RED); g.drawString("THÂY MA (ZOMBIES):", 50, y);
         g.setColor(Color.WHITE);
-        y += 30; g.drawString("- 1. Red Zombie (Đỏ - 5 HP): Đi cắn cây ngáng đường.", 70, y);
-        y += 30; g.drawString("- 2. Shooter Zombie (Cam - 3 HP): Dừng lại bắn xương từ xa phá cây.", 70, y);
+        y += 25; g.drawString("- Red Zombie (5 HP): Đi cắn mọi cây ngáng đường.", 70, y);
+        y += 25; g.drawString("- Shooter Zombie (3 HP): Vừa đi vừa ném xương phá cây từ xa. Nếu đụng cây sẽ đứng cắn.", 70, y);
+        
         drawButton(g, btnBack, "QUAY LẠI", mouseX, mouseY);
     }
 
@@ -210,8 +213,7 @@ public class GameManager {
             int hX = hoverCol * Constants.TILE_SIZE; int hY = hoverRow * Constants.TILE_SIZE;
             boolean canPlant = false;
             if (grid != null) {
-                if (selectedPlant == 4 && grid.map[hoverRow][hoverCol] == 1) canPlant = true;
-                else if (selectedPlant != 4 && (grid.map[hoverRow][hoverCol] == 1 || grid.map[hoverRow][hoverCol] == 2)) canPlant = true;
+                if (grid.map[hoverRow][hoverCol] == 1 || grid.map[hoverRow][hoverCol] == 2) canPlant = true;
             }
             if (isPlanted(hoverCol, hoverRow)) canPlant = false;
 
@@ -234,29 +236,35 @@ public class GameManager {
         g.setColor(new Color(255, 215, 0)); g.fillOval(10, 20, 40, 40);
         g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22)); g.drawString(String.valueOf(sun), 60, 48);
 
-        if (currentLevel != null) {
-            g.setFont(new Font("Arial", Font.BOLD, 14));
-            g.drawString(currentLevel.name, Constants.SCREEN_WIDTH - 250, 45);
-        }
+        
 
         // Draw Dynamic Cards
         for(PlantCard c : uiCards) {
             if (c.image != null) {
-                g.drawImage(c.image, c.rect.x, c.rect.y, c.rect.width, c.rect.height, null);
+                if (c.id == 8 || c.id == 9 || c.id == 10) {
+                    g.drawImage(c.image, c.rect.x + c.rect.width, c.rect.y, -c.rect.width, c.rect.height, null);
+                } else {
+                    g.drawImage(c.image, c.rect.x, c.rect.y, c.rect.width, c.rect.height, null);
+                }
                 if (selectedPlant == c.id) {
                     g.setColor(Color.YELLOW);
                     g.drawRect(c.rect.x - 1, c.rect.y - 1, c.rect.width + 1, c.rect.height + 1);
                     g.drawRect(c.rect.x - 2, c.rect.y - 2, c.rect.width + 3, c.rect.height + 3);
                 }
-                g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 12)); 
-                g.drawString(c.price, c.rect.x + 30, c.rect.y + 70);
-                if (c.id == 2 || c.id == 3 || c.id == 5) {
-                    g.setColor(Color.RED);
-                    g.drawString("(R)", c.rect.x + 5, c.rect.y + 15);
-                } else if (c.id == 8 || c.id == 9 || c.id == 10) {
-                    g.setColor(Color.RED);
-                    g.drawString("(L)", c.rect.x + 5, c.rect.y + 15);
-                }
+                
+                // Che đi phần giá gốc trên ảnh bằng một hình chữ nhật trắng
+                g.setColor(new Color(240, 240, 240)); 
+                g.fillRect(c.rect.x + 2, c.rect.y + 58, c.rect.width - 4, 15);
+                
+                // Vẽ mặt trời nhỏ
+                g.setColor(new Color(255, 215, 0));
+                g.fillOval(c.rect.x + 40, c.rect.y + 60, 11, 11);
+                g.setColor(Color.BLACK);
+                g.drawOval(c.rect.x + 40, c.rect.y + 60, 11, 11);
+                
+                // Vẽ giá tiền
+                g.setFont(new Font("Arial", Font.BOLD, 12));
+                g.drawString(c.price, c.rect.x + 12, c.rect.y + 70);
             } else {
                 g.setColor((selectedPlant == c.id) ? Color.YELLOW : new Color(80, 80, 80));
                 g.fillRect(c.rect.x, c.rect.y, c.rect.width, c.rect.height);
@@ -324,8 +332,7 @@ public class GameManager {
             if (grid == null) return;
             
             boolean canPlant = false;
-            if (selectedPlant == 4 && grid.map[row][col] == 1) canPlant = true;
-            else if (selectedPlant != 4 && (grid.map[row][col] == 1 || grid.map[row][col] == 2)) canPlant = true;
+            if (grid.map[row][col] == 1 || grid.map[row][col] == 2) canPlant = true;
             
             if (isPlanted(col, row)) { canPlant = false; }
 

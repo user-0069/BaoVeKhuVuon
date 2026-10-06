@@ -22,10 +22,12 @@ public class ImageLoader {
                 return img;
             } else {
                 System.err.println("Image not found: " + path);
+                imageCache.put(path, null);
                 return null;
             }
         } catch (IOException e) {
             e.printStackTrace();
+            imageCache.put(path, null);
             return null;
         }
     }

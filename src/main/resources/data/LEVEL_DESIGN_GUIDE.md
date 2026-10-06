@@ -10,16 +10,23 @@ Tài liệu này dành cho những người tạo màn chơi (Level Designer). B
 | ID | Tên Plant | Giá (Sun) | Tính năng |
 |----|-----------|-----------|-----------|
 | 1  | Sunflower | 50        | Sinh 25 Sun mỗi 5 giây. |
-| 2  | Peashooter| 50        | Bắn đạn đơn, sát thương 1. |
-| 3  | Sniper    | 100       | Tầm xa x2, sát thương 2, tốc độ đạn bay nhanh. |
-| 4  | WallNut   | 50        | Máu siêu trâu (30 HP). CHỈ được trồng trên `Đường đi (ID = 1)`. |
-| 5  | SnowPea   | 150       | Đạn băng giảm 60% tốc độ quái trong 3s. |
+| 2  | Peashooter (R)| 50    | Bắn đạn đơn, sát thương 1. Bắn hướng PHẢI. |
+| 8  | Peashooter (L)| 50    | Bắn đạn đơn, sát thương 1. Bắn hướng TRÁI. |
+| 3  | Sniper (R)| 100       | Tầm xa x2, sát thương 2. Bắn hướng PHẢI. |
+| 9  | Sniper (L)| 100       | Tầm xa x2, sát thương 2. Bắn hướng TRÁI. |
+| 4  | WallNut   | 50        | Máu siêu trâu (30 HP), dùng để chặn đường quái. |
+| 5  | SnowPea (R)| 150      | Đạn băng giảm 60% tốc độ quái trong 3s. Bắn hướng PHẢI. |
+| 10 | SnowPea (L)| 150      | Đạn băng giảm 60% tốc độ quái trong 3s. Bắn hướng TRÁI. |
+| 6  | CherryBomb| 150       | Nổ banh xác toàn bộ Zombie trong ô 3x3 quanh nó. Dùng 1 lần. |
+| 7  | Chomper   | 150       | Nuốt chửng 1 Zombie trong ô 3x3, mất 10s nhai (không thể đánh lúc nhai). |
+
+Lưu ý về quy tắc trồng: Tất cả các cây (bao gồm WallNut) đều có thể trồng trên Chậu (Pot) hoặc Đường (Path).
 
 ### 🧟 THÂY MA (ZOMBIES) - Dùng trong mảng `zombies`
 | ID | Tên Zombie     | HP  | Khả năng |
 |----|----------------|-----|----------|
-| 1  | Red Zombie     | 5   | Đi theo đường, cắn cây (Wallnut) chặn đường. |
-| 2  | Shooter Zombie | 3   | Quét 250px thấy cây sẽ dừng bước và ném xương. |
+| 1  | Red Zombie     | 5   | Đi theo đường, nếu đụng cây sẽ đứng lại cắn. |
+| 2  | Shooter Zombie | 3   | Vừa đi vừa ném xương phá cây từ xa. Nếu đụng cây cũng sẽ đứng cắn. |
 
 ### 🗺️ BẢN ĐỒ (TILES) - Dùng trong ma trận `map`
 0 = Cỏ trang trí. 1 = Đường đất. 2 = Bệ trồng cây.
