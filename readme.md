@@ -39,8 +39,18 @@ Toàn bộ dữ liệu màn chơi đã được tách riêng ra file JSON (ví d
   - **ID 1:** Red Zombie (5 HP): Đi theo đường, cắn cây ngáng đường.
   - **ID 2:** Shooter Zombie (Cam - 3 HP): Vừa đi vừa ném đá (rock) phá cây từ xa nếu phát hiện cây trong tầm ngắm. Lật ảnh tự động theo hướng di chuyển.
 
-## 4. Hướng dẫn phát triển tiếp
-- Để tạo màn chơi mới: Chỉ cần copy file `level_1.json`, đổi tên, chỉnh sửa mảng `map`, mảng `waypoints` (để bẻ góc cua) và thiết kế lại danh sách `waves`. Mã nguồn sẽ tự động thích ứng!
+## 4. Công cụ Thiết kế Màn chơi (Level Editor)
+- Trò chơi tích hợp sẵn công cụ **Level Editor trực quan bằng Java Swing** (`com.team.gardendefense.editor.LevelEditor`).
+- **Cách mở:**
+  - Cách 1: Bấm nút **"LEVEL EDITOR"** ngay trên Menu chính của Game.
+  - Cách 2: Chạy trực tiếp class `LevelEditor.java` trong IDE hoặc lệnh Maven.
+- **Tính năng của Level Editor:**
+  - 🎨 **Tùy chỉnh Kích thước Map:** Thay đổi số Cột (Cols) và Hàng (Rows) linh hoạt, tự động co giãn lưới ô vuông.
+  - 🖌️ **Tô màu bản đồ bằng chuột:** Chọn cọ Cỏ (0), Đường đi (1), Bệ đặt tháp (2), click và kéo rê chuột để vẽ. Hỗ trợ chuột phải để xóa.
+  - 🌱 **Chọn Cây cho phép (Allowed Plants):** Chọn nhanh các loại cây được mang vào màn từ danh sách checkbox 10 loại cây.
+  - 🧟 **Thiết kế Wave & Đường đi đa luồng (Multi-Spawners):** Tạo danh sách Wave, thêm nhiều Cửa quái (Spawner) chạy song song, chọn khoảng cách nhả quái (`spawnInterval`), danh sách quái vật.
+  - 📍 **Click cắm cờ Waypoints trực quan:** Bật chế độ đặt Waypoint và click trực tiếp lên Map, Editor sẽ tự động vẽ cờ mốc và đường nối mũi tên chỉ đường đi của Zombie!
+  - 💾 **Lưu & Mở file JSON:** Mở bất kỳ file `level_X.json` để sửa hoặc bấm Save để tự động xuất ra JSON chuẩn chỉ.
 
 ## 5. Cấu trúc thư mục (Folder Tree)
 ```text
@@ -55,18 +65,25 @@ BaoVeKhuVuon/
         │       │   ├── GameManager.java
         │       │   ├── InputHandler.java
         │       │   └── WaveManager.java
+        │       ├── editor/              # Công cụ thiết kế màn chơi trực quan (GUI)
+        │       │   └── LevelEditor.java # Ứng dụng Level Editor (Java Swing)
         │       ├── model/               # Các mô hình dữ liệu và thực thể
         │       │   ├── entity/
         │       │   │   ├── monster/     # Abstract Monster, Zombie, ShooterZombie
         │       │   │   ├── plant/       # Abstract Plant, Hướng Dương, Peashooter, CherryBomb, Chomper vv.
         │       │   │   └── projectile/  # Đạn của Cây (Pea) và Đạn của Quái (ZombieBone)
-        │       │   ├── level/           # Các POJO hứng dữ liệu từ JSON (Level, Wave, Waypoint)
-        │       │   └── map/             # Bản đồ (Grid)
+        │       │   ├── level/           # Các POJO hứng dữ liệu từ JSON (Level, Wave, Spawner, Waypoint)
+        │       │   └── map/             # Bản đồ (Grid, Tile)
         │       ├── utils/
-        │       │   └── Constants.java   # Nơi chứa các hằng số, chỉ số Game (Config / Balancing)
+        │       │   ├── Constants.java   # Nơi chứa các hằng số, chỉ số Game (Config / Balancing)
+        │       │   └── ImageLoader.java # Bộ nạp và cache hình ảnh sprites/cards
         │       ├── view/
-        │       │   └── GamePanel.java   # Vòng lặp Game (Game Loop / UI Frame)
-        │       └── GameLauncher.java    # Điểm chạy chương trình (Main)
+        │       │   ├── renderer/
+        │       │   │   └── GamePanel.java # Vòng lặp Game (Game Loop / UI Frame)
+        │       │   └── ui/
+        │       │       └── HUD.java       # Giao diện hiển thị
+        │       └── main/
+        │           └── GameLauncher.java  # Điểm chạy chương trình chính (Main)
         └── resources/
             ├── assets/                  # Nơi chứa tài nguyên đa phương tiện (Media)
             │   ├── images/              # Hình ảnh (Sprites, Background, UI, thẻ bài, vv.)

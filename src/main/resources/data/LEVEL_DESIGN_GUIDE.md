@@ -1,6 +1,8 @@
 # HƯỚNG DẪN THIẾT KẾ MÀN CHƠI (LEVEL DESIGN GUIDE)
 
-Tài liệu này dành cho những người tạo màn chơi (Level Designer). Bất kỳ ai cũng có thể tự tạo một màn chơi (Level) mới bằng cách viết một file `.json` và ném vào thư mục `src/main/resources/data/`. Game sẽ tự động load dựa trên logic của hệ thống.
+Tài liệu này dành cho những người tạo màn chơi (Level Designer). 
+
+> 💡 **MẸO DÙNG LEVEL EDITOR:** Thay vì phải sửa tay file JSON, bạn có thể mở công cụ **Level Editor trực quan** bằng cách bấm nút **"LEVEL EDITOR"** trên Menu chính của Game, hoặc chạy file `LevelEditor.java`. Bạn có thể tô màu map, chọn kích thước, cắm cờ Waypoint bằng chuột và bấm Lưu trực tiếp!
 
 ---
 

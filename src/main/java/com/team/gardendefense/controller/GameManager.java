@@ -62,9 +62,10 @@ public class GameManager {
     }
 
     // Các Nút bấm chung
-    public Rectangle btnPlay = new Rectangle(412, 300, 200, 60);
-    public Rectangle btnInstr = new Rectangle(412, 400, 200, 60);
-    public Rectangle btnExit = new Rectangle(412, 500, 200, 60);
+    public Rectangle btnPlay = new Rectangle(412, 280, 200, 55);
+    public Rectangle btnInstr = new Rectangle(412, 360, 200, 55);
+    public Rectangle btnEditor = new Rectangle(412, 440, 200, 55);
+    public Rectangle btnExit = new Rectangle(412, 520, 200, 55);
     public Rectangle btnBack = new Rectangle(412, 650, 200, 60);
     public Rectangle btnRestart = new Rectangle(412, 530, 200, 60);
     public Rectangle btnExitGO = new Rectangle(412, 610, 200, 60);
@@ -179,6 +180,7 @@ public class GameManager {
         g.drawString("BẢO VỆ KHU VƯỜN", 160, 180);
         drawButton(g, btnPlay, "CHƠI NGAY", mouseX, mouseY);
         drawButton(g, btnInstr, "HƯỚNG DẪN", mouseX, mouseY);
+        drawButton(g, btnEditor, "LEVEL EDITOR", mouseX, mouseY);
         drawButton(g, btnExit, "THOÁT", mouseX, mouseY);
     }
 
@@ -310,6 +312,9 @@ public class GameManager {
         if (state == GameState.MENU) {
             if (btnPlay.contains(mX, mY)) resetGame();
             else if (btnInstr.contains(mX, mY)) state = GameState.INSTRUCTIONS;
+            else if (btnEditor.contains(mX, mY)) {
+                new com.team.gardendefense.editor.LevelEditor().setVisible(true);
+            }
             else if (btnExit.contains(mX, mY)) System.exit(0);
             return;
         } else if (state == GameState.INSTRUCTIONS) {
