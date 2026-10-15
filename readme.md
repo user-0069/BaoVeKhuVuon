@@ -15,29 +15,35 @@ Hello Antigravity. Đây là tài liệu mô tả kiến trúc dự án. Hãy đ
 - **Mô hình kiến trúc:** MVC.
 
 ## 2. Hệ thống Màn chơi (Level & Wave System)
-Toàn bộ dữ liệu màn chơi đã được tách riêng ra file JSON (ví dụ `src/main/resources/data/level_1.json`). Nhờ vậy, người thiết kế màn chơi không cần biết code Java vẫn có thể tạo Map mới.
+Toàn bộ dữ liệu màn chơi đã được tách riêng ra file JSON (ví dụ `level_1.json`, `level_2.json`). Nhờ vậy, người thiết kế màn chơi không cần biết code Java vẫn có thể tạo Map mới.
+- **Hệ thống Chọn Màn (Level Selection):** Giao diện "CHỌN LEVEL" trực quan từ Menu chính, tự động quét toàn bộ file `level_*.json` trong hệ thống và hiển thị các thẻ bài thông số (Sun ban đầu, số đợt quái, kích thước Map) để người chơi tự do lựa chọn.
+- **Kích thước Map Linh Hoạt (Dynamic Map Dimensions):** Game tự động nhận diện và mở rộng kích thước cửa sổ / lưới ô vuông theo số cột và số hàng của từng màn chơi (hỗ trợ cả các map lớn như 23x17).
+- **Tiến trình Màn chơi:** Khi chiến thắng một màn chơi (`VICTORY!`), game cung cấp nút **"MÀN TIẾP THEO ▶"** để sang ngay màn kế tiếp hoặc nút **"CHỌN MÀN KHÁC"**.
 - **Map:** Ma trận 2D (0: Cỏ, 1: Đường đi, 2: Bệ trồng cây).
 - **Waypoints:** Mảng các điểm neo {x, y} để định tuyến đường đi gập ghềnh cho Zombie. Thuật toán của Zombie sẽ tự động di chuyển bám sát theo các toạ độ này.
 - **AllowedPlants:** Mảng ID các loại cây được phép mang vào màn chơi. Thanh công cụ UI (Thẻ bài) sẽ *tự động* render ra đúng những cây này.
 - **Waves:** Mỗi màn chơi có nhiều đợt tấn công (Wave). Mỗi đợt có thời gian nghỉ, khoảng cách sinh quái, và danh sách thứ tự quái vật.
-- **Thắng / Thua:** Hết Sun -> GAME OVER. Giết hết quái của tất cả Wave -> VICTORY.
+- **Thắng / Thua:** Quái đến cuối đường -> GAME OVER. Giết hết quái của tất cả Wave -> VICTORY.
 
 ## 3. Cấu trúc và Tính năng hiện tại
-- **Hệ thống Game State:** Menu Chính -> Hướng Dẫn -> Chơi -> Game Over / Victory.
+- **Hệ thống Game State:** Menu Chính -> Chọn Level -> Hướng Dẫn -> Chơi -> Game Over / Victory. Có nút Menu nhanh trên thanh HUD trong trận đấu để quay lại Menu bất kỳ lúc nào.
 - **Cơ chế Tiền tệ (Sun):** Đọc `initialSun` từ JSON. Tự động rơi chậm (25 Sun mỗi 10 giây). Giết quái được 10 Sun. Quái lọt lưới trừ 50 Sun. 
 - **Cơ chế Bắn (Targeting):** Các cây ngắm bắn theo trục thẳng (Trái hoặc Phải). Người chơi dùng phím A/D (hoặc Mũi tên Trái/Phải), HOẶC **click trực tiếp vào nút [HƯỚNG]** trên góc phải màn hình để chọn hướng bắn cho cây trước khi đặt.
 - **Hệ thống Thẻ Bài (Battle Cards):** UI sử dụng ảnh thẻ bài thực tế từ hệ thống tài nguyên để hiển thị trên thanh công cụ (Seed Bank).
-- **Thực vật (Plants) [Được chuẩn hóa ID]:**
+- **Thực vật (Plants) [Được chuẩn hóa ID 1 - 10]:**
   - **ID 1:** Sunflower (50 Sun): Sinh 25 Sun mỗi 5 giây.
-  - **ID 2:** Peashooter (50 Sun): Bắn đạn đậu, sát thương 1.
-  - **ID 3:** Sniper (100 Sun): Bắn xa, sát thương 2.
-  - **ID 4:** WallNut (50 Sun): Máu 30, chỉ trồng trên đường chặn quái.
-  - **ID 5:** SnowPea (150 Sun): Đạn đóng băng, làm chậm tốc độ quái.
-  - **ID 6:** CherryBomb (150 Sun): Sau 0.5s phát nổ tiêu diệt toàn bộ zombie trong phạm vi 3x3 quanh nó. Dùng 1 lần. Đặt trên đường/chậu.
-  - **ID 7:** Chomper (150 Sun): Nuốt chửng 1 zombie (tử vong ngay) lọt vào phạm vi 3x3 của nó. Sau khi nuốt sẽ mất 10s nhai (cooldown) không thể tấn công. Đặt trên đường/chậu.
+  - **ID 2:** Peashooter R (50 Sun): Bắn đạn đậu sát thương 1 sang PHẢI.
+  - **ID 8:** Peashooter L (50 Sun): Bắn đạn đậu sát thương 1 sang TRÁI.
+  - **ID 3:** Sniper R (100 Sun): Bắn xa sát thương 2 sang PHẢI.
+  - **ID 9:** Sniper L (100 Sun): Bắn xa sát thương 2 sang TRÁI.
+  - **ID 4:** WallNut (50 Sun): Máu 30 HP, dùng làm khiên chặn đường quái.
+  - **ID 5:** SnowPea R (150 Sun): Đạn băng làm chậm quái sang PHẢI.
+  - **ID 10:** SnowPea L (150 Sun): Đạn băng làm chậm quái sang TRÁI.
+  - **ID 6:** CherryBomb (150 Sun): Sau 0.5s phát nổ tiêu diệt toàn bộ zombie trong phạm vi 3x3 quanh nó. Dùng 1 lần.
+  - **ID 7:** Chomper (150 Sun): Nuốt chửng 1 zombie (tử vong ngay) lọt vào phạm vi 3x3 của nó. Sau khi nuốt mất 10s nhai không thể tấn công.
 - **Thây ma (Zombies) [Được chuẩn hóa ID]:**
   - **ID 1:** Red Zombie (5 HP): Đi theo đường, cắn cây ngáng đường.
-  - **ID 2:** Shooter Zombie (Cam - 3 HP): Vừa đi vừa ném đá (rock) phá cây từ xa nếu phát hiện cây trong tầm ngắm. Lật ảnh tự động theo hướng di chuyển.
+  - **ID 2:** Shooter Zombie (Cam - 3 HP): Vừa đi vừa ném xương phá cây từ xa nếu phát hiện cây trong tầm ngắm. Lật ảnh tự động theo hướng di chuyển.
 
 ## 4. Công cụ Thiết kế Màn chơi (Level Editor)
 - Trò chơi tích hợp sẵn công cụ **Level Editor trực quan bằng Java Swing** (`com.team.gardendefense.editor.LevelEditor`).
@@ -90,5 +96,21 @@ BaoVeKhuVuon/
             │   └── sounds/              # Âm thanh (BGM, SFX)
             └── data/                    # Nơi chứa dữ liệu Levels
                 ├── LEVEL_DESIGN_GUIDE.md
-                └── level_1.json
+                ├── level_1.json
+                └── level_2.json
 ```
+
+## 6. Hướng dẫn Biên dịch và Chạy Game
+- **Chạy trực tiếp trong VS Code (Khuyên dùng):**
+  - Mở file `src/main/java/com/team/gardendefense/main/GameLauncher.java`.
+  - Nhấp vào nút **Run Java ▶️** ở góc trên bên phải thanh công cụ.
+- **Biên dịch bằng Terminal PowerShell:**
+  > ⚠️ Luôn dùng cờ `--release 11` khi biên dịch bằng `javac` để đảm bảo tương thích với mọi phiên bản JDK (tránh lỗi `UnsupportedClassVersionError`):
+  ```powershell
+  javac --release 11 -cp "C:\Users\Admin\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar" -sourcepath src\main\java -d target\classes (Get-ChildItem -Recurse -Filter "*.java" src\main\java | ForEach-Object { $_.FullName })
+  ```
+- **Chạy bằng Terminal PowerShell:**
+  ```powershell
+  java -cp "target/classes;C:\Users\Admin\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar" com.team.gardendefense.main.GameLauncher
+  ```
+

@@ -17,11 +17,32 @@ public class GamePanel extends JPanel implements Runnable {
         this.setDoubleBuffered(true);
 
         gm = new GameManager();
+        gm.setGamePanel(this);
         InputHandler input = new InputHandler(gm);
         this.addMouseListener(input);
         this.addMouseMotionListener(input); // Thêm dòng này để lắng nghe di chuột
         this.addKeyListener(input);
         this.setFocusable(true);
+    }
+
+    public void resizeForLevel(int cols, int rows) {
+        int width = Math.max(Constants.SCREEN_WIDTH, cols * Constants.TILE_SIZE);
+        int height = Math.max(Constants.SCREEN_HEIGHT, rows * Constants.TILE_SIZE);
+
+        java.awt.Dimension screen = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+        if (height > screen.height - 70) {
+            height = screen.height - 70;
+        }
+        if (width > screen.width - 40) {
+            width = screen.width - 40;
+        }
+
+        this.setPreferredSize(new Dimension(width, height));
+        java.awt.Window win = javax.swing.SwingUtilities.getWindowAncestor(this);
+        if (win instanceof javax.swing.JFrame) {
+            win.pack();
+            win.setLocationRelativeTo(null);
+        }
     }
 
     public void startGameThread() {

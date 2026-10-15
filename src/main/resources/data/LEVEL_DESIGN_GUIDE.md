@@ -69,9 +69,16 @@ Lưu ý về quy tắc trồng: Tất cả các cây (bao gồm WallNut) đều 
 * Chỉ khi **tất cả các Spawners xả hết quái**, game mới coi như xong Wave này và bắt đầu đếm ngược `delayBefore` của Wave tiếp theo.
 
 ## 3. CƠ CHẾ WAYPOINTS VÀ LƯỚI
-* Toạ độ Cột/Hàng (`col`, `row`) tính từ 0. Bảng đồ chuẩn là 16 cột x 12 hàng.
-* `col: -1` dùng để cho quái xuất hiện tàng hình từ ngoài rìa màn hình bên trái đi vào.
-* Quái vật sẽ đi theo các Waypoints nối tiếp nhau, giúp bạn thiết kế bẻ lái mọi ngã rẽ bạn tự vẽ ra ở ma trận `map`.
+* Toạ độ Cột/Hàng (`col`, `row`) tính từ 0.
+* **Kích thước Map linh hoạt (Dynamic Map Size):** Bản đồ không còn bị giới hạn ở 16 cột x 12 hàng. Bạn có thể tự do chỉnh số Cột (`cols`) và Hàng (`rows`) trong Level Editor (ví dụ: `23x17`). Game sẽ tự động co giãn cửa sổ và tính toán phạm vi bản đồ theo đúng cấu hình JSON.
+* `col: -1` dùng để cho quái xuất hiện từ ngoài rìa màn hình bên trái đi vào.
+* Quái vật sẽ đi theo các Waypoints nối tiếp nhau. Khi quái đi đến và vượt qua Waypoint cuối cùng (hoặc vượt qua cạnh phải bản đồ), quái sẽ xâm nhập thành công vào khu vườn và kích hoạt GAME OVER.
 
 ## 4. TINH CHỈNH CHỈ SỐ (BALANCING)
 Sức mạnh và Giá tiền của game được tập trung quản lý tại: `src/main/java/com/team/gardendefense/utils/Constants.java`. Bạn có thể thay đổi tùy thích mà không sợ hỏng logic game.
+
+## 5. QUY TẮC LƯU VÀ TỰ ĐỘNG TÍCH HỢP VÀO GAME
+* **Đặt tên file chuẩn:** Khi lưu màn chơi mới, đặt tên file theo định dạng: `level_<ID>.json` (ví dụ: `level_2.json`, `level_3.json`,...).
+* **Thư mục lưu trữ:** Lưu trực tiếp vào thư mục `src/main/resources/data/`.
+* **Tự động nhận diện vào Menu Chọn Level:** Game tích hợp cơ chế quét tự động toàn bộ file màn chơi. Bất kỳ file `level_<ID>.json` mới nào xuất hiện trong thư mục `data` sẽ lập tức hiển thị thành một thẻ bài màn chơi trong giao diện **"CHỌN LEVEL"** với đầy đủ thông số: Tên màn, Sun ban đầu, số đợt Wave, kích thước bản đồ, và nút "VÀO CHƠI ▶" mà không cần phải can thiệp vào code Java!
+
