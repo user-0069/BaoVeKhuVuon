@@ -21,6 +21,14 @@ public class InputHandler extends MouseAdapter implements KeyListener {
         gm.hoverCol = e.getX() / Constants.TILE_SIZE;
         gm.hoverRow = e.getY() / Constants.TILE_SIZE;
     }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        gm.mouseX = e.getX();
+        gm.mouseY = e.getY();
+        gm.hoverCol = e.getX() / Constants.TILE_SIZE;
+        gm.hoverRow = e.getY() / Constants.TILE_SIZE;
+    }
     
     @Override
     public void keyPressed(KeyEvent e) {

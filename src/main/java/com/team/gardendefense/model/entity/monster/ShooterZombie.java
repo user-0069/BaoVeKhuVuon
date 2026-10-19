@@ -23,6 +23,7 @@ public class ShooterZombie extends Monster {
         } else { this.x = -Constants.TILE_SIZE; this.y = 0; }
 
         this.health = Constants.HP_ZOMBIE_SHOOTER; this.maxHp = Constants.HP_ZOMBIE_SHOOTER;
+        this.isMiniBoss = true;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/Zombie_full.png");
     }
 

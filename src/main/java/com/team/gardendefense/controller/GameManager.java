@@ -14,24 +14,40 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.BasicStroke;
+import java.awt.Image;
 import com.google.gson.Gson;
 import com.team.gardendefense.model.entity.plant.*;
 import com.team.gardendefense.model.entity.monster.*;
 import com.team.gardendefense.model.entity.projectile.*;
+import com.team.gardendefense.model.entity.coin.Coin;
+import com.team.gardendefense.model.entity.coin.CoinType;
+import com.team.gardendefense.model.entity.pet.PetSnail;
+import com.team.gardendefense.system.AudioManager;
+import com.team.gardendefense.system.LootTable;
+import com.team.gardendefense.system.WalletManager;
+import com.team.gardendefense.view.ui.PauseDialog;
+import com.team.gardendefense.view.ui.ShopScreen;
 import com.team.gardendefense.model.map.Grid;
 import com.team.gardendefense.model.level.LevelData;
 import com.team.gardendefense.model.level.Waypoint;
 import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.view.renderer.GamePanel;
+import java.awt.RenderingHints;
+import java.awt.GradientPaint;
 
 public class GameManager {
-    public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, GAMEOVER, GAMEWON }
+    public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER, GAMEWON, SHOP }
     public GameState state = GameState.MENU;
 
     public Grid grid;
     public List<Plant> plants = new CopyOnWriteArrayList<>();
     public List<Monster> zombies = new CopyOnWriteArrayList<>();
     public List<Projectile> projectiles = new CopyOnWriteArrayList<>();
+    public List<Coin> coins = new CopyOnWriteArrayList<>();
+    public PetSnail petSnail = null;
+    public ShopScreen shopScreen;
+    public PauseDialog pauseDialog;
+    public Image coinBankImg;
     
     public int sun = 50; 
     private int passiveSunTimer = 0;
@@ -47,6 +63,10 @@ public class GameManager {
 
     public void setGamePanel(GamePanel panel) {
         this.panel = panel;
+    }
+
+    public GamePanel getPanel() {
+        return panel;
     }
 
     // Thông tin xem trước Level để hiển thị danh sách
@@ -78,21 +98,33 @@ public class GameManager {
             else if (id==8) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_peashooter.png"); price = String.valueOf(Constants.COST_PEASHOOTER); }
             else if (id==9) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
             else if (id==10) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_snowpea.png"); price = String.valueOf(Constants.COST_SNOWPEA); }
+            else if (id==11) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/reanim/Marigold_petals.png"); price = String.valueOf(Constants.COST_MARIGOLD); }
         }
     }
     public List<PlantCard> uiCards = new ArrayList<>();
     public int selectedPlant = 0; 
 
     public void handleKeyPress(int keyCode) {
-        // Có thể mở rộng phím tắt nếu cần
+        if (keyCode == java.awt.event.KeyEvent.VK_ESCAPE || keyCode == java.awt.event.KeyEvent.VK_P) {
+            if (state == GameState.PLAYING) {
+                AudioManager.getInstance().playBuySound();
+                state = GameState.PAUSED;
+            } else if (state == GameState.PAUSED) {
+                AudioManager.getInstance().playBuySound();
+                state = GameState.PLAYING;
+            } else if (state == GameState.SHOP) {
+                state = GameState.PLAYING;
+            }
+        }
     }
 
     // Các Nút bấm chung
-    public Rectangle btnPlay = new Rectangle(412, 240, 200, 50);
-    public Rectangle btnLevelSelect = new Rectangle(412, 305, 200, 50);
-    public Rectangle btnInstr = new Rectangle(412, 370, 200, 50);
-    public Rectangle btnEditor = new Rectangle(412, 435, 200, 50);
-    public Rectangle btnExit = new Rectangle(412, 500, 200, 50);
+    public Rectangle btnPlay = new Rectangle(412, 190, 200, 48);
+    public Rectangle btnLevelSelect = new Rectangle(412, 250, 200, 48);
+    public Rectangle btnShop = new Rectangle(412, 310, 200, 48);
+    public Rectangle btnInstr = new Rectangle(412, 370, 200, 48);
+    public Rectangle btnEditor = new Rectangle(412, 430, 200, 48);
+    public Rectangle btnExit = new Rectangle(412, 490, 200, 48);
 
     public Rectangle btnBack = new Rectangle(412, 660, 200, 50);
 
@@ -102,10 +134,20 @@ public class GameManager {
     public Rectangle btnExitGO = new Rectangle(412, 635, 220, 50);
 
     public Rectangle btnInGameMenu = new Rectangle(0, 0, 90, 30);
+    public Rectangle btnInGameShop = new Rectangle(0, 0, 90, 30);
 
     public GameManager() {
+        shopScreen = new ShopScreen(this);
+        pauseDialog = new PauseDialog(this);
+        coinBankImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/coinbank.png");
         scanAvailableLevels();
         loadLevel("/data/level_1.json");
+    }
+
+    public void spawnCoin(float x, float y, CoinType type) {
+        if (type != null) {
+            coins.add(new Coin(x, y, type));
+        }
     }
 
     // Quét toàn bộ file level_*.json để nạp danh sách chọn màn
@@ -228,8 +270,14 @@ public class GameManager {
     }
 
     public void resetGame() {
-        plants.clear(); zombies.clear(); projectiles.clear();
+        plants.clear(); zombies.clear(); projectiles.clear(); coins.clear();
         selectedPlant = 0; passiveSunTimer = 0;
+        
+        if (WalletManager.getInstance().getData().hasPetSnail) {
+            petSnail = new PetSnail(50, getMapHeight() - 60);
+        } else {
+            petSnail = null;
+        }
         
         if (currentLevel != null) {
             currentLevelId = currentLevel.id;
@@ -241,6 +289,8 @@ public class GameManager {
                 uiCards.add(new PlantCard(pId, startX));
                 startX += 80;
             }
+            // Luôn thêm thẻ bài Marigold (Hoa Cúc - ID 11) để nhả xu!
+            uiCards.add(new PlantCard(11, startX));
         }
         state = GameState.PLAYING;
         if (panel != null) {
@@ -249,6 +299,14 @@ public class GameManager {
     }
 
     public void update() {
+        if (state == GameState.SHOP) {
+            shopScreen.update();
+            return;
+        }
+        if (state == GameState.PAUSED) {
+            pauseDialog.update();
+            return;
+        }
         if (state != GameState.PLAYING) return;
 
         passiveSunTimer++;
@@ -257,9 +315,23 @@ public class GameManager {
         if (waveManager != null) {
             waveManager.update();
             if (waveManager.isAllSpawned() && zombies.isEmpty()) {
+                if (state != GameState.GAMEWON) {
+                    // Thưởng Kim Cương khi thắng trọn vẹn màn chơi!
+                    spawnCoin(getScreenWidth() / 2.0f, getScreenHeight() / 2.0f, CoinType.DIAMOND);
+                }
                 state = GameState.GAMEWON; // Thắng!
             }
         }
+
+        // Cập nhật Coin và Pet Snail
+        for (Coin c : coins) {
+            c.update(this);
+            if (c.isDead()) coins.remove(c);
+        }
+        if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
+            petSnail.update(this);
+        }
+        WalletManager.getInstance().updateFloatingTexts();
 
         for (Plant p : plants) {
             if (p.isDead()) plants.remove(p);
@@ -313,17 +385,27 @@ public class GameManager {
                 }
             }
             z.update(this);
-            if (z.isDead()) { sun += Constants.ZOMBIE_KILL_REWARD; zombies.remove(z); }
+            if (z.isDead()) {
+                sun += Constants.ZOMBIE_KILL_REWARD;
+                // Rơi xu: 20% Xu Bạc, 5% Xu Vàng, 1% Kim Cương, 74% Trượt
+                CoinType drop = LootTable.rollDrop(z.isMiniBoss, false);
+                if (drop != null) {
+                    spawnCoin(z.x + 20, z.y + 20, drop);
+                }
+                zombies.remove(z);
+            }
         }
     }
 
     public void draw(Graphics2D g) {
-        if (state == GameState.MENU) drawMainMenu(g);
+        if (state == GameState.SHOP) shopScreen.draw(g);
+        else if (state == GameState.MENU) drawMainMenu(g);
         else if (state == GameState.LEVEL_SELECT) drawLevelSelect(g);
         else if (state == GameState.INSTRUCTIONS) drawInstructions(g);
         else {
             drawGameplay(g);
-            if (state == GameState.GAMEOVER) drawGameOver(g);
+            if (state == GameState.PAUSED) pauseDialog.draw(g);
+            else if (state == GameState.GAMEOVER) drawGameOver(g);
             else if (state == GameState.GAMEWON) drawGameWon(g);
         }
     }
@@ -335,20 +417,36 @@ public class GameManager {
         g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 64));
         String title = "BẢO VỆ KHU VƯỜN";
         int tw = g.getFontMetrics().stringWidth(title);
-        g.drawString(title, (sw - tw) / 2, 160);
+        g.drawString(title, (sw - tw) / 2, 140);
 
         int bx = (sw - 200) / 2;
         btnPlay.x = bx;
         btnLevelSelect.x = bx;
+        btnShop.x = bx;
         btnInstr.x = bx;
         btnEditor.x = bx;
         btnExit.x = bx;
 
         drawButton(g, btnPlay, "CHƠI NGAY", mouseX, mouseY);
         drawButton(g, btnLevelSelect, "CHỌN LEVEL", mouseX, mouseY, new Color(46, 139, 87));
+        drawButton(g, btnShop, "CỬA HÀNG 🛒", mouseX, mouseY, new Color(180, 100, 30));
         drawButton(g, btnInstr, "HƯỚNG DẪN", mouseX, mouseY);
         drawButton(g, btnEditor, "LEVEL EDITOR", mouseX, mouseY);
         drawButton(g, btnExit, "THOÁT", mouseX, mouseY);
+
+        // Hiển thị khung số dư xu nhỏ ở góc phải menu chính
+        int mbX = sw - 170;
+        int mbY = 20;
+        g.setColor(new Color(0, 0, 0, 160));
+        g.fillRoundRect(mbX, mbY, 145, 40, 10, 10);
+        g.setColor(new Color(255, 215, 0));
+        g.drawRoundRect(mbX, mbY, 145, 40, 10, 10);
+        if (coinBankImg != null) {
+            g.drawImage(coinBankImg, mbX + 6, mbY + 4, 32, 32, null);
+        }
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.setColor(new Color(255, 220, 50));
+        g.drawString("$ " + WalletManager.getInstance().getCoins(), mbX + 44, mbY + 27);
     }
 
     private void drawLevelSelect(Graphics2D g) {
@@ -515,11 +613,48 @@ public class GameManager {
         for(Monster z : zombies) z.draw(g);
         for(Projectile p : projectiles) p.draw(g);
 
+        // Vẽ Pet Ốc sên Stinky nếu đã mở khóa
+        if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
+            petSnail.draw(g);
+        }
+
+        // Vẽ các đồng xu và kim cương đang rơi hoặc bay trên sân
+        for(Coin c : coins) {
+            c.draw(g);
+        }
+
         // UI Header
         int sw = getScreenWidth();
         g.setColor(new Color(0, 0, 0, 160)); g.fillRect(0, 0, sw, 80);
         g.setColor(new Color(255, 215, 0)); g.fillOval(10, 20, 40, 40);
         g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22)); g.drawString(String.valueOf(sun), 60, 48);
+
+        // Khung hiển thị Ví Tiền ở góc trên bên phải
+        int bankX = sw - 360;
+        int bankY = 16;
+        g.setColor(new Color(0, 0, 0, 180));
+        g.fillRoundRect(bankX, bankY, 115, 36, 10, 10);
+        g.setColor(new Color(255, 215, 0));
+        g.drawRoundRect(bankX, bankY, 115, 36, 10, 10);
+        if (coinBankImg != null) {
+            g.drawImage(coinBankImg, bankX + 4, bankY + 3, 30, 30, null);
+        } else {
+            g.fillOval(bankX + 6, bankY + 6, 24, 24);
+        }
+        g.setColor(new Color(255, 220, 50));
+        g.setFont(new Font("Arial", Font.BOLD, 16));
+        g.drawString("$ " + WalletManager.getInstance().getCoins(), bankX + 38, bankY + 25);
+
+        // Nút Shop trong game
+        btnInGameShop.setBounds(bankX, 55, 115, 22);
+        drawSmallButton(g, btnInGameShop, "Shop 🛒", mouseX, mouseY);
+
+        // Hiệu ứng số tiền nảy bay lên (+10, +50, +1000)
+        for (WalletManager.FloatingText ft : WalletManager.getInstance().floatingTexts) {
+            g.setColor(new Color(255, 225, 30, ft.alpha));
+            g.setFont(new Font("Arial", Font.BOLD, 18));
+            g.drawString(ft.text, (int) ft.x, (int) ft.y);
+        }
 
         // Thông tin Level hiện tại ở góc trên bên phải
         if (currentLevel != null) {
@@ -529,8 +664,8 @@ public class GameManager {
             int ltw = g.getFontMetrics().stringWidth(lvlText);
             g.drawString(lvlText, sw - ltw - 120, 48);
 
-            btnInGameMenu.setBounds(sw - 105, 25, 90, 32);
-            drawSmallButton(g, btnInGameMenu, "Menu ☰", mouseX, mouseY);
+            btnInGameMenu.setBounds(sw - 105, 20, 92, 36);
+            drawPvZWoodButton(g, btnInGameMenu, "MENU", mouseX, mouseY);
         }
 
         // Draw Dynamic Cards
@@ -572,91 +707,188 @@ public class GameManager {
     private void drawGameOver(Graphics2D g) {
         int sw = getScreenWidth();
         int sh = getScreenHeight();
-        g.setColor(new Color(0, 0, 0, 185)); g.fillRect(0, 0, sw, sh);
-        g.setColor(Color.RED); g.setFont(new Font("Arial", Font.BOLD, 75));
-        String title = "GAME OVER";
-        int tw = g.getFontMetrics().stringWidth(title);
-        g.drawString(title, (sw - tw) / 2, sh / 2 - 70);
+        g.setColor(new Color(0, 0, 0, 195)); g.fillRect(0, 0, sw, sh);
 
-        int bw = 220, bh = 50;
+        int dw = 420;
+        int dh = 380;
+        int dx = (sw - dw) / 2;
+        int dy = (sh - dh) / 2 - 20;
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Nền bia đá Game Over
+        GradientPaint stoneGrad = new GradientPaint(dx, dy, new Color(45, 30, 25), dx, dy + dh, new Color(25, 15, 12));
+        g2.setPaint(stoneGrad);
+        g2.fillRoundRect(dx, dy, dw, dh, 24, 24);
+        g2.setStroke(new BasicStroke(3f));
+        g2.setColor(new Color(160, 60, 50));
+        g2.drawRoundRect(dx + 2, dy + 2, dw - 4, dh - 4, 22, 22);
+
+        // Tiêu đề Game Over
+        g2.setFont(new Font("Serif", Font.BOLD, 46));
+        String title = "THE ZOMBIES ATE";
+        String title2 = "YOUR BRAINS!";
+        int tw1 = g2.getFontMetrics().stringWidth(title);
+        g2.setColor(Color.BLACK);
+        g2.drawString(title, (sw - tw1) / 2 + 2, dy + 55);
+        g2.setColor(new Color(255, 60, 50));
+        g2.drawString(title, (sw - tw1) / 2, dy + 53);
+
+        int tw2 = g2.getFontMetrics().stringWidth(title2);
+        g2.setColor(Color.BLACK);
+        g2.drawString(title2, (sw - tw2) / 2 + 2, dy + 100);
+        g2.setColor(new Color(255, 80, 70));
+        g2.drawString(title2, (sw - tw2) / 2, dy + 98);
+
+        int bw = 260, bh = 46;
         int bx = (sw - bw) / 2;
-        int by = sh / 2;
+        int by = dy + 130;
 
         btnRestart.setBounds(bx, by, bw, bh);
-        drawButton(g, btnRestart, "CHƠI LẠI", mouseX, mouseY);
-        by += 65;
+        drawButton(g2, btnRestart, "CHƠI LẠI TỪ ĐẦU", mouseX, mouseY, new Color(180, 80, 30));
+        by += 60;
 
         btnLevelSelectGW.setBounds(bx, by, bw, bh);
-        drawButton(g, btnLevelSelectGW, "CHỌN MÀN KHÁC", mouseX, mouseY, new Color(46, 139, 87));
-        by += 65;
+        drawButton(g2, btnLevelSelectGW, "CHỌN MÀN KHÁC 🗺️", mouseX, mouseY, new Color(45, 95, 75));
+        by += 60;
 
         btnExitGO.setBounds(bx, by, bw, bh);
-        drawButton(g, btnExitGO, "VỀ MENU CHÍNH", mouseX, mouseY);
+        drawButton(g2, btnExitGO, "VỀ MENU CHÍNH 🏠", mouseX, mouseY, new Color(110, 45, 45));
+
+        g2.dispose();
     }
 
     private void drawGameWon(Graphics2D g) {
         int sw = getScreenWidth();
         int sh = getScreenHeight();
-        g.setColor(new Color(0, 0, 0, 185)); g.fillRect(0, 0, sw, sh);
-        g.setColor(new Color(50, 205, 50)); g.setFont(new Font("Arial", Font.BOLD, 75));
+        g.setColor(new Color(0, 0, 0, 190)); g.fillRect(0, 0, sw, sh);
+
+        int dw = 440;
+        int dh = 420;
+        int dx = (sw - dw) / 2;
+        int dy = (sh - dh) / 2 - 30;
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Nền bia đá Victory
+        GradientPaint stoneGrad = new GradientPaint(dx, dy, new Color(30, 48, 32), dx, dy + dh, new Color(15, 28, 18));
+        g2.setPaint(stoneGrad);
+        g2.fillRoundRect(dx, dy, dw, dh, 24, 24);
+        g2.setStroke(new BasicStroke(3f));
+        g2.setColor(new Color(215, 175, 70));
+        g2.drawRoundRect(dx + 2, dy + 2, dw - 4, dh - 4, 22, 22);
+
+        // Tiêu đề Victory
+        g2.setFont(new Font("Serif", Font.BOLD, 48));
         String title = "VICTORY!";
-        int tw = g.getFontMetrics().stringWidth(title);
-        g.drawString(title, (sw - tw) / 2, sh / 2 - 90);
+        int tw = g2.getFontMetrics().stringWidth(title);
+        g2.setColor(Color.BLACK);
+        g2.drawString(title, (sw - tw) / 2 + 2, dy + 58);
+        g2.setColor(new Color(255, 225, 50));
+        g2.drawString(title, (sw - tw) / 2, dy + 56);
 
-        g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22));
+        g2.setFont(new Font("Arial", Font.BOLD, 15));
+        g2.setColor(new Color(210, 245, 210));
         String sub = "Chúc mừng! Bạn đã bảo vệ an toàn khu vườn!";
-        int subW = g.getFontMetrics().stringWidth(sub);
-        g.drawString(sub, (sw - subW) / 2, sh / 2 - 40);
+        int subW = g2.getFontMetrics().stringWidth(sub);
+        g2.drawString(sub, (sw - subW) / 2, dy + 92);
 
-        int bw = 220, bh = 50;
+        int bw = 280, bh = 46;
         int bx = (sw - bw) / 2;
-        int by = sh / 2 + 10;
+        int by = dy + 120;
 
         boolean hasNext = hasLevel(currentLevelId + 1);
         if (hasNext) {
             btnNextLevel.setBounds(bx, by, bw, bh);
-            drawButton(g, btnNextLevel, "MÀN TIẾP THEO ▶", mouseX, mouseY, new Color(46, 139, 87));
-            by += 65;
+            drawButton(g2, btnNextLevel, "MÀN TIẾP THEO ▶", mouseX, mouseY, new Color(46, 139, 87));
+            by += 58;
         }
 
         btnRestart.setBounds(bx, by, bw, bh);
-        drawButton(g, btnRestart, "CHƠI LẠI", mouseX, mouseY);
-        by += 65;
+        drawButton(g2, btnRestart, "CHƠI LẠI MÀN NÀY", mouseX, mouseY, new Color(180, 90, 30));
+        by += 58;
 
         btnLevelSelectGW.setBounds(bx, by, bw, bh);
-        drawButton(g, btnLevelSelectGW, "CHỌN MÀN KHÁC", mouseX, mouseY);
-        by += 65;
+        drawButton(g2, btnLevelSelectGW, "CHỌN MÀN KHÁC 🗺️", mouseX, mouseY, new Color(45, 95, 75));
+        by += 58;
 
         btnExitGO.setBounds(bx, by, bw, bh);
-        drawButton(g, btnExitGO, "VỀ MENU CHÍNH", mouseX, mouseY);
+        drawButton(g2, btnExitGO, "VỀ MENU CHÍNH 🏠", mouseX, mouseY, new Color(110, 45, 45));
+
+        g2.dispose();
     }
 
     private void drawButton(Graphics2D g, Rectangle r, String text, int mX, int mY) {
-        drawButton(g, r, text, mX, mY, Color.WHITE);
+        drawButton(g, r, text, mX, mY, new Color(110, 80, 50));
     }
 
     private void drawButton(Graphics2D g, Rectangle r, String text, int mX, int mY, Color baseColor) {
         boolean hover = r.contains(mX, mY);
-        if (hover) {
-            int red = Math.min(255, baseColor.getRed() + 35);
-            int green = Math.min(255, baseColor.getGreen() + 35);
-            int blue = Math.min(255, baseColor.getBlue() + 35);
-            g.setColor(new Color(red, green, blue));
-        } else {
-            g.setColor(baseColor);
-        }
-        g.fillRect(r.x, r.y, r.width, r.height);
-        g.setColor(Color.BLACK);
-        g.drawRect(r.x, r.y, r.width, r.height);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        if (baseColor.equals(Color.WHITE)) {
-            g.setColor(Color.BLACK);
-        } else {
-            g.setColor(Color.WHITE);
-        }
-        g.setFont(new Font("Arial", Font.BOLD, 18));
-        int strW = g.getFontMetrics().stringWidth(text);
-        g.drawString(text, r.x + (r.width - strW) / 2, r.y + (r.height + 7) / 2); 
+        // Bóng đổ
+        g2.setColor(new Color(0, 0, 0, 90));
+        g2.fillRoundRect(r.x + 2, r.y + 3, r.width, r.height, 12, 12);
+
+        Color topColor = hover ? baseColor.brighter() : baseColor;
+        Color bottomColor = hover ? baseColor : baseColor.darker();
+        GradientPaint btnGrad = new GradientPaint(r.x, r.y, topColor, r.x, r.y + r.height, bottomColor);
+        g2.setPaint(btnGrad);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+
+        // Viền gờ nổi 3D
+        g2.setStroke(new BasicStroke(hover ? 2.2f : 1.5f));
+        g2.setColor(hover ? new Color(255, 235, 120) : new Color(220, 180, 100));
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+
+        g2.setFont(new Font("Serif", Font.BOLD, 17));
+        int strW = g2.getFontMetrics().stringWidth(text);
+        int strX = r.x + (r.width - strW) / 2;
+        int strY = r.y + (r.height + 6) / 2;
+
+        g2.setColor(new Color(15, 15, 15, 180));
+        g2.drawString(text, strX + 1, strY + 2);
+
+        g2.setColor(hover ? Color.WHITE : new Color(250, 245, 225));
+        g2.drawString(text, strX, strY);
+        g2.dispose();
+    }
+
+    public void drawPvZWoodButton(Graphics2D g, Rectangle r, String text, int mX, int mY) {
+        boolean hover = r.contains(mX, mY);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Bóng đổ
+        g2.setColor(new Color(0, 0, 0, 100));
+        g2.fillRoundRect(r.x + 2, r.y + 3, r.width, r.height, 12, 12);
+
+        // Nền dải màu vân gỗ nâu ấm
+        Color topC = hover ? new Color(185, 125, 65) : new Color(145, 90, 45);
+        Color botC = hover ? new Color(135, 85, 38) : new Color(105, 62, 28);
+        GradientPaint grad = new GradientPaint(r.x, r.y, topC, r.x, r.y + r.height, botC);
+        g2.setPaint(grad);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+
+        // Viền vàng nổi 3D
+        g2.setStroke(new BasicStroke(hover ? 2.5f : 1.8f));
+        g2.setColor(hover ? new Color(255, 235, 130) : new Color(215, 175, 95));
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+
+        // Chữ
+        g2.setFont(new Font("Serif", Font.BOLD, 16));
+        int tw = g2.getFontMetrics().stringWidth(text);
+        int tx = r.x + (r.width - tw) / 2;
+        int ty = r.y + (r.height + 6) / 2;
+
+        g2.setColor(new Color(20, 10, 5, 200));
+        g2.drawString(text, tx + 1, ty + 2);
+        g2.setColor(hover ? Color.WHITE : new Color(255, 245, 210));
+        g2.drawString(text, tx, ty);
+        g2.dispose();
     }
 
     private void drawSmallButton(Graphics2D g, Rectangle r, String text, int mX, int mY) {
@@ -685,11 +917,20 @@ public class GameManager {
                 scanAvailableLevels();
                 state = GameState.LEVEL_SELECT;
             }
+            else if (btnShop.contains(mX, mY)) {
+                state = GameState.SHOP;
+            }
             else if (btnInstr.contains(mX, mY)) state = GameState.INSTRUCTIONS;
             else if (btnEditor.contains(mX, mY)) {
                 new com.team.gardendefense.editor.LevelEditor().setVisible(true);
             }
             else if (btnExit.contains(mX, mY)) System.exit(0);
+            return;
+        } else if (state == GameState.SHOP) {
+            shopScreen.handleClick(mX, mY);
+            return;
+        } else if (state == GameState.PAUSED) {
+            pauseDialog.handleClick(mX, mY);
             return;
         } else if (state == GameState.LEVEL_SELECT) {
             if (btnBack.contains(mX, mY)) {
@@ -738,9 +979,21 @@ public class GameManager {
 
         if (state == GameState.PLAYING) {
             if (btnInGameMenu.contains(mX, mY)) {
-                state = GameState.MENU;
-                if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
+                AudioManager.getInstance().playBuySound();
+                state = GameState.PAUSED;
                 return;
+            }
+            if (btnInGameShop.contains(mX, mY)) {
+                state = GameState.SHOP;
+                return;
+            }
+
+            // Click trực tiếp vào đồng xu để nhặt
+            for (Coin c : coins) {
+                if (!c.isDead() && c.getBounds().contains(mX, mY)) {
+                    c.collect(this);
+                    return;
+                }
             }
 
             for(PlantCard c : uiCards) {
@@ -769,6 +1022,7 @@ public class GameManager {
                 else if (selectedPlant == 5 || selectedPlant == 10) cost = Constants.COST_SNOWPEA;
                 else if (selectedPlant == 6) cost = 150;
                 else if (selectedPlant == 7) cost = 150;
+                else if (selectedPlant == 11) cost = Constants.COST_MARIGOLD;
 
                 if (sun >= cost) {
                     Plant p = null;
@@ -782,6 +1036,7 @@ public class GameManager {
                     else if (selectedPlant == 10) { p = new SnowPea(col, row); p.direction = 3; }
                     else if (selectedPlant == 6) p = new com.team.gardendefense.model.entity.plant.CherryBomb(col, row, this);
                     else if (selectedPlant == 7) p = new com.team.gardendefense.model.entity.plant.Chomper(col, row, this);
+                    else if (selectedPlant == 11) p = new Marigold(col, row);
                     
                     if (p != null) {
                         plants.add(p);

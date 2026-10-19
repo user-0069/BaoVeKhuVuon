@@ -58,4 +58,19 @@ public class Constants {
     public static final float RANGE_ZOMBIE_SHOOTER = 250f;
     public static final int DMG_ZOMBIE_SHOOTER = 1;
     public static final float SPEED_BONE = 5f;
+
+    // --- MARIGOLD STATS ---
+    public static final int COST_MARIGOLD = 50;
+    public static final int HP_MARIGOLD = 5;
+    public static final int RATE_MARIGOLD = 1440; // 24 giây
+
+    // --- COIN SYSTEM STATS ---
+    public static final int COIN_VAL_SILVER = 10;
+    public static final int COIN_VAL_GOLD = 50;
+    public static final int COIN_VAL_DIAMOND = 1000;
+    public static final float DROP_RATE_SILVER = 0.20f;
+    public static final float DROP_RATE_GOLD = 0.05f;
+    public static final float DROP_RATE_DIAMOND = 0.01f;
+    public static final int COIN_LIFETIME = 360; // 6 giây
+    public static final int COIN_FADE_START = 240; // 2 giây cuối nhấp nháy
 }

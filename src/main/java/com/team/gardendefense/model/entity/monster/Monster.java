@@ -16,6 +16,7 @@ public abstract class Monster {
     public int wpIdx = 1; // Mặc định điểm xuất phát là index 0, nên hướng tới index 1
     
     public boolean facingRight = false;
+    public boolean isMiniBoss = false;
 
     public abstract void update(GameManager gm);
     public Image image;
