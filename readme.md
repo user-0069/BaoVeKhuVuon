@@ -167,12 +167,16 @@ BaoVeKhuVuon/
 - Mở file `src/main/java/com/team/gardendefense/main/GameLauncher.java`.
 - Nhấn nút **Run Java ▶️** ở góc trên bên phải giao diện VS Code.
 
-### Cách 2: Biên dịch và chạy bằng Terminal (PowerShell / Command Prompt)
+### Cách 2: Chạy nhanh bằng file script có sẵn (Khuyên Dùng Nhất)
+- **Windows Command Prompt:** Nhấp đúp chuột vào file `run.bat` hoặc gõ `run.bat` trong Terminal.
+- **PowerShell:** Gõ `.\run.ps1`
+
+### Cách 3: Biên dịch và chạy thủ công qua Terminal
 1. **Biên dịch:**
    ```powershell
-   javac -encoding UTF-8 -sourcepath src/main/java -cp "C:\Users\ADMIN\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java
+   javac -encoding UTF-8 -sourcepath src/main/java -cp "lib/gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java
    ```
-2. **Khởi chạy trò chơi:**
+2. **Khởi chạy:**
    ```powershell
-   java -cp "target/classes;C:\Users\ADMIN\.m2\repository\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar" com.team.gardendefense.main.GameLauncher
+   java -cp "target/classes;lib/gson-2.10.1.jar" com.team.gardendefense.main.GameLauncher
    ```

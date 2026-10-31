@@ -8,7 +8,7 @@ public class GameLauncher {
         JFrame window = new JFrame();
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setResizable(true);
-        window.setTitle("Bảo vệ khu vườn");
+        window.setTitle("B\u1EA3o v\u1EC7 khu v\u01B0\u1EDDn");
 
         GamePanel gamePanel = new GamePanel();
         window.add(gamePanel);

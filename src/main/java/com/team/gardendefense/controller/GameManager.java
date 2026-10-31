@@ -98,7 +98,7 @@ public class GameManager {
             else if (id==8) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_peashooter.png"); price = String.valueOf(Constants.COST_PEASHOOTER); }
             else if (id==9) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
             else if (id==10) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_snowpea.png"); price = String.valueOf(Constants.COST_SNOWPEA); }
-            else if (id==11) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/reanim/Marigold_petals.png"); price = String.valueOf(Constants.COST_MARIGOLD); }
+            else if (id==11) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_marigold.png"); price = String.valueOf(Constants.COST_MARIGOLD); }
         }
     }
     public List<PlantCard> uiCards = new ArrayList<>();
