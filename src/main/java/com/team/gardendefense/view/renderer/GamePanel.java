@@ -18,7 +18,7 @@ public class GamePanel extends JPanel implements Runnable {
 
         gm = new GameManager();
         gm.setGamePanel(this);
-        InputHandler input = new InputHandler(gm);
+        InputHandler input = new InputHandler(gm, this);
         this.addMouseListener(input);
         this.addMouseMotionListener(input); // Thêm dòng này để lắng nghe di chuột
         this.addKeyListener(input);
@@ -72,8 +72,15 @@ public class GamePanel extends JPanel implements Runnable {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g;
-        gm.draw(g2);
-        g2.dispose();
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            double scaleX = (double) getWidth() / gm.getScreenWidth();
+            double scaleY = (double) getHeight() / gm.getScreenHeight();
+            g2.scale(scaleX, scaleY);
+            gm.draw(g2);
+        } finally {
+            g2.dispose();
+        }
     }
 }
