@@ -1,7 +1,7 @@
 {
-  "coins": 3810,
-  "hasPetSnail": false,
-  "chocolateCount": 0,
+  "coins": 5870,
+  "hasPetSnail": true,
+  "chocolateCount": 6,
   "hasGoldenShovel": false,
   "iceShroomBlastCount": 1,
   "lawnMowerBackupCount": 1,
