@@ -13,8 +13,8 @@ public class CherryBomb extends Plant {
 
     public CherryBomb(int col, int row, GameManager gameManager) {
         super(col, row);
-        this.health = 5;
-        this.maxHealth = 5;
+        this.health = Constants.HP_CHERRYBOMB;
+        this.maxHealth = Constants.HP_CHERRYBOMB;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/CherryBomb.png");
     }
 

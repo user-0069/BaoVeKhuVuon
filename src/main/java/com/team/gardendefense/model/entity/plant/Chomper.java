@@ -12,8 +12,8 @@ public class Chomper extends Plant {
 
     public Chomper(int col, int row, GameManager gameManager) {
         super(col, row);
-        this.health = 5;
-        this.maxHealth = 5;
+        this.health = Constants.HP_CHOMPER;
+        this.maxHealth = Constants.HP_CHOMPER;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/Chomper.png");
     }
 

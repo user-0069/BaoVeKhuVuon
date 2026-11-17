@@ -59,6 +59,12 @@ public class Constants {
     public static final int DMG_ZOMBIE_SHOOTER = 1;
     public static final float SPEED_BONE = 5f;
 
+    // --- CHERRYBOMB / CHOMPER COST AND HP ---
+    public static final int COST_CHERRYBOMB = 150;
+    public static final int COST_CHOMPER = 150;
+    public static final int HP_CHERRYBOMB = 1;
+    public static final int HP_CHOMPER = 5;
+
     // --- MARIGOLD STATS ---
     public static final int COST_MARIGOLD = 50;
     public static final int HP_MARIGOLD = 5;

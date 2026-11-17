@@ -118,8 +118,8 @@ public class GameManager {
             else if (id==3) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
             else if (id==4) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_wallnut.png"); price = String.valueOf(Constants.COST_WALLNUT); }
             else if (id==5) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_snowpea.png"); price = String.valueOf(Constants.COST_SNOWPEA); }
-            else if (id==6) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_cherrybomb.png"); price = "150"; }
-            else if (id==7) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_chomper.png"); price = "150"; }
+            else if (id==6) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_cherrybomb.png"); price = String.valueOf(Constants.COST_CHERRYBOMB); }
+            else if (id==7) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_chomper.png"); price = String.valueOf(Constants.COST_CHOMPER); }
             else if (id==8) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_peashooter.png"); price = String.valueOf(Constants.COST_PEASHOOTER); }
             else if (id==9) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
             else if (id==10) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_snowpea.png"); price = String.valueOf(Constants.COST_SNOWPEA); }
@@ -333,8 +333,6 @@ public class GameManager {
                 uiCards.add(new PlantCard(pId, startX));
                 startX += 80;
             }
-            // Luôn thêm thẻ bài Marigold (Hoa Cúc - ID 11) để nhả xu!
-            uiCards.add(new PlantCard(11, startX));
         }
         state = GameState.PLAYING;
         if (panel != null) {
