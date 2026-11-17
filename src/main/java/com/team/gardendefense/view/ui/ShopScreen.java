@@ -193,7 +193,7 @@ public class ShopScreen {
 
     public void handleClick(int mX, int mY) {
         if (btnBack.contains(mX, mY)) {
-            gm.state = GameManager.GameState.MENU;
+            gm.closeShop();
             return;
         }
 

@@ -38,6 +38,7 @@ import java.awt.GradientPaint;
 public class GameManager {
     public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER, GAMEWON, SHOP }
     public GameState state = GameState.MENU;
+    private GameState shopReturnState = GameState.MENU;
 
     public Grid grid;
     public List<Plant> plants = new CopyOnWriteArrayList<>();
@@ -67,6 +68,18 @@ public class GameManager {
 
     public GamePanel getPanel() {
         return panel;
+    }
+
+    public void openShop() {
+        shopReturnState = state;
+        state = GameState.SHOP;
+    }
+
+    public void closeShop() {
+        if (state == GameState.SHOP) {
+            state = shopReturnState;
+            shopReturnState = GameState.MENU;
+        }
     }
 
     // Thông tin xem trước Level để hiển thị danh sách
@@ -113,7 +126,7 @@ public class GameManager {
                 AudioManager.getInstance().playBuySound();
                 state = GameState.PLAYING;
             } else if (state == GameState.SHOP) {
-                state = GameState.PLAYING;
+                closeShop();
             }
         }
     }
@@ -918,7 +931,7 @@ public class GameManager {
                 state = GameState.LEVEL_SELECT;
             }
             else if (btnShop.contains(mX, mY)) {
-                state = GameState.SHOP;
+                openShop();
             }
             else if (btnInstr.contains(mX, mY)) state = GameState.INSTRUCTIONS;
             else if (btnEditor.contains(mX, mY)) {
@@ -984,7 +997,7 @@ public class GameManager {
                 return;
             }
             if (btnInGameShop.contains(mX, mY)) {
-                state = GameState.SHOP;
+                openShop();
                 return;
             }
 
