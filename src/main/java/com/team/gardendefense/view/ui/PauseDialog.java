@@ -200,7 +200,7 @@ public class PauseDialog {
         // 3. Mở Cửa hàng
         if (btnShop.contains(mX, mY)) {
             AudioManager.getInstance().playBuySound();
-            gm.state = GameManager.GameState.SHOP;
+            gm.openShop(GameManager.GameState.PLAYING);
             return;
         }
 

@@ -5,10 +5,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.awt.Graphics2D;
 import java.awt.Color;
 import java.awt.Font;
@@ -29,6 +31,7 @@ import com.team.gardendefense.view.ui.PauseDialog;
 import com.team.gardendefense.view.ui.ShopScreen;
 import com.team.gardendefense.model.map.Grid;
 import com.team.gardendefense.model.level.LevelData;
+import com.team.gardendefense.model.level.LevelDataValidator;
 import com.team.gardendefense.model.level.Waypoint;
 import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.view.renderer.GamePanel;
@@ -36,6 +39,8 @@ import java.awt.RenderingHints;
 import java.awt.GradientPaint;
 
 public class GameManager {
+    private static final Logger LOGGER = Logger.getLogger(GameManager.class.getName());
+
     public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER, GAMEWON, SHOP }
     public GameState state = GameState.MENU;
     private GameState shopReturnState = GameState.MENU;
@@ -74,7 +79,11 @@ public class GameManager {
     }
 
     public void openShop() {
-        shopReturnState = state;
+        openShop(state);
+    }
+
+    public void openShop(GameState returnState) {
+        shopReturnState = returnState;
         state = GameState.SHOP;
     }
 
@@ -217,10 +226,20 @@ public class GameManager {
                 File f = new File("src/main/resources" + path);
                 if (f.exists()) is = new FileInputStream(f);
             }
-            if (is != null) {
-                return new Gson().fromJson(new InputStreamReader(is), LevelData.class);
+            if (is == null) return null;
+            try (InputStream input = is;
+                 InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
+                LevelData data = new Gson().fromJson(reader, LevelData.class);
+                String validationError = LevelDataValidator.validate(data);
+                if (validationError != null) {
+                    LOGGER.warning("Bỏ qua level " + id + ": " + validationError);
+                    return null;
+                }
+                return data;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.warning("Không thể đọc level " + id + ": " + e.getMessage());
+        }
         return null;
     }
 
@@ -233,9 +252,7 @@ public class GameManager {
     }
 
     public void startLevel(int id) {
-        currentLevelId = id;
-        loadLevel("/data/level_" + id + ".json");
-        resetGame();
+        if (loadLevel("/data/level_" + id + ".json")) resetGame();
     }
 
     public boolean loadLevel(String path) {
@@ -245,15 +262,23 @@ public class GameManager {
                 File f = new File("src/main/resources" + path);
                 if (f.exists()) is = new FileInputStream(f);
             }
-            if (is != null) {
-                currentLevel = new Gson().fromJson(new InputStreamReader(is), LevelData.class);
-                if (currentLevel != null) {
-                    currentLevelId = currentLevel.id;
-                    grid = new Grid(currentLevel.map, currentLevel.id);
-                    return true;
+            if (is == null) return false;
+            try (InputStream input = is;
+                 InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
+                LevelData loadedLevel = new Gson().fromJson(reader, LevelData.class);
+                String validationError = LevelDataValidator.validate(loadedLevel);
+                if (validationError != null) {
+                    LOGGER.warning("Không thể nạp level từ " + path + ": " + validationError);
+                    return false;
                 }
+                currentLevel = loadedLevel;
+                currentLevelId = currentLevel.id;
+                grid = new Grid(currentLevel.map, currentLevel.id);
+                return true;
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            LOGGER.warning("Không thể nạp level từ " + path + ": " + e.getMessage());
+        }
         return false;
     }
 
@@ -326,6 +351,10 @@ public class GameManager {
             pauseDialog.update();
             return;
         }
+        if (state == GameState.GAMEOVER || state == GameState.GAMEWON) {
+            updateCollectibles();
+            return;
+        }
         if (state != GameState.PLAYING) return;
 
         passiveSunTimer++;
@@ -342,15 +371,7 @@ public class GameManager {
             }
         }
 
-        // Cập nhật Coin và Pet Snail
-        for (Coin c : coins) {
-            c.update(this);
-            if (c.isDead()) coins.remove(c);
-        }
-        if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
-            petSnail.update(this);
-        }
-        WalletManager.getInstance().updateFloatingTexts();
+        updateCollectibles();
 
         for (Plant p : plants) {
             if (p.isDead()) plants.remove(p);
@@ -414,6 +435,27 @@ public class GameManager {
                 zombies.remove(z);
             }
         }
+    }
+
+    private void updateCollectibles() {
+        for (Coin c : coins) {
+            c.update(this);
+            if (c.isDead()) coins.remove(c);
+        }
+        if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
+            petSnail.update(this);
+        }
+        WalletManager.getInstance().updateFloatingTexts();
+    }
+
+    private boolean collectCoinAt(int x, int y) {
+        for (Coin c : coins) {
+            if (!c.isDead() && c.getBounds().contains(x, y)) {
+                c.collect(this);
+                return true;
+            }
+        }
+        return false;
     }
 
     public void draw(Graphics2D g) {
@@ -1009,8 +1051,8 @@ public class GameManager {
     public void handleClick(int mX, int mY) {
         if (state == GameState.MENU) {
             if (btnPlay.contains(mX, mY)) {
-                if (currentLevel == null) loadLevel("/data/level_1.json");
-                resetGame();
+                if (currentLevel == null && !loadLevel("/data/level_1.json")) return;
+                if (currentLevel != null) resetGame();
             }
             else if (btnLevelSelect.contains(mX, mY)) {
                 scanAvailableLevels();
@@ -1058,6 +1100,7 @@ public class GameManager {
                 state = GameState.MENU;
                 if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
             }
+            else collectCoinAt(mX, mY);
             return;
         } else if (state == GameState.GAMEWON) {
             if (hasLevel(currentLevelId + 1) && btnNextLevel.contains(mX, mY)) {
@@ -1073,6 +1116,7 @@ public class GameManager {
                 state = GameState.MENU;
                 if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
             }
+            else collectCoinAt(mX, mY);
             return;
         }
 
@@ -1088,12 +1132,7 @@ public class GameManager {
             }
 
             // Click trực tiếp vào đồng xu để nhặt
-            for (Coin c : coins) {
-                if (!c.isDead() && c.getBounds().contains(mX, mY)) {
-                    c.collect(this);
-                    return;
-                }
-            }
+            if (collectCoinAt(mX, mY)) return;
 
             for(PlantCard c : uiCards) {
                 if(c.rect.contains(mX, mY)) { selectedPlant = c.id; return; }

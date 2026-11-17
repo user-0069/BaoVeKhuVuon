@@ -3,6 +3,7 @@ package com.team.gardendefense.editor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.team.gardendefense.model.level.LevelData;
+import com.team.gardendefense.model.level.LevelDataValidator;
 import com.team.gardendefense.model.level.SpawnerData;
 import com.team.gardendefense.model.level.WaveData;
 import com.team.gardendefense.model.level.Waypoint;
@@ -822,7 +823,10 @@ public class LevelEditor extends JFrame {
         LevelData data = new LevelData();
         try {
             data.id = Integer.parseInt(txtLevelId.getText().trim());
-        } catch (Exception e) { data.id = 1; }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "ID màn chơi phải là số nguyên dương.", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         data.name = txtLevelName.getText().trim();
         data.initialSun = (int) spinInitialSun.getValue();
@@ -831,6 +835,12 @@ public class LevelEditor extends JFrame {
 
         data.map = this.mapData;
         data.waves = wavesList.toArray(new WaveData[0]);
+
+        String validationError = LevelDataValidator.validate(data);
+        if (validationError != null) {
+            JOptionPane.showMessageDialog(this, validationError, "Dữ liệu màn chơi không hợp lệ", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         // Mở hộp thoại lưu file
         JFileChooser chooser = new JFileChooser(new File("src/main/resources/data"));
@@ -858,6 +868,11 @@ public class LevelEditor extends JFrame {
             try (FileReader reader = new FileReader(file)) {
                 Gson gson = new Gson();
                 LevelData data = gson.fromJson(reader, LevelData.class);
+                String validationError = LevelDataValidator.validate(data);
+                if (validationError != null) {
+                    JOptionPane.showMessageDialog(this, validationError, "Dữ liệu màn chơi không hợp lệ", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
 
                 txtLevelId.setText(String.valueOf(data.id));
                 txtLevelName.setText(data.name != null ? data.name : "Custom Level");

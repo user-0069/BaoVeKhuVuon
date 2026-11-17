@@ -6,10 +6,11 @@ import javax.swing.JPanel;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.util.concurrent.locks.LockSupport;
 
 public class GamePanel extends JPanel implements Runnable {
     private Thread gameThread;
-    private boolean running = false;
+    private volatile boolean running = false;
     private GameManager gm;
 
     public GamePanel() {
@@ -45,7 +46,8 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
-    public void startGameThread() {
+    public synchronized void startGameThread() {
+        if (running) return;
         gameThread = new Thread(this);
         running = true;
         gameThread.start();
@@ -53,18 +55,23 @@ public class GamePanel extends JPanel implements Runnable {
 
     @Override
     public void run() {
-        double drawInterval = 1000000000 / Constants.FPS;
-        double delta = 0;
-        long lastTime = System.nanoTime();
-        long currentTime;
+        long frameDuration = 1_000_000_000L / Constants.FPS;
+        long nextFrame = System.nanoTime();
         while (running) {
-            currentTime = System.nanoTime();
-            delta += (currentTime - lastTime) / drawInterval;
-            lastTime = currentTime;
-            if (delta >= 1) {
-                gm.update();
-                repaint();
-                delta--;
+            long now = System.nanoTime();
+            long remaining = nextFrame - now;
+            if (remaining > 0) {
+                LockSupport.parkNanos(remaining);
+                continue;
+            }
+
+            gm.update();
+            repaint();
+
+            nextFrame += frameDuration;
+            long frameEnd = System.nanoTime();
+            if (frameEnd - nextFrame > frameDuration * 5) {
+                nextFrame = frameEnd + frameDuration;
             }
         }
     }
