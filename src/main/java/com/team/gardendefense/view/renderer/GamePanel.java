@@ -6,6 +6,9 @@ import javax.swing.JPanel;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.Point;
+import java.awt.Color;
 import java.util.concurrent.locks.LockSupport;
 
 public class GamePanel extends JPanel implements Runnable {
@@ -15,6 +18,7 @@ public class GamePanel extends JPanel implements Runnable {
 
     public GamePanel() {
         this.setPreferredSize(new Dimension(Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT));
+        this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
 
         gm = new GameManager();
@@ -53,6 +57,23 @@ public class GamePanel extends JPanel implements Runnable {
         gameThread.start();
     }
 
+    public Point screenToGameCoordinates(int screenX, int screenY) {
+        int gameWidth = gm.getScreenWidth();
+        int gameHeight = gm.getScreenHeight();
+        int panelWidth = getWidth();
+        int panelHeight = getHeight();
+        if (panelWidth <= 0 || panelHeight <= 0) return new Point(-1, -1);
+
+        double scale = Math.min((double) panelWidth / gameWidth, (double) panelHeight / gameHeight);
+        double offsetX = (panelWidth - gameWidth * scale) / 2.0;
+        double offsetY = (panelHeight - gameHeight * scale) / 2.0;
+        if (screenX < offsetX || screenX >= offsetX + gameWidth * scale
+                || screenY < offsetY || screenY >= offsetY + gameHeight * scale) {
+            return new Point(-1, -1);
+        }
+        return new Point((int) ((screenX - offsetX) / scale), (int) ((screenY - offsetY) / scale));
+    }
+
     @Override
     public void run() {
         long frameDuration = 1_000_000_000L / Constants.FPS;
@@ -79,12 +100,18 @@ public class GamePanel extends JPanel implements Runnable {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        if (getWidth() <= 0 || getHeight() <= 0) return;
 
         Graphics2D g2 = (Graphics2D) g.create();
         try {
-            double scaleX = (double) getWidth() / gm.getScreenWidth();
-            double scaleY = (double) getHeight() / gm.getScreenHeight();
-            g2.scale(scaleX, scaleY);
+            int gameWidth = gm.getScreenWidth();
+            int gameHeight = gm.getScreenHeight();
+            double scale = Math.min((double) getWidth() / gameWidth, (double) getHeight() / gameHeight);
+            double offsetX = (getWidth() - gameWidth * scale) / 2.0;
+            double offsetY = (getHeight() - gameHeight * scale) / 2.0;
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.translate(offsetX, offsetY);
+            g2.scale(scale, scale);
             gm.draw(g2);
         } finally {
             g2.dispose();
