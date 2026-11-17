@@ -2,23 +2,35 @@ package com.team.gardendefense.system;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.team.gardendefense.model.entity.coin.CoinType;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Quản lý tổng tài sản tiền xu và trạng thái mở khóa Meta-game của người chơi.
  * Lưu trữ bền vững (Save/Load) qua file JSON.
  */
 public class WalletManager {
-    private static final WalletManager instance = new WalletManager();
-    public static WalletManager getInstance() { return instance; }
-
     private static final String SAVE_FILE = "wallet_save.json";
+    private static final Path SAVE_PATH = Paths.get("saves", SAVE_FILE);
+    private static final Path USER_SAVE_PATH = Paths.get(
+            System.getProperty("user.home"), ".garden-defense", SAVE_FILE);
+    private static final Path LEGACY_SAVE_PATH = Paths.get(SAVE_FILE);
+    private static final Logger LOGGER = Logger.getLogger(WalletManager.class.getName());
+    private static final WalletManager instance = new WalletManager();
+
+    public static WalletManager getInstance() { return instance; }
 
     // Dữ liệu cần lưu
     public static class SaveData {
@@ -114,20 +126,34 @@ public class WalletManager {
     }
 
     public synchronized void save() {
-        try (FileWriter writer = new FileWriter(SAVE_FILE)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(data, writer);
-        } catch (Exception ignored) {}
+        try {
+            Files.createDirectories(SAVE_PATH.getParent());
+            try (Writer writer = Files.newBufferedWriter(SAVE_PATH, StandardCharsets.UTF_8)) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(data, writer);
+            }
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "Could not save player progress to " + SAVE_PATH, ex);
+        }
     }
 
     public synchronized void load() {
-        File file = new File(SAVE_FILE);
-        if (file.exists()) {
-            try (FileReader reader = new FileReader(file)) {
-                SaveData loaded = new Gson().fromJson(reader, SaveData.class);
-                if (loaded != null) {
-                    this.data = loaded;
+        Path source = Files.exists(SAVE_PATH) ? SAVE_PATH
+                : Files.exists(USER_SAVE_PATH) ? USER_SAVE_PATH
+                : LEGACY_SAVE_PATH;
+        if (!Files.exists(source)) {
+            return;
+        }
+
+        try (Reader reader = Files.newBufferedReader(source, StandardCharsets.UTF_8)) {
+            SaveData loaded = new Gson().fromJson(reader, SaveData.class);
+            if (loaded != null) {
+                this.data = loaded;
+                if (!source.equals(SAVE_PATH)) {
+                    save();
                 }
-            } catch (Exception ignored) {}
+            }
+        } catch (IOException | JsonParseException ex) {
+            LOGGER.log(Level.SEVERE, "Could not load player progress from " + source, ex);
         }
     }
 }

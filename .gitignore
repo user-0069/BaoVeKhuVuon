@@ -35,6 +35,10 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
+# Per-user game progress
+/wallet_save.json
+/saves/wallet_save.json
+
 # IDEs
 .idea/
 *.iml

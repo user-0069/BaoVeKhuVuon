@@ -49,6 +49,9 @@ public class GameManager {
     public ShopScreen shopScreen;
     public PauseDialog pauseDialog;
     public Image coinBankImg;
+    private Image mainMenuBackgroundImg;
+    private Image mainMenuTitleImg;
+    private Image sunIconImg;
     
     public int sun = 50; 
     private int passiveSunTimer = 0;
@@ -153,6 +156,9 @@ public class GameManager {
         shopScreen = new ShopScreen(this);
         pauseDialog = new PauseDialog(this);
         coinBankImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/coinbank.png");
+        mainMenuBackgroundImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/mainbg.png");
+        mainMenuTitleImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/titlegame.png");
+        sunIconImg = loadSunIconImage();
         scanAvailableLevels();
         loadLevel("/data/level_1.json");
     }
@@ -243,7 +249,7 @@ public class GameManager {
                 currentLevel = new Gson().fromJson(new InputStreamReader(is), LevelData.class);
                 if (currentLevel != null) {
                     currentLevelId = currentLevel.id;
-                    grid = new Grid(currentLevel.map);
+                    grid = new Grid(currentLevel.map, currentLevel.id);
                     return true;
                 }
             }
@@ -426,11 +432,40 @@ public class GameManager {
     private void drawMainMenu(Graphics2D g) {
         int sw = getScreenWidth();
         int sh = getScreenHeight();
-        g.setColor(new Color(34, 139, 34)); g.fillRect(0, 0, sw, sh);
-        g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 64));
-        String title = "BẢO VỆ KHU VƯỜN";
-        int tw = g.getFontMetrics().stringWidth(title);
-        g.drawString(title, (sw - tw) / 2, 140);
+        if (mainMenuBackgroundImg != null
+                && mainMenuBackgroundImg.getWidth(null) > 0
+                && mainMenuBackgroundImg.getHeight(null) > 0) {
+            int imageWidth = mainMenuBackgroundImg.getWidth(null);
+            int imageHeight = mainMenuBackgroundImg.getHeight(null);
+            double scale = Math.max((double) sw / imageWidth, (double) sh / imageHeight);
+            int drawWidth = (int) Math.ceil(imageWidth * scale);
+            int drawHeight = (int) Math.ceil(imageHeight * scale);
+
+            Graphics2D backgroundGraphics = (Graphics2D) g.create();
+            try {
+                backgroundGraphics.clipRect(0, 0, sw, sh);
+                backgroundGraphics.drawImage(
+                        mainMenuBackgroundImg,
+                        (sw - drawWidth) / 2,
+                        (sh - drawHeight) / 2,
+                        drawWidth,
+                        drawHeight,
+                        null);
+            } finally {
+                backgroundGraphics.dispose();
+            }
+        } else {
+            g.setColor(new Color(34, 139, 34));
+            g.fillRect(0, 0, sw, sh);
+        }
+
+        if (mainMenuTitleImg != null
+                && mainMenuTitleImg.getWidth(null) > 0
+                && mainMenuTitleImg.getHeight(null) > 0) {
+            int titleWidth = sw * 65 / 100;
+            int titleHeight = titleWidth * mainMenuTitleImg.getHeight(null) / mainMenuTitleImg.getWidth(null);
+            g.drawImage(mainMenuTitleImg, (sw - titleWidth) / 2, 0, titleWidth, titleHeight, null);
+        }
 
         int bx = (sw - 200) / 2;
         btnPlay.x = bx;
@@ -599,6 +634,52 @@ public class GameManager {
         drawButton(g, btnBack, "QUAY LẠI", mouseX, mouseY);
     }
 
+    private Image loadSunIconImage() {
+        Image source = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/sunimg.png");
+        if (!(source instanceof java.awt.image.BufferedImage)) return source;
+
+        java.awt.image.BufferedImage original = (java.awt.image.BufferedImage) source;
+        int minX = original.getWidth();
+        int minY = original.getHeight();
+        int maxX = -1;
+        int maxY = -1;
+        for (int y = 0; y < original.getHeight(); y++) {
+            for (int x = 0; x < original.getWidth(); x++) {
+                int pixel = original.getRGB(x, y);
+                int red = (pixel >> 16) & 0xff;
+                int green = (pixel >> 8) & 0xff;
+                int blue = pixel & 0xff;
+                if (isSunImageBackground(red, green, blue)) continue;
+
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+        if (maxX < minX || maxY < minY) return null;
+
+        java.awt.image.BufferedImage cropped = new java.awt.image.BufferedImage(
+                maxX - minX + 1, maxY - minY + 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                int pixel = original.getRGB(x, y);
+                int red = (pixel >> 16) & 0xff;
+                int green = (pixel >> 8) & 0xff;
+                int blue = pixel & 0xff;
+                if (isSunImageBackground(red, green, blue)) pixel = 0;
+                cropped.setRGB(x - minX, y - minY, pixel);
+            }
+        }
+        return cropped;
+    }
+
+    private boolean isSunImageBackground(int red, int green, int blue) {
+        int min = Math.min(red, Math.min(green, blue));
+        int max = Math.max(red, Math.max(green, blue));
+        return min >= 240 && max - min <= 15;
+    }
+
     private void drawGameplay(Graphics2D g) {
         if(grid != null) grid.draw(g);
         
@@ -639,7 +720,12 @@ public class GameManager {
         // UI Header
         int sw = getScreenWidth();
         g.setColor(new Color(0, 0, 0, 160)); g.fillRect(0, 0, sw, 80);
-        g.setColor(new Color(255, 215, 0)); g.fillOval(10, 20, 40, 40);
+        if (sunIconImg != null) {
+            g.drawImage(sunIconImg, 10, 20, 40, 40, null);
+        } else {
+            g.setColor(new Color(255, 215, 0));
+            g.fillOval(10, 20, 40, 40);
+        }
         g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22)); g.drawString(String.valueOf(sun), 60, 48);
 
         // Khung hiển thị Ví Tiền ở góc trên bên phải

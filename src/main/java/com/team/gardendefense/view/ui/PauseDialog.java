@@ -14,9 +14,9 @@ import java.awt.*;
 public class PauseDialog {
     private final GameManager gm;
 
-    // Kích thước hộp thoại
-    private final int dialogWidth = 440;
-    private final int dialogHeight = 520;
+    private static final int BOARD_IMAGE_WIDTH = 1920;
+    private static final int BOARD_IMAGE_HEIGHT = 2208;
+    private static final int MAX_DIALOG_HEIGHT = 740;
 
     // Các nút bấm trong Options Dialog
     public Rectangle btnResume = new Rectangle();
@@ -26,13 +26,13 @@ public class PauseDialog {
     public Rectangle btnMainMenu = new Rectangle();
     public Rectangle btnToggleSound = new Rectangle();
 
-    private Image buttonBgImg;
-    private Image buttonGlowImg;
+    private Image boardBgImg;
+    private Image choiceBarImg;
 
     public PauseDialog(GameManager gm) {
         this.gm = gm;
-        this.buttonBgImg = ImageLoader.getImage("src/main/resources/assets/images/SeedChooser_Button.png");
-        this.buttonGlowImg = ImageLoader.getImage("src/main/resources/assets/images/SeedChooser_Button_Glow.png");
+        this.boardBgImg = loadBoardImage();
+        this.choiceBarImg = loadChoiceBarImage();
     }
 
     public void update() {
@@ -48,97 +48,138 @@ public class PauseDialog {
         g.fillRect(0, 0, sw, sh);
 
         // 2. Tọa độ tâm màn hình
+        int dialogHeight = Math.min(MAX_DIALOG_HEIGHT, sh - 24);
+        int dialogWidth = dialogHeight * BOARD_IMAGE_WIDTH / BOARD_IMAGE_HEIGHT;
+        if (dialogWidth > sw - 24) {
+            dialogWidth = sw - 24;
+            dialogHeight = dialogWidth * BOARD_IMAGE_HEIGHT / BOARD_IMAGE_WIDTH;
+        }
         int dx = (sw - dialogWidth) / 2;
         int dy = (sh - dialogHeight) / 2;
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Bóng đổ ngoài của bia đá
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(dx + 10, dy + 12, dialogWidth, dialogHeight, 28, 28);
+        if (boardBgImg != null) {
+            g2.drawImage(boardBgImg, dx, dy, dialogWidth, dialogHeight, null);
+        } else {
+            g2.setColor(new Color(48, 38, 28));
+            g2.fillRoundRect(dx, dy, dialogWidth, dialogHeight, 24, 24);
+            g2.setStroke(new BasicStroke(3f));
+            g2.setColor(new Color(185, 145, 75));
+            g2.drawRoundRect(dx + 2, dy + 2, dialogWidth - 4, dialogHeight - 4, 22, 22);
+        }
 
-        // Nền bia đá chính phong cách PvZ (Màu nâu đá sẫm kết hợp xanh rêu rêu phong)
-        GradientPaint stoneGrad = new GradientPaint(
-                dx, dy, new Color(48, 38, 28),
-                dx, dy + dialogHeight, new Color(28, 22, 16)
-        );
-        g2.setPaint(stoneGrad);
-        g2.fillRoundRect(dx, dy, dialogWidth, dialogHeight, 24, 24);
-
-        // Viền đá đục đẽo 3D
-        g2.setStroke(new BasicStroke(4f));
-        g2.setColor(new Color(110, 85, 55));
-        g2.drawRoundRect(dx + 2, dy + 2, dialogWidth - 4, dialogHeight - 4, 22, 22);
-
-        // Viền trong mạ vàng cổ
-        g2.setStroke(new BasicStroke(2f));
-        g2.setColor(new Color(185, 145, 75));
-        g2.drawRoundRect(dx + 10, dy + 10, dialogWidth - 20, dialogHeight - 20, 18, 18);
-
-        // Đinh tán trang trí 4 góc (Rivets)
-        drawRivet(g2, dx + 18, dy + 18);
-        drawRivet(g2, dx + dialogWidth - 18, dy + 18);
-        drawRivet(g2, dx + 18, dy + dialogHeight - 18);
-        drawRivet(g2, dx + dialogWidth - 18, dy + dialogHeight - 18);
-
-        // 3. Tiêu đề "GAME PAUSED" (TẠM DỪNG)
-        String title = "GAME PAUSED";
-        g2.setFont(new Font("Serif", Font.BOLD, 36));
-        int tw = g2.getFontMetrics().stringWidth(title);
-
-        // Bóng chữ nổi 3D
-        g2.setColor(new Color(20, 15, 10));
-        g2.drawString(title, dx + (dialogWidth - tw) / 2 + 2, dy + 56);
-        // Chữ vàng óng ánh
-        g2.setColor(new Color(255, 215, 50));
-        g2.drawString(title, dx + (dialogWidth - tw) / 2, dy + 54);
-
-        // Thông tin màn chơi
-        String sub = "Màn " + gm.currentLevelId;
-        g2.setFont(new Font("Arial", Font.BOLD, 14));
-        g2.setColor(new Color(190, 220, 170));
-        int subW = g2.getFontMetrics().stringWidth(sub);
-        g2.drawString(sub, dx + (dialogWidth - subW) / 2, dy + 82);
-
-        // Đường gạch chia khắc đá
-        g2.setColor(new Color(130, 95, 55));
-        g2.drawLine(dx + 35, dy + 95, dx + dialogWidth - 35, dy + 95);
-
-        // 4. Các nút bấm lựa chọn (Vertical Stack)
-        int btnW = 320;
-        int btnH = 46;
-        int btnX = dx + (dialogWidth - btnW) / 2;
-        int startBtnY = dy + 115;
-        int gapY = 58;
+        // 4. Các nút lựa chọn xếp thành hai cột
+        int btnW = dialogWidth * 29 / 100;
+        int btnH = choiceBarImg == null
+                ? dialogHeight * 6 / 100
+                : btnW * choiceBarImg.getHeight(null) / choiceBarImg.getWidth(null);
+        int columnGap = dialogWidth * 4 / 100;
+        int gridWidth = btnW * 2 + columnGap;
+        int leftColumnX = dx + (dialogWidth - gridWidth) / 2 + dialogWidth * 3 / 100;
+        int rightColumnX = leftColumnX + btnW + columnGap;
+        int rowGap = dialogHeight * 2 / 100;
+        int startBtnY = dy + dialogHeight * 45 / 100;
+        int buttonStepY = btnH + rowGap;
 
         // Button 1: TIẾP TỤC (Xanh lá cây rực rỡ)
-        btnResume.setBounds(btnX, startBtnY, btnW, btnH);
+        btnResume.setBounds(leftColumnX, startBtnY, btnW, btnH);
         drawPvZButton(g2, btnResume, "TIẾP TỤC", gm.mouseX, gm.mouseY, new Color(46, 139, 87), new Color(60, 179, 113));
 
         // Button 2: CHƠI LẠI (Cam đất đá)
-        btnRestart.setBounds(btnX, startBtnY + gapY, btnW, btnH);
+        btnRestart.setBounds(rightColumnX, startBtnY, btnW, btnH);
         drawPvZButton(g2, btnRestart, "CHƠI LẠI TỪ ĐẦU", gm.mouseX, gm.mouseY, new Color(180, 82, 35), new Color(205, 92, 38));
 
         // Button 3: CỬA HÀNG CRAZY DAVE (Vàng mật ong)
-        btnShop.setBounds(btnX, startBtnY + gapY * 2, btnW, btnH);
+        btnShop.setBounds(leftColumnX, startBtnY + buttonStepY, btnW, btnH);
         drawPvZButton(g2, btnShop, "CỬA HÀNG 🛒", gm.mouseX, gm.mouseY, new Color(160, 110, 30), new Color(190, 135, 40));
 
         // Button 4: ÂM THANH SFX (Toggle)
         boolean soundOn = AudioManager.getInstance().isSfxEnabled();
-        btnToggleSound.setBounds(btnX, startBtnY + gapY * 3, btnW, btnH);
+        btnToggleSound.setBounds(rightColumnX, startBtnY + buttonStepY, btnW, btnH);
         String soundText = soundOn ? "ÂM THANH: [ BẬT 🔊 ]" : "ÂM THANH: [ TẮT 🔇 ]";
         drawPvZButton(g2, btnToggleSound, soundText, gm.mouseX, gm.mouseY, new Color(70, 90, 120), new Color(85, 110, 145));
 
         // Button 5: CHỌN MÀN KHÁC (Xanh ngọc bích sẫm)
-        btnLevelSelect.setBounds(btnX, startBtnY + gapY * 4, btnW, btnH);
+        btnLevelSelect.setBounds(leftColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
         drawPvZButton(g2, btnLevelSelect, "CHỌN MÀN KHÁC 🗺️", gm.mouseX, gm.mouseY, new Color(45, 85, 75), new Color(55, 105, 90));
 
         // Button 6: VỀ MENU CHÍNH (Đỏ gạch / Nâu gỗ sẫm)
-        btnMainMenu.setBounds(btnX, startBtnY + gapY * 5, btnW, btnH);
+        btnMainMenu.setBounds(rightColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
         drawPvZButton(g2, btnMainMenu, "VỀ MENU CHÍNH 🏠", gm.mouseX, gm.mouseY, new Color(110, 40, 40), new Color(135, 50, 50));
 
         g2.dispose();
+    }
+
+    private Image loadBoardImage() {
+        Image source = ImageLoader.getImage("src/main/resources/assets/images/gamepausedboard.png");
+        if (!(source instanceof java.awt.image.BufferedImage)) return source;
+
+        java.awt.image.BufferedImage original = (java.awt.image.BufferedImage) source;
+        java.awt.image.BufferedImage transparent = new java.awt.image.BufferedImage(
+                original.getWidth(), original.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < original.getHeight(); y++) {
+            for (int x = 0; x < original.getWidth(); x++) {
+                int pixel = original.getRGB(x, y);
+                int red = (pixel >> 16) & 0xff;
+                int green = (pixel >> 8) & 0xff;
+                int blue = pixel & 0xff;
+                int max = Math.max(red, Math.max(green, blue));
+                int min = Math.min(red, Math.min(green, blue));
+                if (min >= 185 && max <= 225 && max - min <= 15) {
+                    pixel = 0;
+                }
+                transparent.setRGB(x, y, pixel);
+            }
+        }
+        return transparent;
+    }
+
+    private Image loadChoiceBarImage() {
+        Image source = ImageLoader.getImage("src/main/resources/assets/images/choicebar.png");
+        if (!(source instanceof java.awt.image.BufferedImage)) return source;
+
+        java.awt.image.BufferedImage original = (java.awt.image.BufferedImage) source;
+        int minX = original.getWidth();
+        int minY = original.getHeight();
+        int maxX = -1;
+        int maxY = -1;
+        for (int y = 0; y < original.getHeight(); y++) {
+            for (int x = 0; x < original.getWidth(); x++) {
+                int pixel = original.getRGB(x, y);
+                int red = (pixel >> 16) & 0xff;
+                int green = (pixel >> 8) & 0xff;
+                int blue = pixel & 0xff;
+                if (isChoiceBarBackground(red, green, blue)) continue;
+
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+        if (maxX < minX || maxY < minY) return null;
+
+        java.awt.image.BufferedImage cropped = new java.awt.image.BufferedImage(
+                maxX - minX + 1, maxY - minY + 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                int pixel = original.getRGB(x, y);
+                int red = (pixel >> 16) & 0xff;
+                int green = (pixel >> 8) & 0xff;
+                int blue = pixel & 0xff;
+                if (isChoiceBarBackground(red, green, blue)) pixel = 0;
+                cropped.setRGB(x - minX, y - minY, pixel);
+            }
+        }
+        return cropped;
+    }
+
+    private boolean isChoiceBarBackground(int red, int green, int blue) {
+        int min = Math.min(red, Math.min(green, blue));
+        int max = Math.max(red, Math.max(green, blue));
+        return min >= 185 && max - min <= 20;
     }
 
     public void handleClick(int mX, int mY) {
@@ -196,31 +237,36 @@ public class PauseDialog {
     private void drawPvZButton(Graphics2D g, Rectangle r, String text, int mX, int mY, Color baseColor, Color hoverColor) {
         boolean hover = r.contains(mX, mY);
 
-        // Hiệu ứng bóng đổ phía dưới của nút
-        g.setColor(new Color(0, 0, 0, 90));
-        g.fillRoundRect(r.x + 2, r.y + 3, r.width, r.height, 14, 14);
-
-        // Thân nút bấm dạng dải màu dốc Gradient 3D
-        Color topColor = hover ? hoverColor.brighter() : hoverColor;
-        Color bottomColor = hover ? baseColor.brighter() : baseColor;
-        GradientPaint btnGrad = new GradientPaint(r.x, r.y, topColor, r.x, r.y + r.height, bottomColor);
-        g.setPaint(btnGrad);
-        g.fillRoundRect(r.x, r.y, r.width, r.height, 12, 12);
-
-        // Viền viền kép sáng/tối tạo hiệu ứng nổi gờ (Beveled Edge)
-        g.setStroke(new BasicStroke(hover ? 2.5f : 1.5f));
-        g.setColor(hover ? new Color(255, 235, 120) : new Color(240, 205, 120));
-        g.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
-
-        // Highlight viền trong góc trên
-        g.setColor(new Color(255, 255, 255, hover ? 110 : 60));
-        g.drawLine(r.x + 6, r.y + 3, r.x + r.width - 6, r.y + 3);
+        if (choiceBarImg != null) {
+            g.drawImage(choiceBarImg, r.x, r.y, r.width, r.height, null);
+            if (hover) {
+                g.setColor(new Color(255, 255, 255, 45));
+                g.fillRoundRect(r.x + 3, r.y + 3, r.width - 6, r.height - 6, 12, 12);
+            }
+        } else {
+            g.setColor(new Color(0, 0, 0, 90));
+            g.fillRoundRect(r.x + 2, r.y + 3, r.width, r.height, 14, 14);
+            Color topColor = hover ? hoverColor.brighter() : hoverColor;
+            Color bottomColor = hover ? baseColor.brighter() : baseColor;
+            GradientPaint btnGrad = new GradientPaint(r.x, r.y, topColor, r.x, r.y + r.height, bottomColor);
+            g.setPaint(btnGrad);
+            g.fillRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+            g.setStroke(new BasicStroke(hover ? 2.5f : 1.5f));
+            g.setColor(hover ? new Color(255, 235, 120) : new Color(240, 205, 120));
+            g.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+        }
 
         // Chữ trên nút với bóng đổ tối (Drop shadow)
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        int strW = g.getFontMetrics().stringWidth(text);
+        int fontSize = 14;
+        Font buttonFont = new Font("Arial", Font.BOLD, fontSize);
+        while (fontSize > 9 && g.getFontMetrics(buttonFont).stringWidth(text) > r.width - 16) {
+            buttonFont = new Font("Arial", Font.BOLD, --fontSize);
+        }
+        g.setFont(buttonFont);
+        FontMetrics metrics = g.getFontMetrics();
+        int strW = metrics.stringWidth(text);
         int strX = r.x + (r.width - strW) / 2;
-        int strY = r.y + (r.height + 6) / 2;
+        int strY = r.y + (r.height - metrics.getHeight()) / 2 + metrics.getAscent();
 
         g.setColor(new Color(15, 15, 15, 180));
         g.drawString(text, strX + 1, strY + 2);
@@ -229,13 +275,4 @@ public class PauseDialog {
         g.drawString(text, strX, strY);
     }
 
-    private void drawRivet(Graphics2D g, int cx, int cy) {
-        g.setColor(new Color(20, 15, 10));
-        g.fillOval(cx - 5, cy - 5, 10, 10);
-        g.setColor(new Color(180, 145, 75));
-        g.fillOval(cx - 4, cy - 4, 8, 8);
-        g.setColor(new Color(255, 240, 160));
-        g.fillOval(cx - 2, cy - 2, 3, 3);
-    }
 }
-

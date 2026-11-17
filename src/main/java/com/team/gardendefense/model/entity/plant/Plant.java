@@ -19,22 +19,26 @@ public abstract class Plant {
     }
     public abstract void update(GameManager gm);
     public void draw(Graphics2D g) {
+        drawPlantImage(g, Constants.TILE_SIZE + 10);
+    }
+
+    protected void drawPlantImage(Graphics2D g, int size) {
         if (image != null) {
             int cx = x + Constants.TILE_SIZE / 2;
             int cy = y + Constants.TILE_SIZE / 2;
-            int size = Constants.TILE_SIZE + 10;
+            int offset = (Constants.TILE_SIZE - size) / 2;
             Graphics2D g2 = (Graphics2D) g.create();
             
             if (direction == 0) { // Up
                 g2.rotate(-Math.PI / 2, cx, cy);
-                g2.drawImage(image, x - 5, y - 5, size, size, null);
+                g2.drawImage(image, x + offset, y + offset, size, size, null);
             } else if (direction == 2) { // Down
                 g2.rotate(Math.PI / 2, cx, cy);
-                g2.drawImage(image, x - 5, y - 5, size, size, null);
+                g2.drawImage(image, x + offset, y + offset, size, size, null);
             } else if (direction == 3) { // Left (flip)
-                g2.drawImage(image, x - 5 + size, y - 5, -size, size, null);
+                g2.drawImage(image, x + offset + size, y + offset, -size, size, null);
             } else { // Right
-                g2.drawImage(image, x - 5, y - 5, size, size, null);
+                g2.drawImage(image, x + offset, y + offset, size, size, null);
             }
             g2.dispose();
         }
