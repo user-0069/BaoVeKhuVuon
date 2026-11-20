@@ -9,33 +9,54 @@ import com.team.gardendefense.model.entity.projectile.Pea;
 
 public class Peashooter extends Plant {
     private int shootTimer = 0;
+    private boolean pendingShot = false;
+    private int shotDelay = 0;
 
     public Peashooter(int col, int row) { 
         super(col, row); 
         this.health = Constants.HP_PEASHOOTER; this.maxHealth = Constants.HP_PEASHOOTER;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/Peashooter_full.png");
+        setAnimation("PeaShooterSingle.reanim");
     }
 
-    
     @Override
     public void update(GameManager gm) {
         shootTimer++;
+
+        // Delayed projectile spawn perfectly synchronized with the peak mouth spit frame
+        if (pendingShot) {
+            shotDelay--;
+            if (shotDelay <= 0) {
+                pendingShot = false;
+                spawnPea(gm);
+            }
+        }
+
         if (shootTimer >= Constants.RATE_PEASHOOTER) { 
             Monster target = getClosestZombie(gm);
             if (target != null) {
-                float tx = x + 32; float ty = y + 32;
-                if (direction == 0) ty -= 100;
-                else if (direction == 1) tx += 100;
-                else if (direction == 2) ty += 100;
-                else if (direction == 3) tx -= 100;
-                
-                gm.projectiles.add(new Pea(
-                    x + 32, y + 32, tx, ty, 
-                    Constants.DMG_PEASHOOTER, new Color(144, 238, 144), Constants.SPEED_PEA, false
-                ));
+                playAction("shoot");
+                pendingShot = true;
+                shotDelay = 11; // Launch pea when mouth lunges forward (frame ~11 out of 24)
                 shootTimer = 0; 
             }
         }
+    }
+
+    private void spawnPea(GameManager gm) {
+        float sx = x + 32;
+        float sy = y + 20;
+        float tx = sx;
+        float ty = sy;
+        if (direction == 0) { ty -= 100; sy -= 14; }
+        else if (direction == 1) { tx += 100; sx += 18; }
+        else if (direction == 2) { ty += 100; sy += 14; }
+        else if (direction == 3) { tx -= 100; sx -= 18; }
+
+        gm.projectiles.add(new Pea(
+            sx, sy, tx, ty, 
+            Constants.DMG_PEASHOOTER, new Color(144, 238, 144), Constants.SPEED_PEA, false
+        ));
     }
     
     private Monster getClosestZombie(GameManager gm) {

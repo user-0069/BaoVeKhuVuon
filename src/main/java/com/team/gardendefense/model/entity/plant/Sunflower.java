@@ -37,54 +37,70 @@ public class Sunflower extends Plant {
     private static final int[] SUN_FRAME_INDEXES = {5, 6, 7, 8, 9};
 
     private int sunTimer = 0;
-    private int animationTimer = 0;
-    private int animationFrame = 0;
-    private boolean animationPlaying = false;
+    private int sunPopTimer = 0;
+    private static final int SUN_POP_DURATION = 35;
 
     public Sunflower(int col, int row) { 
         super(col, row); 
         this.health = Constants.HP_SUNFLOWER; this.maxHealth = Constants.HP_SUNFLOWER;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/Sunflower_full.png");
-        if (hasProductionAnimation()) {
-            this.image = PRODUCTION_FRAMES[0];
-        }
+        setAnimation("SunFlower.reanim");
     }
 
     @Override
     public void update(GameManager gm) {
         sunTimer++;
-        if (animationPlaying) {
-            animationTimer++;
-            animationFrame = Math.min(animationTimer / ANIMATION_FRAME_DURATION, PRODUCTION_FRAMES.length - 1);
-            image = PRODUCTION_FRAMES[animationFrame];
-            if (animationTimer >= ANIMATION_FRAME_DURATION * PRODUCTION_FRAMES.length) {
-                animationPlaying = false;
-                animationFrame = PRODUCTION_FRAMES.length - 1;
-            }
+        if (sunPopTimer > 0) {
+            sunPopTimer--;
         }
         if (sunTimer >= Constants.RATE_SUNFLOWER) {
             gm.sun += Constants.AMOUNT_SUNFLOWER;
             sunTimer = 0;
-            if (hasProductionAnimation()) {
-                animationPlaying = true;
-                animationTimer = 0;
-                animationFrame = 0;
-                image = PRODUCTION_FRAMES[0];
-            }
+            sunPopTimer = SUN_POP_DURATION;
         }
     }
 
     @Override
     public void draw(Graphics2D g) {
-        drawPlantImage(g, Constants.TILE_SIZE + 22);
-        if (!animationPlaying || PRODUCTION_SUNS.length != SUN_FRAME_INDEXES.length) return;
+        // Draw continuous warm solar glow charging up before producing sun (last 50 ticks)
+        if (sunTimer >= Constants.RATE_SUNFLOWER - 50) {
+            float progress = (sunTimer - (Constants.RATE_SUNFLOWER - 50)) / 50.0f;
+            float pulse = (float) Math.sin(progress * Math.PI);
+            int cx = x + Constants.TILE_SIZE / 2;
+            int cy = y + Constants.TILE_SIZE / 2 - 4;
+            int glowSize = (int)(Constants.TILE_SIZE * (0.85f + 0.25f * pulse));
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setColor(new java.awt.Color(255, 220, 50, (int)(pulse * 105)));
+            g2.fillOval(cx - glowSize / 2, cy - glowSize / 2, glowSize, glowSize);
+            g2.dispose();
+        }
 
-        for (int i = 0; i < SUN_FRAME_INDEXES.length; i++) {
-            if (animationFrame == SUN_FRAME_INDEXES[i]) {
-                int size = i == SUN_FRAME_INDEXES.length - 1 ? 12 : 18;
-                g.drawImage(PRODUCTION_SUNS[i], x + (Constants.TILE_SIZE - size) / 2, y - 14, size, size, null);
-                break;
+        // Draw animated sunflower skeleton smoothly at all times
+        drawPlantImage(g, Constants.TILE_SIZE, true);
+
+        // Draw sun token smoothly emerging and floating up above the flower
+        if (sunPopTimer > 0) {
+            float p = 1.0f - (sunPopTimer / (float) SUN_POP_DURATION);
+            float floatY = (y + 14) - p * 24; // Smoothly rises from inside head to above head
+            int sunSize = (int)(18 + Math.sin(p * Math.PI) * 4);
+            int sunX = x + (Constants.TILE_SIZE - sunSize) / 2;
+            int sunY = (int) floatY;
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            float alpha = p < 0.8f ? 1.0f : (1.0f - p) / 0.2f;
+            g2.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, Math.max(0f, Math.min(1f, alpha))));
+
+            // Sun aura
+            g2.setColor(new java.awt.Color(255, 235, 100, 160));
+            g2.fillOval(sunX - 3, sunY - 3, sunSize + 6, sunSize + 6);
+
+            if (PRODUCTION_SUNS.length > 0) {
+                g2.drawImage(PRODUCTION_SUNS[0], sunX, sunY, sunSize, sunSize, null);
+            } else {
+                g2.setColor(new java.awt.Color(255, 215, 0));
+                g2.fillOval(sunX, sunY, sunSize, sunSize);
             }
+            g2.dispose();
         }
     }
 

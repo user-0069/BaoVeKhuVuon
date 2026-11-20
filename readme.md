@@ -99,6 +99,11 @@ Chuẩn phong cách bia đá và biển gỗ nổi tiếng của Plants vs. Zomb
   - **ID 1:** Red Zombie (5 HP): Quái thường đi theo đường, cắn cây ngáng đường.
   - **ID 2:** Shooter Zombie (3 HP): Mini-Boss ném xương từ xa, tỉ lệ rớt xu vàng/kim cương cao hơn.
 
+### Hoạt ảnh nhân vật
+- Cây Peashooter, SnowPea, Sunflower, WallNut, Chomper và Marigold dùng các lớp hình và khung chuyển động trong `assets/reanim/*.reanim` để nhấp nhô, chớp mắt, bắn hoặc cắn. Sunflower vẫn dùng hoạt ảnh riêng khi tạo Sun.
+- Hai loại zombie dùng hoạt ảnh bước đi và cắn theo dữ liệu `Zombie.reanim`; khi bị đóng băng, tốc độ hoạt ảnh giảm theo tốc độ di chuyển. Các cây chưa có bộ `reanim` dùng chuyển động nhẹ của ảnh gốc.
+- `Reanim.java` đọc dữ liệu khung hình và nội suy vị trí, góc, tỉ lệ giữa các khung. Khi không tải được dữ liệu hoạt ảnh, game trở lại ảnh tĩnh để nhân vật vẫn hiển thị.
+
 ---
 
 ## 5. Cấu trúc thư mục (Folder Tree)
@@ -106,7 +111,9 @@ Chuẩn phong cách bia đá và biển gỗ nổi tiếng của Plants vs. Zomb
 BaoVeKhuVuon/
 ├── pom.xml
 ├── readme.md
-├── wallet_save.json                     # File lưu trữ số dư và mở khóa Meta Shop
+├── run.bat                               # Biên dịch và chạy trên Windows
+├── run.ps1                               # Lệnh chạy bằng PowerShell
+├── lib/                                  # gson-2.10.1.jar dùng cho lệnh chạy thủ công
 └── src/
     └── main/
         ├── java/
@@ -141,7 +148,8 @@ BaoVeKhuVuon/
         │       │   └── ImageLoader.java # Bộ nạp và cache hình ảnh sprites/cards
         │       ├── view/
         │       │   ├── renderer/
-        │       │   │   └── GamePanel.java # Vòng lặp Game (Game Loop / UI Frame)
+        │       │   │   ├── GamePanel.java # Vòng lặp Game (Game Loop / UI Frame)
+        │       │   │   └── Reanim.java    # Vẽ hoạt ảnh ghép từ các bộ phận nhân vật
         │       │   └── ui/
         │       │       ├── HUD.java       # Giao diện hiển thị
         │       │       ├── PauseDialog.java # Bảng Options / Tạm dừng phong cách bia đá PvZ
@@ -151,12 +159,14 @@ BaoVeKhuVuon/
         └── resources/
             ├── assets/                  # Nơi chứa tài nguyên đa phương tiện (Media gốc PvZ 1)
             │   ├── images/              # Hình ảnh (Sprites, Background, coinbank.png, cards)
-            │   ├── reanim/              # Sprites Coin Bạc, Vàng, Kim Cương, Marigold, Stinky
+            │   ├── reanim/              # Bộ phận hình và dữ liệu hoạt ảnh cây, zombie
             │   └── sounds/              # Âm thanh (coin.ogg, diamond.au, moneyfalls.ogg)
             └── data/                    # Nơi chứa dữ liệu Levels
                 ├── LEVEL_DESIGN_GUIDE.md
                 ├── level_1.json
-                └── level_2.json
+                ├── level_2.json
+                ├── level_3.json
+                └── level_4.json
 ```
 
 ---

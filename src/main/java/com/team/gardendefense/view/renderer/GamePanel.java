@@ -26,6 +26,7 @@ public class GamePanel extends JPanel implements Runnable {
         InputHandler input = new InputHandler(gm, this);
         this.addMouseListener(input);
         this.addMouseMotionListener(input); // Thêm dòng này để lắng nghe di chuột
+        this.addMouseWheelListener(input);
         this.addKeyListener(input);
         this.setFocusable(true);
     }

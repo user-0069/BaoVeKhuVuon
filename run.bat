@@ -13,7 +13,7 @@ echo   Lop khoi chay: %MAIN_CLASS%
 echo ========================================================
 
 rem Bien dich ma nguon
-javac -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
+javac --release 11 -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
 
 if %errorlevel% neq 0 (
     echo.

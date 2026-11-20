@@ -14,7 +14,7 @@ Write-Host "  Dang bien dich va khoi dong tro choi Bao Ve Khu Vuon..." -Foregrou
 Write-Host "  Lop khoi chay: $mainClass" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
 
-javac -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
+javac --release 11 -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
 
 if ($LASTEXITCODE -eq 0) {
     java -cp "target/classes;lib\gson-2.10.1.jar" $mainClass
