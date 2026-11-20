@@ -7,6 +7,7 @@ import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.model.entity.plant.Plant;
 import com.team.gardendefense.model.level.Waypoint;
 import com.team.gardendefense.utils.Constants;
+import com.team.gardendefense.view.renderer.Reanim;
 
 public abstract class Monster {
     public float x, y;
@@ -20,13 +21,36 @@ public abstract class Monster {
 
     public abstract void update(GameManager gm);
     public Image image;
+    protected Reanim animation;
+    protected double animationTicks;
+
+    protected void setAnimation(String fileName) {
+        animation = Reanim.load(fileName);
+    }
+
+    protected void advanceAnimation(double speedMultiplier) {
+        animationTicks += speedMultiplier;
+    }
     
     public void draw(Graphics2D g) {
+        if (animation != null) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            if (facingRight) {
+                g2.translate(2.0 * (x + Constants.TILE_SIZE / 2.0), 0);
+                g2.scale(-1, 1);
+            }
+            // Scale and offset adjusted so the zombie stays strictly on the dirt road without overflowing into grass,
+            // aligned on the exact same ground baseline (Y = 57) as plants.
+            animation.draw(g2, x + 10, y - 11, 0.55f,
+                    attackTarget == null ? "walk" : "eat", animationTicks, true);
+            g2.dispose();
+            return;
+        }
         if (image != null) {
-            int w = Constants.TILE_SIZE + 10;
-            int h = Constants.TILE_SIZE + 10;
-            int drawX = (int)x - 5;
-            int drawY = (int)y - 5;
+            int w = Constants.TILE_SIZE - 12;
+            int h = Constants.TILE_SIZE - 7;
+            int drawX = (int)x + 6;
+            int drawY = (int)y + (57 - h);
             // Base image faces left. If moving right, flip horizontally
             if (facingRight) {
                 g.drawImage(image, drawX + w, drawY, -w, h, null);

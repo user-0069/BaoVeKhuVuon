@@ -10,6 +10,7 @@ public class WallNut extends Plant {
         super(col, row); 
         this.health = Constants.HP_WALLNUT; this.maxHealth = Constants.HP_WALLNUT;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/WallNut_full.png");
+        setAnimation("Wallnut.reanim");
     }
     @Override
     public void update(GameManager gm) { }

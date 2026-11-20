@@ -4,6 +4,8 @@ Tài liệu này dành cho những người tạo màn chơi (Level Designer).
 
 > 💡 **MẸO DÙNG LEVEL EDITOR:** Thay vì phải sửa tay file JSON, bạn có thể mở công cụ **Level Editor trực quan** bằng cách bấm nút **"LEVEL EDITOR"** trên Menu chính của Game, hoặc chạy file `LevelEditor.java`. Bạn có thể tô màu map, chọn kích thước, cắm cờ Waypoint bằng chuột và bấm Lưu trực tiếp!
 
+Hoạt ảnh cây và zombie được nạp tự động từ `assets/reanim` theo loại nhân vật trong level. Người thiết kế màn chơi chỉ cần chọn ID cây và zombie như bảng dưới; file JSON không cần khai báo khung hoạt ảnh.
+
 ---
 
 ## 1. BẢNG TRA CỨU ID (ID REFERENCE)

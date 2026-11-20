@@ -9,6 +9,8 @@ import com.team.gardendefense.model.entity.projectile.Pea;
 
 public class SniperPlant extends Plant {
     private int shootTimer = 0;
+    private boolean pendingShot = false;
+    private int shotDelay = 0;
 
     public SniperPlant(int col, int row) { 
         super(col, row); 
@@ -19,22 +21,41 @@ public class SniperPlant extends Plant {
     @Override
     public void update(GameManager gm) {
         shootTimer++;
+
+        // Delayed projectile spawn synchronized with the muzzle flash and recoil forward thrust
+        if (pendingShot) {
+            shotDelay--;
+            if (shotDelay <= 0) {
+                pendingShot = false;
+                spawnPea(gm);
+            }
+        }
+
         if (shootTimer >= Constants.RATE_SNIPER) { 
             Monster target = getClosestZombie(gm);
             if (target != null) {
-                float tx = x + 32; float ty = y + 32;
-                if (direction == 0) ty -= 100;
-                else if (direction == 1) tx += 100;
-                else if (direction == 2) ty += 100;
-                else if (direction == 3) tx -= 100;
-                
-                gm.projectiles.add(new Pea(
-                    x + 32, y + 32, tx, ty, 
-                    Constants.DMG_SNIPER, new Color(138, 43, 226), Constants.SPEED_SNIPER_PEA, false
-                ));
+                playAction("shoot");
+                pendingShot = true;
+                shotDelay = 5;
                 shootTimer = 0;
             }
         }
+    }
+
+    private void spawnPea(GameManager gm) {
+        float sx = x + 32;
+        float sy = y + 20;
+        float tx = sx;
+        float ty = sy;
+        if (direction == 0) { ty -= 100; sy -= 18; }
+        else if (direction == 1) { tx += 100; sx += 18; }
+        else if (direction == 2) { ty += 100; sy += 18; }
+        else if (direction == 3) { tx -= 100; sx -= 18; }
+
+        gm.projectiles.add(new Pea(
+            sx, sy, tx, ty, 
+            Constants.DMG_SNIPER, new Color(138, 43, 226), Constants.SPEED_SNIPER_PEA, false
+        ));
     }
     
     private Monster getClosestZombie(GameManager gm) {
@@ -44,13 +65,11 @@ public class SniperPlant extends Plant {
             boolean inLine = false; float dist = 0;
             if (direction == 0 && dy < 0 && Math.abs(dx) < 30) { inLine = true; dist = -dy; }
             else if (direction == 1 && dx > 0 && Math.abs(dy) < 30) { inLine = true; dist = dx; }
-            else if (direction == 2 && dy > 0 && Math.abs(dx) < 30) { inLine = true; dist = dy; }
+            else if (direction == 2 && dy > 0 && Math.abs(dy) < 30) { inLine = true; dist = dy; }
             else if (direction == 3 && dx < 0 && Math.abs(dy) < 30) { inLine = true; dist = -dx; }
             
             if (inLine && dist <= minDist) { minDist = dist; closest = z; }
         }
         return closest;
     }
-
-    
 }

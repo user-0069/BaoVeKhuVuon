@@ -34,6 +34,7 @@ import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.view.renderer.GamePanel;
 import java.awt.RenderingHints;
 import java.awt.GradientPaint;
+import java.awt.Shape;
 
 public class GameManager {
     public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER, GAMEWON, SHOP }
@@ -86,11 +87,11 @@ public class GameManager {
     public List<LevelPreview> availableLevels = new ArrayList<>();
 
     // Menu động chứa thẻ bài thực vật
-    class PlantCard {
+    public class PlantCard {
         int id; Rectangle rect; Color color; String price;
         java.awt.Image image;
-        PlantCard(int id, int x) {
-            this.id = id; this.rect = new Rectangle(x, 10, 60, 75);
+        public PlantCard(int id, int x) {
+            this.id = id; this.rect = new Rectangle(x, 6, 54, 68);
             if(id==1) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sunflower.png"); price = String.valueOf(Constants.COST_SUNFLOWER); }
             else if (id==2) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_peashooter.png"); price = String.valueOf(Constants.COST_PEASHOOTER); }
             else if (id==3) { image = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/card_sniperplant.png"); price = String.valueOf(Constants.COST_SNIPER); }
@@ -106,6 +107,15 @@ public class GameManager {
     }
     public List<PlantCard> uiCards = new ArrayList<>();
     public int selectedPlant = 0; 
+
+    // Các thành phần điều hướng thanh thẻ bài thực vật
+    public Rectangle btnCardLeft = new Rectangle(0, 0, 22, 40);
+    public Rectangle btnCardRight = new Rectangle(0, 0, 22, 40);
+    public int cardScrollOffset = 0;
+    public boolean needsCardScroll = false;
+    public int maxCardScroll = 0;
+    public int cardViewX = 110;
+    public int cardViewW = 400;
 
     public void handleKeyPress(int keyCode) {
         if (keyCode == java.awt.event.KeyEvent.VK_ESCAPE || keyCode == java.awt.event.KeyEvent.VK_P) {
@@ -136,8 +146,8 @@ public class GameManager {
     public Rectangle btnLevelSelectGW = new Rectangle(412, 570, 220, 50);
     public Rectangle btnExitGO = new Rectangle(412, 635, 220, 50);
 
-    public Rectangle btnInGameMenu = new Rectangle(0, 0, 90, 30);
-    public Rectangle btnInGameShop = new Rectangle(0, 0, 90, 30);
+    public Rectangle btnInGameMenu = new Rectangle(0, 0, 88, 32);
+    public Rectangle btnInGameShop = new Rectangle(0, 0, 120, 24);
 
     public GameManager() {
         shopScreen = new ShopScreen(this);
@@ -290,10 +300,11 @@ public class GameManager {
             sun = currentLevel.initialSun;
             waveManager = new WaveManager(this, currentLevel.waves);
             uiCards.clear();
-            int startX = 120;
+            cardScrollOffset = 0;
+            int startX = 110;
             for (int pId : currentLevel.allowedPlants) {
                 uiCards.add(new PlantCard(pId, startX));
-                startX += 80;
+                startX += 58;
             }
             // Luôn thêm thẻ bài Marigold (Hoa Cúc - ID 11) để nhả xu!
             uiCards.add(new PlantCard(11, startX));
@@ -341,7 +352,10 @@ public class GameManager {
 
         for (Plant p : plants) {
             if (p.isDead()) plants.remove(p);
-            else p.update(this);
+            else {
+                p.advanceAnimation();
+                p.update(this);
+            }
         }
 
         int maxW = getMapWidth();
@@ -713,26 +727,27 @@ public class GameManager {
             g.setColor(new Color(255, 215, 0));
             g.fillOval(10, 20, 40, 40);
         }
-        g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22)); g.drawString(String.valueOf(sun), 60, 48);
+        g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22)); g.drawString(String.valueOf(sun), 58, 48);
 
-        // Khung hiển thị Ví Tiền ở góc trên bên phải
-        int bankX = sw - 360;
-        int bankY = 16;
+        // Khung hiển thị Ví Tiền ở góc trên bên phải (bố cục gọn gàng, tránh chồng lấn thẻ bài)
+        int bankW = 120;
+        int bankX = sw - 232;
+        int bankY = 12;
         g.setColor(new Color(0, 0, 0, 180));
-        g.fillRoundRect(bankX, bankY, 115, 36, 10, 10);
+        g.fillRoundRect(bankX, bankY, bankW, 32, 10, 10);
         g.setColor(new Color(255, 215, 0));
-        g.drawRoundRect(bankX, bankY, 115, 36, 10, 10);
+        g.drawRoundRect(bankX, bankY, bankW, 32, 10, 10);
         if (coinBankImg != null) {
-            g.drawImage(coinBankImg, bankX + 4, bankY + 3, 30, 30, null);
+            g.drawImage(coinBankImg, bankX + 4, bankY + 3, 26, 26, null);
         } else {
-            g.fillOval(bankX + 6, bankY + 6, 24, 24);
+            g.fillOval(bankX + 6, bankY + 4, 24, 24);
         }
         g.setColor(new Color(255, 220, 50));
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        g.drawString("$ " + WalletManager.getInstance().getCoins(), bankX + 38, bankY + 25);
+        g.setFont(new Font("Arial", Font.BOLD, 15));
+        g.drawString("$ " + WalletManager.getInstance().getCoins(), bankX + 34, bankY + 22);
 
         // Nút Shop trong game
-        btnInGameShop.setBounds(bankX, 55, 115, 22);
+        btnInGameShop.setBounds(bankX, 48, bankW, 24);
         drawSmallButton(g, btnInGameShop, "Shop 🛒", mouseX, mouseY);
 
         // Hiệu ứng số tiền nảy bay lên (+10, +50, +1000)
@@ -742,20 +757,64 @@ public class GameManager {
             g.drawString(ft.text, (int) ft.x, (int) ft.y);
         }
 
-        // Thông tin Level hiện tại ở góc trên bên phải
-        if (currentLevel != null) {
-            g.setFont(new Font("Arial", Font.BOLD, 15));
-            g.setColor(new Color(240, 240, 240));
-            String lvlText = "Màn " + currentLevel.id + ": " + (currentLevel.name != null ? currentLevel.name : "");
-            int ltw = g.getFontMetrics().stringWidth(lvlText);
-            g.drawString(lvlText, sw - ltw - 120, 48);
+        // Nút Menu và Thông tin Level hiện tại ở góc trên cùng bên phải
+        int menuW = 88;
+        int menuX = sw - 98;
+        btnInGameMenu.setBounds(menuX, 12, menuW, 32);
+        drawPvZWoodButton(g, btnInGameMenu, "MENU", mouseX, mouseY);
 
-            btnInGameMenu.setBounds(sw - 105, 20, 92, 36);
-            drawPvZWoodButton(g, btnInGameMenu, "MENU", mouseX, mouseY);
+        if (currentLevel != null) {
+            g.setFont(new Font("Arial", Font.BOLD, 12));
+            g.setColor(new Color(230, 230, 230));
+            String lvlText = "Màn " + currentLevel.id;
+            if (currentLevel.name != null && !currentLevel.name.isEmpty()) {
+                lvlText += ": " + currentLevel.name;
+            }
+            int ltw = g.getFontMetrics().stringWidth(lvlText);
+            if (ltw > menuW + 10) {
+                lvlText = "Màn " + currentLevel.id;
+                ltw = g.getFontMetrics().stringWidth(lvlText);
+            }
+            g.drawString(lvlText, menuX + (menuW - ltw) / 2, 60);
         }
 
-        // Draw Dynamic Cards
-        for(PlantCard c : uiCards) {
+        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Bank/Shop/Screen
+        int cardW = 54;
+        int cardH = 68;
+        int cardGap = 4;
+        int cardY = 6;
+        int cardAreaX = 110;
+        int rightBoundary = bankX - 10;
+        int cardAreaW = Math.max(100, rightBoundary - cardAreaX);
+        int totalCardsW = uiCards.isEmpty() ? 0 : (uiCards.size() * cardW + (uiCards.size() - 1) * cardGap);
+
+        needsCardScroll = totalCardsW > cardAreaW;
+        if (needsCardScroll) {
+            btnCardLeft.setBounds(cardAreaX, 20, 20, 40);
+            btnCardRight.setBounds(rightBoundary - 20, 20, 20, 40);
+            cardViewX = cardAreaX + 22;
+            cardViewW = cardAreaW - 44;
+            maxCardScroll = Math.max(0, totalCardsW - cardViewW);
+            cardScrollOffset = Math.max(0, Math.min(cardScrollOffset, maxCardScroll));
+            drawCardScrollButton(g, btnCardLeft, "◀", mouseX, mouseY, cardScrollOffset > 0);
+            drawCardScrollButton(g, btnCardRight, "▶", mouseX, mouseY, cardScrollOffset < maxCardScroll);
+        } else {
+            btnCardLeft.setBounds(0, 0, 0, 0);
+            btnCardRight.setBounds(0, 0, 0, 0);
+            cardViewX = cardAreaX;
+            cardViewW = cardAreaW;
+            maxCardScroll = 0;
+            cardScrollOffset = 0;
+        }
+
+        Shape origClip = g.getClip();
+        g.setClip(cardViewX, 0, cardViewW, 80);
+
+        for (int i = 0; i < uiCards.size(); i++) {
+            PlantCard c = uiCards.get(i);
+            int cx = cardViewX - cardScrollOffset + i * (cardW + cardGap);
+            c.rect.setBounds(cx, cardY, cardW, cardH);
+
             if (c.image != null) {
                 if (c.id == 8 || c.id == 9 || c.id == 10) {
                     g.drawImage(c.image, c.rect.x + c.rect.width, c.rect.y, -c.rect.width, c.rect.height, null);
@@ -770,24 +829,48 @@ public class GameManager {
                 
                 // Che đi phần giá gốc trên ảnh bằng một hình chữ nhật trắng
                 g.setColor(new Color(240, 240, 240)); 
-                g.fillRect(c.rect.x + 2, c.rect.y + 58, c.rect.width - 4, 15);
+                g.fillRect(c.rect.x + 2, c.rect.y + 52, c.rect.width - 4, 14);
                 
                 // Vẽ mặt trời nhỏ
                 g.setColor(new Color(255, 215, 0));
-                g.fillOval(c.rect.x + 40, c.rect.y + 60, 11, 11);
+                g.fillOval(c.rect.x + 36, c.rect.y + 54, 10, 10);
                 g.setColor(Color.BLACK);
-                g.drawOval(c.rect.x + 40, c.rect.y + 60, 11, 11);
+                g.drawOval(c.rect.x + 36, c.rect.y + 54, 10, 10);
                 
                 // Vẽ giá tiền
-                g.setFont(new Font("Arial", Font.BOLD, 12));
-                g.drawString(c.price, c.rect.x + 12, c.rect.y + 70);
+                g.setFont(new Font("Arial", Font.BOLD, 11));
+                g.drawString(c.price, c.rect.x + 6, c.rect.y + 63);
             } else {
                 g.setColor((selectedPlant == c.id) ? Color.YELLOW : new Color(80, 80, 80));
                 g.fillRect(c.rect.x, c.rect.y, c.rect.width, c.rect.height);
-                g.setColor(c.color); g.fillOval(c.rect.x + 15, c.rect.y + 5, 40, 40);
-                g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 14)); g.drawString(c.price, c.rect.x + 20, c.rect.y + 55);
+                g.setColor(c.color != null ? c.color : Color.GREEN);
+                g.fillOval(c.rect.x + 12, c.rect.y + 5, 30, 30);
+                g.setColor(Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 12));
+                g.drawString(c.price, c.rect.x + 12, c.rect.y + 50);
             }
         }
+        g.setClip(origClip);
+    }
+
+    private void drawCardScrollButton(Graphics2D g, Rectangle r, String arrow, int mX, int mY, boolean enabled) {
+        if (r.width <= 0) return;
+        boolean hover = enabled && r.contains(mX, mY);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        Color bg = !enabled ? new Color(40, 40, 40, 180) : (hover ? new Color(80, 160, 60) : new Color(45, 95, 45));
+        g2.setColor(bg);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 6, 6);
+        g2.setColor(enabled ? (hover ? Color.YELLOW : new Color(150, 220, 130)) : new Color(90, 90, 90));
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 6, 6);
+        
+        g2.setFont(new Font("Arial", Font.BOLD, 12));
+        int strW = g2.getFontMetrics().stringWidth(arrow);
+        g2.setColor(enabled ? Color.WHITE : new Color(120, 120, 120));
+        g2.drawString(arrow, r.x + (r.width - strW) / 2, r.y + (r.height + 8) / 2);
+        g2.dispose();
     }
 
     private void drawGameOver(Graphics2D g) {
@@ -795,8 +878,8 @@ public class GameManager {
         int sh = getScreenHeight();
         g.setColor(new Color(0, 0, 0, 195)); g.fillRect(0, 0, sw, sh);
 
-        int dw = 420;
-        int dh = 380;
+        int dw = 480;
+        int dh = 400;
         int dx = (sw - dw) / 2;
         int dy = (sh - dh) / 2 - 20;
 
@@ -811,10 +894,18 @@ public class GameManager {
         g2.setColor(new Color(160, 60, 50));
         g2.drawRoundRect(dx + 2, dy + 2, dw - 4, dh - 4, 22, 22);
 
-        // Tiêu đề Game Over
-        g2.setFont(new Font("Serif", Font.BOLD, 46));
+        // Tiêu đề Game Over - Tự động co dãn chữ để tuyệt đối không tràn khung
         String title = "THE ZOMBIES ATE";
         String title2 = "YOUR BRAINS!";
+        float fontSize = 34f;
+        Font titleFont = new Font("Serif", Font.BOLD, (int) fontSize);
+        while (fontSize > 18f && (g2.getFontMetrics(titleFont).stringWidth(title) > dw - 60 ||
+                                  g2.getFontMetrics(titleFont).stringWidth(title2) > dw - 60)) {
+            fontSize -= 2f;
+            titleFont = new Font("Serif", Font.BOLD, (int) fontSize);
+        }
+        g2.setFont(titleFont);
+
         int tw1 = g2.getFontMetrics().stringWidth(title);
         g2.setColor(Color.BLACK);
         g2.drawString(title, (sw - tw1) / 2 + 2, dy + 55);
@@ -823,21 +914,28 @@ public class GameManager {
 
         int tw2 = g2.getFontMetrics().stringWidth(title2);
         g2.setColor(Color.BLACK);
-        g2.drawString(title2, (sw - tw2) / 2 + 2, dy + 100);
+        g2.drawString(title2, (sw - tw2) / 2 + 2, dy + 95);
         g2.setColor(new Color(255, 80, 70));
-        g2.drawString(title2, (sw - tw2) / 2, dy + 98);
+        g2.drawString(title2, (sw - tw2) / 2, dy + 93);
 
-        int bw = 260, bh = 46;
+        // Phụ đề thông báo thua tiếng Việt, canh giữa chuẩn xác
+        g2.setFont(new Font("Arial", Font.BOLD, 14));
+        g2.setColor(new Color(240, 180, 180));
+        String sub = "ZOMBIE ĐÃ XÂM CHIẾM KHU VƯỜN!";
+        int subW = g2.getFontMetrics().stringWidth(sub);
+        g2.drawString(sub, (sw - subW) / 2, dy + 130);
+
+        int bw = 260, bh = 44;
         int bx = (sw - bw) / 2;
-        int by = dy + 130;
+        int by = dy + 155;
 
         btnRestart.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnRestart, "CHƠI LẠI TỪ ĐẦU", mouseX, mouseY, new Color(180, 80, 30));
-        by += 60;
+        drawButton(g2, btnRestart, "CHƠI LẠI TỪ ĐẦU 🔄", mouseX, mouseY, new Color(180, 70, 30));
+        by += 58;
 
         btnLevelSelectGW.setBounds(bx, by, bw, bh);
         drawButton(g2, btnLevelSelectGW, "CHỌN MÀN KHÁC 🗺️", mouseX, mouseY, new Color(45, 95, 75));
-        by += 60;
+        by += 58;
 
         btnExitGO.setBounds(bx, by, bw, bh);
         drawButton(g2, btnExitGO, "VỀ MENU CHÍNH 🏠", mouseX, mouseY, new Color(110, 45, 45));
@@ -1082,8 +1180,27 @@ public class GameManager {
                 }
             }
 
+            // Click nút cuộn thanh thẻ bài
+            if (needsCardScroll) {
+                if (btnCardLeft.contains(mX, mY)) {
+                    AudioManager.getInstance().playBuySound();
+                    cardScrollOffset = Math.max(0, cardScrollOffset - (54 + 4) * 2);
+                    return;
+                }
+                if (btnCardRight.contains(mX, mY)) {
+                    AudioManager.getInstance().playBuySound();
+                    cardScrollOffset = Math.min(maxCardScroll, cardScrollOffset + (54 + 4) * 2);
+                    return;
+                }
+            }
+
             for(PlantCard c : uiCards) {
-                if(c.rect.contains(mX, mY)) { selectedPlant = c.id; return; }
+                if (c.rect.contains(mX, mY)) {
+                    if (!needsCardScroll || (mX >= cardViewX && mX <= cardViewX + cardViewW)) {
+                        selectedPlant = c.id;
+                        return;
+                    }
+                }
             }
 
             if (selectedPlant > 0) {
@@ -1130,6 +1247,14 @@ public class GameManager {
                     }
                     selectedPlant = 0; 
                 } else { selectedPlant = 0; }
+            }
+        }
+    }
+
+    public void handleMouseWheel(int rotation, int mX, int mY) {
+        if (state == GameState.PLAYING && needsCardScroll) {
+            if (mY <= 85) {
+                cardScrollOffset = Math.max(0, Math.min(maxCardScroll, cardScrollOffset + rotation * 32));
             }
         }
     }

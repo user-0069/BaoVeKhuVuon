@@ -30,6 +30,7 @@ public class Marigold extends Plant {
         this.maxHealth = 5;
         this.petalsImg = ImageLoader.getImage("src/main/resources/assets/reanim/Marigold_petals.png");
         this.headImg = ImageLoader.getImage("src/main/resources/assets/reanim/Marigold_head.png");
+        setAnimation("Marigold.reanim");
     }
 
     @Override
@@ -51,16 +52,20 @@ public class Marigold extends Plant {
     public void draw(Graphics2D g) {
         int cx = x + 4;
         int cy = y + 4;
-        int size = Constants.TILE_SIZE;
+        int size = Constants.TILE_SIZE - 8;
 
-        // Vẽ hiệu ứng sắp ra xu (sáng dần trong 2 giây trước khi nhả xu)
-        if (timer > COIN_PRODUCE_INTERVAL - 120) {
-            float glowAlpha = ((timer % 30) / 30f) * 0.4f;
-            g.setColor(new Color(255, 230, 100, (int)(glowAlpha * 255)));
-            g.fillOval(cx - 5, cy - 5, size + 10, size + 10);
+        // Vẽ hiệu ứng sắp ra xu (ánh hào quang thở nhẹ nhàng, mượt mà trước khi nhả xu)
+        if (timer > COIN_PRODUCE_INTERVAL - 90) {
+            float progress = (timer - (COIN_PRODUCE_INTERVAL - 90)) / 90.0f;
+            float pulse = (float) Math.sin(progress * Math.PI);
+            int glowSize = (int)(Constants.TILE_SIZE * (0.8f + 0.2f * pulse));
+            g.setColor(new Color(255, 220, 80, (int)(pulse * 90)));
+            g.fillOval(x + (Constants.TILE_SIZE - glowSize) / 2, y + (Constants.TILE_SIZE - glowSize) / 2, glowSize, glowSize);
         }
 
-        if (petalsImg != null && headImg != null) {
+        if (animation != null) {
+            drawPlantImage(g, Constants.TILE_SIZE);
+        } else if (petalsImg != null && headImg != null) {
             g.drawImage(petalsImg, cx, cy, size, size, null);
             g.drawImage(headImg, cx + 8, cy + 8, size - 16, size - 16, null);
         } else {

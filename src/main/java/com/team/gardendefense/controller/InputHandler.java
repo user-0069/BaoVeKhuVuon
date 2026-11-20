@@ -1,12 +1,14 @@
 package com.team.gardendefense.controller;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.view.renderer.GamePanel;
 
-public class InputHandler extends MouseAdapter implements KeyListener {
+public class InputHandler extends MouseAdapter implements KeyListener, MouseWheelListener {
     private GameManager gm;
     private GamePanel gamePanel;
 
@@ -42,6 +44,11 @@ public class InputHandler extends MouseAdapter implements KeyListener {
         gm.mouseY = toGameY(e.getY());
         gm.hoverCol = gm.mouseX / Constants.TILE_SIZE;
         gm.hoverRow = gm.mouseY / Constants.TILE_SIZE;
+    }
+
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        gm.handleMouseWheel(e.getWheelRotation(), toGameX(e.getX()), toGameY(e.getY()));
     }
     
     @Override

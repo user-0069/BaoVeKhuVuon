@@ -25,6 +25,7 @@ public class ShooterZombie extends Monster {
         this.health = Constants.HP_ZOMBIE_SHOOTER; this.maxHp = Constants.HP_ZOMBIE_SHOOTER;
         this.isMiniBoss = true;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/Zombie_full.png");
+        setAnimation("Zombie.reanim");
     }
 
     @Override public void applyFreeze() { freezeTimer = Constants.FREEZE_DURATION; }
@@ -33,6 +34,7 @@ public class ShooterZombie extends Monster {
     public void update(GameManager gm) {
         if (freezeTimer > 0) { freezeTimer--; speed = baseSpeed * Constants.FREEZE_SPEED_MULTI; } 
         else { speed = baseSpeed; }
+        advanceAnimation(speed / baseSpeed);
 
         if (attackTarget != null) {
             if (attackTarget.isDead()) { attackTarget = null; }
