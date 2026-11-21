@@ -173,6 +173,37 @@ Các mục trên là **đề xuất**, chưa được triển khai trong lần t
 - **Sunflower, WallNut, Marigold:**
   - Kiểm tra và xác nhận chuyển động hoạt ảnh trơn tru, hào quang ánh sáng mềm mại, không có hiện tượng giật cục hay lỗi rời rạc bộ phận.
 
+## Triển khai công năng vật phẩm Cửa Hàng: Bùa Đóng Băng (Ice Shroom Blast)
+
+Theo mô tả trong Cửa hàng: *"Đóng băng và làm chậm toàn sân đấu trong 5 giây"*.
+
+### 1. Cơ chế hoạt động (Gameplay Mechanics)
+- **Thời lượng:** 5 giây = 300 tick game (60 FPS).
+- **Giai đoạn 1 - Đóng băng cứng (0s -> 2s, 120 tick đầu):**
+  - Toàn bộ Zombie trên sân bị bọc kín trong khối băng pha lê 3D.
+  - Tốc độ di chuyển giảm về 0 (`speed = 0`).
+  - Toàn bộ hành vi (di chuyển, cắn cây, bắn xương của Shooter Zombie) bị vô hiệu hóa hoàn toàn.
+- **Giai đoạn 2 - Làm chậm buốt giá (2s -> 5s, 180 tick sau):**
+  - Khối băng pha lê tan vỡ, chuyển sang làn sương lạnh mờ buốt giá.
+  - Tốc độ di chuyển giảm còn 40% (`baseSpeed * 0.4f`).
+  - Hết 300 tick, Zombie trở lại trạng thái bình thường.
+- **Áp dụng cho Zombie mới xuất hiện:** Bất kỳ Zombie nào xuất hiện trong thời gian bùa còn hiệu lực đều tự động chịu trạng thái tương ứng.
+
+### 2. Giao diện và Điều khiển (UI & Controls)
+- **Nút bấm trực tiếp trong trận:** Nút `[❄ F]` nằm cạnh Ví Tiền ở góc trên bên phải màn hình (tọa độ `itemX = bankX - 66, Y = 12`, kích thước `54x54`), có huy hiệu hiển thị số lượng bùa sở hữu `xN` hoặc nút `+MUA` khi hết bùa.
+- **Phím tắt nhanh:** Phím `F` trên bàn phím.
+- **Hiệu ứng đồ họa (VFX):**
+  - Sóng xung kích băng tuyết xanh ngọc nở rộng từ tâm màn hình (`iceShroomWaveRadius`).
+  - Màn hình phủ sương tuyết buốt giá (`vignette frost tint`).
+  - 16 tinh thể hoa tuyết `❄` lơ lửng và rơi nhẹ trên màn hình.
+  - Khối băng pha lê 3D với tia nứt và phản xạ ánh sáng bọc quanh mỗi Zombie.
+  - Banner nghệ thuật thông báo: `"❄️ BÙA ĐÓNG BĂNG ĐÃ KÍCH HOẠT! (5 GIÂY) ❄️"`.
+- **Hiệu ứng âm thanh (SFX):**
+  - Hàm `AudioManager.playFreezeSound()` phát chuỗi âm sắc pha lê buốt giá (synthesized crystal chime).
+- **Liên kết Ví tiền (Wallet Persistence):**
+  - Trừ 1 bùa trong `iceShroomBlastCount` và lưu tự động vào `saves/wallet_save.json`.
+  - Nếu đã hết bùa (count = 0), phát thông báo nổi màu cam nhắc nhở và tự động chuyển đến Shop khi bấm nút.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

@@ -50,6 +50,10 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
     
     @Override
     public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_F) {
+            gm.activateIceShroom();
+            return;
+        }
         gm.handleKeyPress(e.getKeyCode());
     }
     

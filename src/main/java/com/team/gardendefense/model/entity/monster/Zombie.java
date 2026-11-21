@@ -10,7 +10,6 @@ import com.team.gardendefense.model.level.Waypoint;
 public class Zombie extends Monster {
     private float baseSpeed = Constants.SPEED_ZOMBIE_RED;
     private float speed = Constants.SPEED_ZOMBIE_RED;
-    private int freezeTimer = 0;
     private int attackTimer = 0;
     private int maxHp;
 
@@ -26,12 +25,23 @@ public class Zombie extends Monster {
         setAnimation("Zombie.reanim");
     }
 
-    @Override public void applyFreeze() { freezeTimer = Constants.FREEZE_DURATION; }
-
     @Override
     public void update(GameManager gm) {
-        if (freezeTimer > 0) { freezeTimer--; speed = baseSpeed * Constants.FREEZE_SPEED_MULTI; } 
-        else { speed = baseSpeed; }
+        if (freezeTimer > 0) {
+            freezeTimer--;
+            if (freezeTimer <= Constants.FREEZE_DURATION) {
+                completelyFrozen = false;
+            }
+            if (completelyFrozen) {
+                speed = 0;
+                return; // Đóng băng cứng: không di chuyển, không cắn cây
+            } else {
+                speed = baseSpeed * Constants.FREEZE_SPEED_MULTI;
+            }
+        } else {
+            speed = baseSpeed;
+            completelyFrozen = false;
+        }
         advanceAnimation(speed / baseSpeed);
 
         if (attackTarget != null) {

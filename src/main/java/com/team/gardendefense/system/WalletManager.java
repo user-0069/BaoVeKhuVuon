@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.team.gardendefense.model.entity.coin.CoinType;
 
+import java.awt.Color;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -54,11 +56,19 @@ public class WalletManager {
         public float x, y;
         public int alpha = 255;
         public int life = 60; // 1 giây
+        public Color color = new Color(255, 225, 30);
 
         public FloatingText(String text, float x, float y) {
             this.text = text;
             this.x = x;
             this.y = y;
+        }
+
+        public FloatingText(String text, float x, float y, Color color) {
+            this.text = text;
+            this.x = x;
+            this.y = y;
+            this.color = color;
         }
 
         public void update() {

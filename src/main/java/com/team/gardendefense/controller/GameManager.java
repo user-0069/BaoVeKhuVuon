@@ -170,6 +170,9 @@ public class GameManager {
 
     public Rectangle btnInGameMenu = new Rectangle(0, 0, 88, 32);
     public Rectangle btnInGameShop = new Rectangle(0, 0, 120, 24);
+    public Rectangle btnIceShroom = new Rectangle(0, 0, 52, 52);
+    public int iceShroomDuration = 0; // Đếm lùi 300 ticks (5 giây)
+    public float iceShroomWaveRadius = 0;
 
     public GameManager() {
         shopScreen = new ShopScreen(this);
@@ -326,6 +329,7 @@ public class GameManager {
     public void resetGame() {
         plants.clear(); zombies.clear(); projectiles.clear(); coins.clear();
         selectedPlant = 0; passiveSunTimer = 0;
+        iceShroomDuration = 0; iceShroomWaveRadius = 0;
         
         if (WalletManager.getInstance().getData().hasPetSnail) {
             petSnail = new PetSnail(50, getMapHeight() - 60);
@@ -365,6 +369,17 @@ public class GameManager {
             return;
         }
         if (state != GameState.PLAYING) return;
+
+        // Xử lý hiệu lực của Bùa Đóng Băng toàn sân (5 giây)
+        if (iceShroomDuration > 0) {
+            iceShroomDuration--;
+            iceShroomWaveRadius += 32f;
+            for (Monster z : zombies) {
+                if (!z.isFrozen()) {
+                    z.applyFreeze(iceShroomDuration, iceShroomDuration > 180);
+                }
+            }
+        }
 
         passiveSunTimer++;
         if (passiveSunTimer >= Constants.PASSIVE_SUN_RATE) { sun += Constants.PASSIVE_SUN_AMOUNT; passiveSunTimer = 0; }
@@ -773,6 +788,7 @@ public class GameManager {
 
         // UI Header
         int sw = getScreenWidth();
+        int sh = getScreenHeight();
         g.setColor(new Color(0, 0, 0, 160)); g.fillRect(0, 0, sw, 80);
         if (sunIconImg != null) {
             g.drawImage(sunIconImg, 10, 20, 40, 40, null);
@@ -805,7 +821,8 @@ public class GameManager {
 
         // Hiệu ứng số tiền nảy bay lên (+10, +50, +1000)
         for (WalletManager.FloatingText ft : WalletManager.getInstance().floatingTexts) {
-            g.setColor(new Color(255, 225, 30, ft.alpha));
+            Color c = ft.color != null ? ft.color : new Color(255, 225, 30);
+            g.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), ft.alpha));
             g.setFont(new Font("Arial", Font.BOLD, 18));
             g.drawString(ft.text, (int) ft.x, (int) ft.y);
         }
@@ -831,13 +848,21 @@ public class GameManager {
             g.drawString(lvlText, menuX + (menuW - ltw) / 2, 60);
         }
 
-        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Bank/Shop/Screen
+        // Nút Kích Hoạt Bùa Đóng Băng [Phím F]
+        int itemW = 54;
+        int itemH = 54;
+        int itemX = bankX - itemW - 14;
+        int itemY = 12;
+        btnIceShroom.setBounds(itemX, itemY, itemW, itemH);
+        drawIceShroomButton(g, btnIceShroom, mouseX, mouseY);
+
+        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Bùa/Bank/Shop/Screen
         int cardW = 54;
         int cardH = 68;
         int cardGap = 4;
         int cardY = 6;
         int cardAreaX = 110;
-        int rightBoundary = bankX - 10;
+        int rightBoundary = itemX - 10;
         int cardAreaW = Math.max(100, rightBoundary - cardAreaX);
         int totalCardsW = uiCards.isEmpty() ? 0 : (uiCards.size() * cardW + (uiCards.size() - 1) * cardGap);
 
@@ -904,6 +929,11 @@ public class GameManager {
             }
         }
         g.setClip(origClip);
+
+        // Hiệu ứng sóng băng tuyết toàn sân của Bùa Đóng Băng
+        if (iceShroomDuration > 0) {
+            drawIceShroomScreenEffect(g, sw, sh);
+        }
     }
 
     private void drawCardScrollButton(Graphics2D g, Rectangle r, String arrow, int mX, int mY, boolean enabled) {
@@ -1226,6 +1256,10 @@ public class GameManager {
                 openShop();
                 return;
             }
+            if (btnIceShroom.contains(mX, mY)) {
+                activateIceShroom();
+                return;
+            }
 
             // Click trực tiếp vào đồng xu để nhặt
             if (collectCoinAt(mX, mY)) return;
@@ -1307,5 +1341,173 @@ public class GameManager {
                 cardScrollOffset = Math.max(0, Math.min(maxCardScroll, cardScrollOffset + rotation * 32));
             }
         }
+    }
+
+    public void activateIceShroom() {
+        if (state != GameState.PLAYING) return;
+        WalletManager wm = WalletManager.getInstance();
+        if (wm.getData().iceShroomBlastCount <= 0) {
+            wm.floatingTexts.add(new WalletManager.FloatingText("Hết Bùa Đóng Băng! Mở Shop 🛒 để mua thêm", mouseX, mouseY, new Color(255, 140, 0)));
+            AudioManager.getInstance().playBuySound();
+            openShop(GameState.PLAYING);
+            return;
+        }
+
+        // Tiêu hao 1 bùa
+        wm.getData().iceShroomBlastCount--;
+        wm.save();
+
+        // Kích hoạt hiệu ứng đóng băng toàn sân trong 5 giây (300 ticks tại 60 FPS)
+        iceShroomDuration = 300;
+        iceShroomWaveRadius = 0;
+        AudioManager.getInstance().playFreezeSound();
+
+        // Đóng băng toàn bộ zombie hiện có trên sân
+        for (Monster z : zombies) {
+            z.applyFreeze(300, true);
+        }
+
+        wm.floatingTexts.add(new WalletManager.FloatingText("❄️ BÙA ĐÓNG BĂNG! (5s) ❄️", getScreenWidth() / 2, getScreenHeight() / 2 - 40, Color.CYAN));
+    }
+
+    private void drawIceShroomButton(Graphics2D g, Rectangle r, int mX, int mY) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        boolean hover = r.contains(mX, mY);
+        int count = WalletManager.getInstance().getData().iceShroomBlastCount;
+
+        // Nền nút hình vuông bo góc với dải màu băng giá
+        GradientPaint bg = new GradientPaint(
+            r.x, r.y, hover ? new Color(25, 60, 100) : new Color(15, 38, 68),
+            r.x, r.y + r.height, hover ? new Color(15, 40, 75) : new Color(10, 24, 46)
+        );
+        g2.setPaint(bg);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Viền nút phát sáng băng tuyết (nhấp nháy trắng khi đang đóng băng)
+        if (iceShroomDuration > 0) {
+            int pulse = (int) (180 + 75 * Math.sin(System.currentTimeMillis() * 0.015));
+            g2.setColor(new Color(200, 245, 255, Math.min(255, pulse)));
+        } else {
+            g2.setColor(hover ? new Color(160, 235, 255) : new Color(90, 180, 230, 180));
+        }
+        g2.setStroke(new BasicStroke(hover ? 2.2f : 1.5f));
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Icon hoa tuyết ở trung tâm
+        g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 26));
+        g2.setColor(iceShroomDuration > 0 ? Color.WHITE : (count > 0 ? new Color(200, 240, 255) : new Color(130, 160, 185)));
+        g2.drawString("❄️", r.x + (r.width - 26) / 2, r.y + 35);
+
+        // Badge phím tắt [F] ở góc trên bên trái
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
+        g2.setColor(new Color(200, 230, 255));
+        g2.setFont(new Font("Arial", Font.BOLD, 10));
+        g2.drawString("F", r.x + 8, r.y + 13);
+
+        // Badge hiển thị số lượng xN ở góc dưới bên phải
+        if (count > 0) {
+            String countText = "x" + count;
+            g2.setFont(new Font("Arial", Font.BOLD, 11));
+            int tw = g2.getFontMetrics().stringWidth(countText);
+            int bw = Math.max(22, tw + 8);
+            int bh = 14;
+            int bx = r.x + r.width - bw - 3;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(0, 0, 0, 210));
+            g2.fillRoundRect(bx, by, bw, bh, 6, 6);
+            g2.setColor(new Color(100, 220, 255));
+            g2.drawRoundRect(bx, by, bw, bh, 6, 6);
+            g2.setColor(new Color(255, 225, 50));
+            g2.drawString(countText, bx + (bw - tw) / 2, by + 11);
+        } else {
+            String buyText = "+MUA";
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
+            int tw = g2.getFontMetrics().stringWidth(buyText);
+            int bw = tw + 6;
+            int bh = 13;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 2;
+
+            g2.setColor(new Color(180, 50, 40, 220));
+            g2.fillRoundRect(bx, by, bw, bh, 4, 4);
+            g2.setColor(Color.WHITE);
+            g2.drawString(buyText, bx + 3, by + 10);
+        }
+
+        // Tooltip hướng dẫn khi rê chuột vào nút
+        if (hover) {
+            String tip = "Bùa Đóng Băng [Phím F]: Đóng băng & làm chậm toàn sân 5s (" + count + " còn lại)";
+            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
+            int tipX = Math.max(10, r.x + (r.width - tipW) / 2);
+            int tipY = r.y + r.height + 22;
+
+            g2.setColor(new Color(10, 25, 45, 235));
+            g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(new Color(120, 215, 255));
+            g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(Color.WHITE);
+            g2.drawString(tip, tipX + 8, tipY);
+        }
+
+        g2.dispose();
+    }
+
+    private void drawIceShroomScreenEffect(Graphics2D g, int sw, int sh) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // 1. Sóng xung kích băng tuyết nở rộng từ tâm màn hình
+        if (iceShroomWaveRadius > 0 && iceShroomWaveRadius < sw * 1.5f) {
+            int cx = sw / 2;
+            int cy = sh / 2;
+            int r = (int) iceShroomWaveRadius;
+            float waveAlpha = Math.max(0, 1.0f - (r / (float)(sw * 1.5f)));
+            g2.setColor(new Color(180, 235, 255, (int)(160 * waveAlpha)));
+            g2.setStroke(new BasicStroke(16f * waveAlpha));
+            g2.drawOval(cx - r, cy - r, r * 2, r * 2);
+
+            g2.setColor(new Color(255, 255, 255, (int)(220 * waveAlpha)));
+            g2.setStroke(new BasicStroke(5f * waveAlpha));
+            g2.drawOval(cx - r, cy - r, r * 2, r * 2);
+        }
+
+        // 2. Viền màn hình sương giá tuyết lạnh
+        float freezeProgress = iceShroomDuration / 300f; // 1.0 -> 0.0
+        int tintAlpha = (int)(55 * freezeProgress);
+        g2.setColor(new Color(135, 206, 250, tintAlpha));
+        g2.fillRect(0, 0, sw, sh);
+
+        // 3. Tinh thể hoa tuyết bay lơ lửng trên màn hình
+        g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+        g2.setColor(new Color(255, 255, 255, (int)(180 * freezeProgress)));
+        int numSnowflakes = 16;
+        for (int i = 0; i < numSnowflakes; i++) {
+            int fx = ((i * 137 + 53) % sw);
+            int fy = ((i * 97 + (int)((300 - iceShroomDuration) * (2.2 + (i % 3)))) % sh);
+            g2.drawString("❄", fx, fy);
+        }
+
+        // 4. Banner thông báo nghệ thuật xuất hiện trong 1.5 giây đầu
+        if (iceShroomDuration > 210) {
+            float bannerAlpha = Math.min(1.0f, (iceShroomDuration - 210) / 30f);
+            String bannerText = "❄️ BÙA ĐÓNG BĂNG ĐÃ KÍCH HOẠT! (5 GIÂY) ❄️";
+            g2.setFont(new Font("Arial", Font.BOLD, 22));
+            int tw = g2.getFontMetrics().stringWidth(bannerText);
+            int bx = (sw - tw) / 2;
+            int by = sh / 4;
+
+            g2.setColor(new Color(0, 20, 50, (int)(200 * bannerAlpha)));
+            g2.fillRoundRect(bx - 20, by - 26, tw + 40, 36, 12, 12);
+            g2.setColor(new Color(100, 220, 255, (int)(230 * bannerAlpha)));
+            g2.drawRoundRect(bx - 20, by - 26, tw + 40, 36, 12, 12);
+            g2.setColor(new Color(230, 250, 255, (int)(255 * bannerAlpha)));
+            g2.drawString(bannerText, bx, by);
+        }
+
+        g2.dispose();
     }
 }

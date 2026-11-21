@@ -75,6 +75,50 @@ public class AudioManager {
     }
 
     /**
+     * Phát âm thanh đóng băng toàn sân (hiệu ứng tinh thể băng giá ngân vang).
+     */
+    public void playFreezeSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(() -> {
+            boolean played = playAudioFile("src/main/resources/assets/sounds/frozen.wav");
+            if (!played) {
+                generateFreezeTone();
+            }
+        });
+    }
+
+    private void generateFreezeTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 600;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            for (int i = 0; i < totalSamples; i++) {
+                double time = i / (double) sampleRate;
+                double sweep = 1.0 - (i / (double) totalSamples) * 0.4;
+                // High crystalline bells + resonant ice crack
+                double wave = Math.sin(2.0 * Math.PI * 2200.0 * sweep * time) * 0.35 +
+                              Math.sin(2.0 * Math.PI * 3300.0 * sweep * time) * 0.25 +
+                              Math.sin(2.0 * Math.PI * 4400.0 * sweep * time) * 0.15 +
+                              Math.sin(2.0 * Math.PI * 880.0 * time) * 0.25;
+                double shimmer = 0.85 + 0.15 * Math.sin(2.0 * Math.PI * 28.0 * time);
+                double decay = Math.exp(-4.5 * (i / (double) totalSamples));
+                buffer[i] = (byte) (wave * shimmer * decay * 110.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    /**
      * Tổng hợp sóng sin âm thanh 'ting' trong trẻo với tần số nâng cao theo combo.
      */
     private void generateTingSound(int combo) {
