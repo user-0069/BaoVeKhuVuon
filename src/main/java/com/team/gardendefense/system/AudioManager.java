@@ -87,6 +87,47 @@ public class AudioManager {
         });
     }
 
+    /**
+     * Phát âm thanh tăng lực vui nhộn khi cho Pet ăn kẹo Chocolate.
+     */
+    public void playPowerUpSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(this::generatePowerUpTone);
+    }
+
+    private void generatePowerUpTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 350;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            // 4 nốt arpeggio tăng dần: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
+            float[] notes = {523.25f, 659.25f, 783.99f, 1046.50f};
+            int samplesPerNote = totalSamples / notes.length;
+
+            for (int i = 0; i < totalSamples; i++) {
+                int noteIdx = Math.min(i / samplesPerNote, notes.length - 1);
+                float freq = notes[noteIdx];
+                double time = i / (double) sampleRate;
+                double wave = Math.sin(2.0 * Math.PI * freq * time) * 0.7 +
+                              Math.sin(2.0 * Math.PI * (freq * 2.0) * time) * 0.3;
+                int noteLocalIdx = i % samplesPerNote;
+                double decay = Math.exp(-4.2 * (noteLocalIdx / (double) samplesPerNote));
+                buffer[i] = (byte) (wave * decay * 115.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void generateFreezeTone() {
         try {
             float sampleRate = 44100f;

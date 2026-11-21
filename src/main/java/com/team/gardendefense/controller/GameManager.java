@@ -171,6 +171,7 @@ public class GameManager {
     public Rectangle btnInGameMenu = new Rectangle(0, 0, 88, 32);
     public Rectangle btnInGameShop = new Rectangle(0, 0, 120, 24);
     public Rectangle btnIceShroom = new Rectangle(0, 0, 52, 52);
+    public Rectangle btnChocolate = new Rectangle(0, 0, 52, 52);
     public int iceShroomDuration = 0; // Đếm lùi 300 ticks (5 giây)
     public float iceShroomWaveRadius = 0;
 
@@ -778,7 +779,7 @@ public class GameManager {
 
         // Vẽ Pet Ốc sên Stinky nếu đã mở khóa
         if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
-            petSnail.draw(g);
+            petSnail.draw(g, mouseX, mouseY);
         }
 
         // Vẽ các đồng xu và kim cương đang rơi hoặc bay trên sân
@@ -848,21 +849,25 @@ public class GameManager {
             g.drawString(lvlText, menuX + (menuW - ltw) / 2, 60);
         }
 
-        // Nút Kích Hoạt Bùa Đóng Băng [Phím F]
-        int itemW = 54;
+        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [Phím F] & Kẹo Chocolate [Phím C]
+        int itemW = 52;
         int itemH = 54;
-        int itemX = bankX - itemW - 14;
         int itemY = 12;
-        btnIceShroom.setBounds(itemX, itemY, itemW, itemH);
+        int iceX = bankX - itemW - 12;
+        btnIceShroom.setBounds(iceX, itemY, itemW, itemH);
         drawIceShroomButton(g, btnIceShroom, mouseX, mouseY);
 
-        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Bùa/Bank/Shop/Screen
+        int chocX = iceX - itemW - 8;
+        btnChocolate.setBounds(chocX, itemY, itemW, itemH);
+        drawChocolateButton(g, btnChocolate, mouseX, mouseY);
+
+        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Bùa/Kẹo/Bank/Shop/Screen
         int cardW = 54;
         int cardH = 68;
         int cardGap = 4;
         int cardY = 6;
         int cardAreaX = 110;
-        int rightBoundary = itemX - 10;
+        int rightBoundary = chocX - 10;
         int cardAreaW = Math.max(100, rightBoundary - cardAreaX);
         int totalCardsW = uiCards.isEmpty() ? 0 : (uiCards.size() * cardW + (uiCards.size() - 1) * cardGap);
 
@@ -1260,6 +1265,14 @@ public class GameManager {
                 activateIceShroom();
                 return;
             }
+            if (btnChocolate.contains(mX, mY)) {
+                activateChocolate();
+                return;
+            }
+            if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail && petSnail.getBounds().contains(mX, mY)) {
+                activateChocolate();
+                return;
+            }
 
             // Click trực tiếp vào đồng xu để nhặt
             if (collectCoinAt(mX, mY)) return;
@@ -1370,6 +1383,48 @@ public class GameManager {
         wm.floatingTexts.add(new WalletManager.FloatingText("❄️ BÙA ĐÓNG BĂNG! (5s) ❄️", getScreenWidth() / 2, getScreenHeight() / 2 - 40, Color.CYAN));
     }
 
+    public void activateChocolate() {
+        if (state != GameState.PLAYING) return;
+        WalletManager wm = WalletManager.getInstance();
+
+        // 1. Kiểm tra đã mở khóa Pet Ốc Sên chưa
+        if (!wm.getData().hasPetSnail) {
+            wm.floatingTexts.add(new WalletManager.FloatingText(
+                "Chưa có Pet Ốc Sên! Mua Pet 🐌 trong Shop trước", mouseX, mouseY, new Color(255, 140, 0)));
+            AudioManager.getInstance().playBuySound();
+            openShop(GameState.PLAYING);
+            return;
+        }
+
+        // 2. Kiểm tra số lượng kẹo Chocolate
+        if (wm.getData().chocolateCount <= 0) {
+            wm.floatingTexts.add(new WalletManager.FloatingText(
+                "Hết Kẹo Chocolate! Mua thêm trong Shop 🛒", mouseX, mouseY, new Color(255, 140, 0)));
+            AudioManager.getInstance().playBuySound();
+            openShop(GameState.PLAYING);
+            return;
+        }
+
+        // 3. Đảm bảo PetSnail đã được khởi tạo
+        if (petSnail == null) {
+            petSnail = new PetSnail(50, getMapHeight() - 60);
+        }
+
+        // 4. Trừ 1 kẹo và kích hoạt tăng tốc cho Pet
+        wm.getData().chocolateCount--;
+        wm.save();
+        petSnail.feedChocolate();
+
+        // 5. Âm thanh và thông báo nổi
+        AudioManager.getInstance().playPowerUpSound();
+        int spawnX = (int) petSnail.x;
+        int spawnY = Math.max(30, (int) petSnail.y - 30);
+        wm.floatingTexts.add(new WalletManager.FloatingText(
+            "⚡ PET TĂNG TỐC 250%! (3 PHÚT) 🍫", 
+            spawnX, spawnY, 
+            new Color(255, 215, 0)));
+    }
+
     private void drawIceShroomButton(Graphics2D g, Rectangle r, int mX, int mY) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1448,6 +1503,124 @@ public class GameManager {
             g2.setColor(new Color(10, 25, 45, 235));
             g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(new Color(120, 215, 255));
+            g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(Color.WHITE);
+            g2.drawString(tip, tipX + 8, tipY);
+        }
+
+        g2.dispose();
+    }
+
+    private void drawChocolateButton(Graphics2D g, Rectangle r, int mX, int mY) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        boolean hover = r.contains(mX, mY);
+
+        WalletManager wm = WalletManager.getInstance();
+        int count = wm.getData().chocolateCount;
+        boolean hasPet = wm.getData().hasPetSnail;
+        boolean isPetBoosted = (petSnail != null && petSnail.isBoosted());
+
+        // Nền nút hình vuông bo góc với dải màu sô-cô-la ấm áp
+        Color topC = hover ? new Color(115, 62, 32) : new Color(80, 42, 20);
+        Color botC = hover ? new Color(75, 38, 18) : new Color(50, 24, 10);
+        if (isPetBoosted) {
+            float pulse = (float) Math.sin(System.currentTimeMillis() * 0.012);
+            topC = new Color(Math.min(255, 135 + (int)(35 * pulse)), 75, 25);
+            botC = new Color(Math.min(255, 95 + (int)(30 * pulse)), 48, 15);
+        }
+
+        GradientPaint bg = new GradientPaint(r.x, r.y, topC, r.x, r.y + r.height, botC);
+        g2.setPaint(bg);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Viền nút
+        if (isPetBoosted) {
+            float pulse = (float) Math.sin(System.currentTimeMillis() * 0.015);
+            int alpha = Math.min(255, (int)(180 + 75 * pulse));
+            g2.setColor(new Color(255, 215, 0, alpha));
+        } else {
+            g2.setColor(hover ? new Color(255, 200, 110) : new Color(175, 120, 65, 180));
+        }
+        g2.setStroke(new BasicStroke(hover || isPetBoosted ? 2.2f : 1.5f));
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Icon kẹo Chocolate 🍫 ở trung tâm
+        g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 26));
+        g2.drawString("🍫", r.x + (r.width - 26) / 2, r.y + 35);
+
+        // Badge phím tắt [C] ở góc trên bên trái
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
+        g2.setColor(new Color(255, 225, 160));
+        g2.setFont(new Font("Arial", Font.BOLD, 10));
+        g2.drawString("C", r.x + 8, r.y + 13);
+
+        // Badge hiển thị ở góc dưới bên phải
+        if (isPetBoosted) {
+            int totalSec = petSnail.getRemainingSeconds();
+            String timeText = String.format("%d:%02d", totalSec / 60, totalSec % 60);
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
+            int tw = g2.getFontMetrics().stringWidth(timeText);
+            int bw = tw + 8;
+            int bh = 14;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(180, 110, 0, 230));
+            g2.fillRoundRect(bx, by, bw, bh, 5, 5);
+            g2.setColor(new Color(255, 235, 120));
+            g2.drawRoundRect(bx, by, bw, bh, 5, 5);
+            g2.setColor(Color.WHITE);
+            g2.drawString(timeText, bx + 4, by + 10);
+        } else if (count > 0) {
+            String countText = "x" + count;
+            g2.setFont(new Font("Arial", Font.BOLD, 11));
+            int tw = g2.getFontMetrics().stringWidth(countText);
+            int bw = Math.max(22, tw + 8);
+            int bh = 14;
+            int bx = r.x + r.width - bw - 3;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(0, 0, 0, 210));
+            g2.fillRoundRect(bx, by, bw, bh, 6, 6);
+            g2.setColor(new Color(255, 190, 80));
+            g2.drawRoundRect(bx, by, bw, bh, 6, 6);
+            g2.setColor(new Color(255, 225, 50));
+            g2.drawString(countText, bx + (bw - tw) / 2, by + 11);
+        } else {
+            String buyText = "+MUA";
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
+            int tw = g2.getFontMetrics().stringWidth(buyText);
+            int bw = tw + 6;
+            int bh = 13;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 2;
+
+            g2.setColor(new Color(180, 50, 40, 220));
+            g2.fillRoundRect(bx, by, bw, bh, 4, 4);
+            g2.setColor(Color.WHITE);
+            g2.drawString(buyText, bx + 3, by + 10);
+        }
+
+        // Tooltip hướng dẫn khi hover
+        if (hover) {
+            String tip;
+            if (!hasPet) {
+                tip = "Kẹo Chocolate [Phím C]: Mua Pet Ốc Sên trước để sử dụng!";
+            } else if (isPetBoosted) {
+                tip = "Pet đang tăng tốc 250%! Còn " + petSnail.getRemainingSeconds() + "s (Bấm để cộng dồn)";
+            } else {
+                tip = "Kẹo Chocolate [Phím C]: Cho Pet ăn tăng 250% tốc độ bò trong 3 phút (" + count + " còn lại)";
+            }
+            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
+            int tipX = Math.max(10, r.x + (r.width - tipW) / 2);
+            int tipY = r.y + r.height + 22;
+
+            g2.setColor(new Color(40, 24, 12, 240));
+            g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(new Color(255, 195, 90));
             g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(Color.WHITE);
             g2.drawString(tip, tipX + 8, tipY);

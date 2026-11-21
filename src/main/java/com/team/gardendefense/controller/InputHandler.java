@@ -54,6 +54,10 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
             gm.activateIceShroom();
             return;
         }
+        if (e.getKeyCode() == KeyEvent.VK_C) {
+            gm.activateChocolate();
+            return;
+        }
         gm.handleKeyPress(e.getKeyCode());
     }
     

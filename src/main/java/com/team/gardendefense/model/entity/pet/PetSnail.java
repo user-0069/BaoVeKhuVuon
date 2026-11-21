@@ -109,7 +109,24 @@ public class PetSnail implements IAutoCollector {
     }
 
     public void feedChocolate() {
-        this.boostTimer = 60 * 180; // 3 phút
+        if (this.boostTimer > 0) {
+            this.boostTimer += 60 * 180; // Cộng dồn thêm 3 phút
+            if (this.boostTimer > 60 * 600) this.boostTimer = 60 * 600; // Tối đa 10 phút
+        } else {
+            this.boostTimer = 60 * 180; // 3 phút (10800 ticks)
+        }
+    }
+
+    public int getBoostTimer() {
+        return boostTimer;
+    }
+
+    public int getRemainingSeconds() {
+        return boostTimer / 60;
+    }
+
+    public Rectangle getBounds() {
+        return new Rectangle((int) x, (int) y, width, height);
     }
 
     public boolean isBoosted() {
@@ -118,7 +135,7 @@ public class PetSnail implements IAutoCollector {
 
     @Override
     public float getCollectionRadius() {
-        return collectionRadius;
+        return isBoosted() ? 52.0f : collectionRadius;
     }
 
     @Override
@@ -127,15 +144,53 @@ public class PetSnail implements IAutoCollector {
     }
 
     public void draw(Graphics2D g) {
+        draw(g, -1, -1);
+    }
+
+    public void draw(Graphics2D g, int mouseX, int mouseY) {
         Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
         int drawX = (int) x;
         int drawY = (int) y;
+        boolean hover = (mouseX >= drawX && mouseX <= drawX + width && mouseY >= drawY && mouseY <= drawY + height);
 
         // Hiệu ứng hào quang khi đang ăn Chocolate Boost
         if (isBoosted()) {
-            g2.setColor(new Color(255, 180, 0, 90));
-            g2.fillOval(drawX - 6, drawY - 6, width + 12, height + 12);
+            float pulse = (float) Math.sin(System.currentTimeMillis() / 120.0);
+            int glowPad = (int) (8 + 4 * pulse);
+
+            // Lớp hào quang vàng cam rực rỡ
+            g2.setColor(new Color(255, 170, 0, (int) (75 + 30 * pulse)));
+            g2.fillOval(drawX - glowPad, drawY - glowPad, width + glowPad * 2, height + glowPad * 2);
+
+            g2.setColor(new Color(255, 230, 80, (int) (130 + 35 * pulse)));
+            g2.setStroke(new java.awt.BasicStroke(1.8f));
+            g2.drawOval(drawX - glowPad, drawY - glowPad, width + glowPad * 2, height + glowPad * 2);
+
+            // Tia chớp tốc độ phía sau
+            int trailX = facingRight ? drawX - 12 : drawX + width + 4;
+            g2.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 14));
+            g2.setColor(new Color(255, 220, 50, (int) (160 + 50 * pulse)));
+            g2.drawString("⚡", trailX, drawY + 26);
+
+            // Hiển thị thanh đếm ngược thời gian nhỏ gọn trên đầu Pet
+            int totalSec = getRemainingSeconds();
+            int mins = totalSec / 60;
+            int secs = totalSec % 60;
+            String timerStr = String.format("%d:%02d ⚡", mins, secs);
+
+            g2.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 11));
+            int tw = g2.getFontMetrics().stringWidth(timerStr);
+            int tx = drawX + (width - tw) / 2;
+            int ty = drawY - 8;
+
+            g2.setColor(new Color(0, 0, 0, 180));
+            g2.fillRoundRect(tx - 5, ty - 12, tw + 10, 16, 6, 6);
+            g2.setColor(new Color(255, 215, 0));
+            g2.drawRoundRect(tx - 5, ty - 12, tw + 10, 16, 6, 6);
+            g2.setColor(new Color(255, 240, 150));
+            g2.drawString(timerStr, tx, ty);
         }
 
         // Bóng đổ
@@ -157,6 +212,26 @@ public class PetSnail implements IAutoCollector {
             g2.fillOval(drawX, drawY + 10, width, height - 10);
             g2.setColor(new Color(160, 100, 50));
             g2.fillOval(drawX + 10, drawY, width - 15, height - 5);
+        }
+
+        // Khung viền và bong bóng gợi ý khi rê chuột vào Pet
+        if (hover) {
+            g2.setColor(new Color(255, 235, 120, 200));
+            g2.setStroke(new java.awt.BasicStroke(1.5f));
+            g2.drawRoundRect(drawX - 2, drawY - 2, width + 4, height + 4, 8, 8);
+
+            String tip = "🍫 Cho ăn Kẹo [C]";
+            g2.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 11));
+            int tw = g2.getFontMetrics().stringWidth(tip);
+            int bx = drawX + (width - tw) / 2;
+            int by = isBoosted() ? drawY - 28 : drawY - 10;
+
+            g2.setColor(new Color(35, 20, 10, 210));
+            g2.fillRoundRect(bx - 4, by - 12, tw + 8, 16, 6, 6);
+            g2.setColor(new Color(255, 200, 80));
+            g2.drawRoundRect(bx - 4, by - 12, tw + 8, 16, 6, 6);
+            g2.setColor(Color.WHITE);
+            g2.drawString(tip, bx, by);
         }
 
         g2.dispose();

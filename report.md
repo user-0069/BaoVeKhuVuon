@@ -204,6 +204,36 @@ Theo mô tả trong Cửa hàng: *"Đóng băng và làm chậm toàn sân đấ
   - Trừ 1 bùa trong `iceShroomBlastCount` và lưu tự động vào `saves/wallet_save.json`.
   - Nếu đã hết bùa (count = 0), phát thông báo nổi màu cam nhắc nhở và tự động chuyển đến Shop khi bấm nút.
 
+## Triển khai công năng vật phẩm Cửa Hàng: Kẹo Chocolate (Pet Snail Boost)
+
+Theo mô tả trong Cửa hàng: *"Tăng 250% tốc độ bò của Pet trong 3 phút"*.
+
+### 1. Cơ chế hoạt động (Gameplay Mechanics)
+- **Thời lượng:** 3 phút = 180 giây = 10,800 tick game (60 FPS).
+- **Tăng tốc siêu cấp 250%:** Tốc độ bò của Pet Ốc Sên Stinky tăng vọt từ `1.6 px/frame` lên `4.0 px/frame` (`baseSpeed * 2.5f`).
+- **Tăng bán kính từ tính nhặt xu:** Bán kính gom tiền mở rộng từ `38 px` lên `52 px`, giúp ốc sên lướt nhanh và quét sạch toàn bộ xu trên sân đấu.
+- **Hỗ trợ cộng dồn thời gian (Stacking):** Nếu cho ăn thêm trong lúc đang có hiệu lực, thời gian tăng tốc được cộng dồn thêm 3 phút (tối đa 10 phút = 36,000 tick).
+- **Bảo vệ an toàn:**
+  - Nếu người chơi chưa mua Pet Ốc Sên trong Cửa hàng: Hiện thông báo nhắc nhở màu cam *"Chưa có Pet Ốc Sên! Mua Pet 🐌 trong Shop trước"* và mở nhanh Cửa Hàng.
+  - Nếu hết kẹo (số lượng = 0): Hiện thông báo *"Hết Kẹo Chocolate! Mua thêm trong Shop 🛒"* và không bị trừ âm.
+
+### 2. Giao diện và Điều khiển (UI & Controls)
+- **Nút bấm trực tiếp trên thanh điều khiển:** Nút `[🍫 C]` nằm cạnh nút Bùa Đóng Băng và Ví Tiền ở góc trên bên phải.
+  - Nếu Pet đang tăng tốc: Nút chuyển sang viền vàng phát sáng nhấp nháy, hiển thị đồng hồ đếm ngược phút:giây thời gian còn lại (ví dụ `2:58`).
+  - Nếu có kẹo: Hiện huy hiệu `xN`.
+  - Nếu hết kẹo: Hiện huy hiệu `+MUA`.
+- **Phím tắt tiện lợi:** Nhấn phím **`C`** trên bàn phím để cho Pet ăn ngay lập tức.
+- **Tương tác trực tiếp trong vườn (Direct Click):** Người chơi có thể click chuột trực tiếp vào chú Ốc Sên đang bò trên sân để cho ăn kẹo. Khi rê chuột vào Pet, hiển thị viền sáng và bong bóng hướng dẫn *"🍫 Cho ăn Kẹo [C]"*.
+- **Hiệu ứng đồ họa (VFX):**
+  - Vòng hào quang năng lượng vàng cam rực rỡ đập nhịp nhàng quanh Ốc Sên.
+  - Tia chớp tốc độ `⚡` phát ra phía sau khi di chuyển.
+  - Huy hiệu nhỏ đếm ngược thời gian `🍫 M:SS ⚡` nổi ngay trên lưng Ốc Sên.
+  - Chữ nổi thông báo: *"⚡ PET TĂNG TỐC 250%! (3 PHÚT) 🍫"*.
+- **Hiệu ứng âm thanh (SFX):**
+  - Hàm `AudioManager.playPowerUpSound()` tổng hợp chuỗi nốt nhạc arpeggio 4 âm tăng dần vui tươi (C5 - E5 - G5 - C6).
+- **Lưu trữ dữ liệu Ví tiền:**
+  - Tiêu thụ 1 viên kẹo trong `chocolateCount` và tự động lưu vào `saves/wallet_save.json`.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.
