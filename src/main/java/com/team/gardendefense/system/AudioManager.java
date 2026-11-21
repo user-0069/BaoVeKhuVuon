@@ -77,6 +77,87 @@ public class AudioManager {
     /**
      * Phát âm thanh đóng băng toàn sân (hiệu ứng tinh thể băng giá ngân vang).
      */
+    /**
+     * Phát âm thanh đào cây bằng Xẻng thường.
+     */
+    public void playShovelSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(() -> {
+            boolean played = playAudioFile("src/main/resources/assets/sounds/shovel.wav");
+            if (!played) {
+                generateShovelTone();
+            }
+        });
+    }
+
+    /**
+     * Phát âm thanh đào cây bằng Xẻng Vàng (âm thanh xẻng xúc đất kết hợp tiếng chuông vàng thu hoạch Mặt trời).
+     */
+    public void playGoldenShovelSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(this::generateGoldenShovelTone);
+    }
+
+    private void generateShovelTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 180;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            for (int i = 0; i < totalSamples; i++) {
+                double time = i / (double) sampleRate;
+                double noise = (Math.random() * 2.0 - 1.0) * 0.45;
+                double clang = Math.sin(2.0 * Math.PI * 460.0 * time) * 0.35 +
+                               Math.sin(2.0 * Math.PI * 880.0 * time) * 0.2;
+                double decay = Math.exp(-12.0 * (i / (double) totalSamples));
+                buffer[i] = (byte) ((noise + clang) * decay * 110.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void generateGoldenShovelTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 380;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            // Tiếng chuông vàng thu hoạch mặt trời (E6 -> G6 -> B6 -> E7)
+            float[] notes = {1318.5f, 1567.98f, 1975.5f, 2637.0f};
+            int samplesPerNote = totalSamples / notes.length;
+
+            for (int i = 0; i < totalSamples; i++) {
+                int noteIdx = Math.min(i / samplesPerNote, notes.length - 1);
+                float freq = notes[noteIdx];
+                double time = i / (double) sampleRate;
+                double wave = Math.sin(2.0 * Math.PI * freq * time) * 0.65 +
+                              Math.sin(2.0 * Math.PI * (freq * 1.5) * time) * 0.25;
+                int noteLocal = i % samplesPerNote;
+                double decay = Math.exp(-5.0 * (noteLocal / (double) samplesPerNote));
+                buffer[i] = (byte) (wave * decay * 115.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
     public void playFreezeSound() {
         if (!sfxEnabled) return;
         soundPool.submit(() -> {

@@ -234,6 +234,43 @@ Theo mô tả trong Cửa hàng: *"Tăng 250% tốc độ bò của Pet trong 3 
 - **Lưu trữ dữ liệu Ví tiền:**
   - Tiêu thụ 1 viên kẹo trong `chocolateCount` và tự động lưu vào `saves/wallet_save.json`.
 
+## Triển khai công năng vật phẩm Cửa Hàng: Xẻng Vàng (Golden Shovel)
+
+Theo mô tả trong Cửa hàng: *"Đào thu hồi cây được hoàn trả 50% số Mặt trời"*.
+
+### 1. Cơ chế hoạt động (Gameplay Mechanics)
+- **Công cụ Đào cây (Shovel Tool):** Cho phép người chơi đào bỏ bất kỳ cây trồng nào trên sân để giải phóng ô đất trồng cây mới hoặc cơ cấu lại chiến thuật phòng thủ.
+- **Xẻng Thường (Chưa sở hữu Xẻng Vàng):**
+  - Đào cây tức thời (`plants.remove(p)`).
+  - Không hoàn trả Mặt trời (hoàn 0 Sun).
+  - Phát âm thanh xúc đất đào cây `AudioManager.playShovelSound()`.
+- **Xẻng Vàng (Đã mua trong Shop - 2500 xu):**
+  - Nâng cấp xẻng lên đẳng cấp Hoàng Kim với ánh hào quang vàng lấp lánh `✨`.
+  - **Hoàn trả chính xác 50% số Mặt trời** theo giá mua gốc của từng loại cây:
+    - Hoa Hướng Dương (Sunflower, giá 50): Hoàn lại **25 ☀️**.
+    - Cây Bắn Đậu 50 Sun (Peashooter, giá 50): Hoàn lại **25 ☀️**.
+    - Cây Bắn Đậu 100 Sun (SniperPlant, giá 100): Hoàn lại **50 ☀️**.
+    - Củ Khoai Tây (WallNut, giá 50): Hoàn lại **25 ☀️**.
+    - Cây Bắn Băng (SnowPea, giá 150): Hoàn lại **75 ☀️**.
+    - Cây Ăn Thịt (Chomper, giá 150): Hoàn lại **75 ☀️**.
+    - Bom Cherry (CherryBomb, giá 150): Hoàn lại **75 ☀️**.
+    - Hoa Cúc Xu (Marigold, giá 50): Hoàn lại **25 ☀️**.
+  - Mặt trời thu hồi được cộng dồn trực tiếp vào quỹ năng lượng mặt trời (`sun += refund`) để tái sử dụng ngay lập tức.
+  - Chữ nổi ánh kim vàng rực rỡ hiển thị trên đầu cây: `"+XX ☀️ (Xẻng Vàng)"`.
+  - Phát âm thanh tiếng xẻng xúc đất kết hợp tiếng chuông ngân vang thu hoạch Mặt trời `AudioManager.playGoldenShovelSound()`.
+
+### 2. Giao diện và Điều khiển (UI & Controls)
+- **Nút bấm Xẻng trên thanh Header:** Nút `[⛏️ S]` nằm trong khay vật phẩm (bên cạnh Kẹo Chocolate, Bùa Đóng Băng và Ví Tiền).
+  - Khi chưa nâng cấp: Hiển thị xẻng cơ bản với huy hiệu xám `"0% ☀️"`.
+  - Khi đã sở hữu Xẻng Vàng: Chuyển sang tông vàng kim rực rỡ, viền vàng nổi bật và huy hiệu vàng `"50% ☀️"`.
+  - Khi đang cầm xẻng: Nút phát xung viền sáng nhấp nháy báo hiệu xẻng đang ở trên tay.
+- **Phím tắt nhanh:** Nhấn phím **`S`** trên bàn phím để cầm xẻng hoặc cất xẻng nhanh.
+- **Hủy thao tác tiện lợi bằng Chuột Phải:** Nhấp chuột phải (`Right-Click`) bất kỳ lúc nào để hủy chọn xẻng hoặc hủy chọn cây đang cầm trên tay.
+- **Hiệu ứng đồ họa (VFX):**
+  - Khi cầm xẻng, chiếc xẻng bay linh hoạt theo vị trí con trỏ chuột (có vầng hào quang vàng và tia sáng lấp lánh `✨` nếu là Xẻng Vàng).
+  - Khi rê chuột lên một ô có cây trồng: Ô cây sáng viền nổi bật (viền vàng kim nếu có Xẻng Vàng, viền đỏ nếu là xẻng thường) kèm theo nhãn thông tin xem trước số Mặt trời sẽ nhận lại: `"+XX ☀️ Hoàn 50%"`.
+  - Click vào cây để đào bỏ, hoặc click vào ô đất trống để cất xẻng an toàn.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

@@ -29,6 +29,10 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
     @Override
     public void mousePressed(MouseEvent e) {
         updateMousePosition(e);
+        if (e.getButton() == MouseEvent.BUTTON3) {
+            gm.handleRightClick(gm.mouseX, gm.mouseY);
+            return;
+        }
         gm.handleClick(gm.mouseX, gm.mouseY);
     }
 
@@ -56,6 +60,10 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
         }
         if (e.getKeyCode() == KeyEvent.VK_C) {
             gm.activateChocolate();
+            return;
+        }
+        if (e.getKeyCode() == KeyEvent.VK_S) {
+            gm.toggleShovel();
             return;
         }
         gm.handleKeyPress(e.getKeyCode());

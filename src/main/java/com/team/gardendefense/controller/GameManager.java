@@ -172,6 +172,10 @@ public class GameManager {
     public Rectangle btnInGameShop = new Rectangle(0, 0, 120, 24);
     public Rectangle btnIceShroom = new Rectangle(0, 0, 52, 52);
     public Rectangle btnChocolate = new Rectangle(0, 0, 52, 52);
+    public Rectangle btnShovel = new Rectangle(0, 0, 52, 52);
+    public boolean shovelSelected = false;
+    public Image shovelImg;
+    public Image shovelBankImg;
     public int iceShroomDuration = 0; // Đếm lùi 300 ticks (5 giây)
     public float iceShroomWaveRadius = 0;
 
@@ -179,6 +183,8 @@ public class GameManager {
         shopScreen = new ShopScreen(this);
         pauseDialog = new PauseDialog(this);
         coinBankImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/coinbank.png");
+        shovelImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/Shovel.png");
+        shovelBankImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/ShovelBank.png");
         mainMenuBackgroundImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/mainbg.png");
         mainMenuTitleImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/titlegame.png");
         sunIconImg = loadSunIconImage();
@@ -330,6 +336,7 @@ public class GameManager {
     public void resetGame() {
         plants.clear(); zombies.clear(); projectiles.clear(); coins.clear();
         selectedPlant = 0; passiveSunTimer = 0;
+        shovelSelected = false;
         iceShroomDuration = 0; iceShroomWaveRadius = 0;
         
         if (WalletManager.getInstance().getData().hasPetSnail) {
@@ -768,6 +775,32 @@ public class GameManager {
             g.fillRect(hX, hY, Constants.TILE_SIZE, Constants.TILE_SIZE);
         }
 
+        // Hiệu ứng rê xẻng lên ô cây có thể đào
+        if (shovelSelected && hoverCol >= 0 && hoverCol < numCols && hoverRow >= 0 && hoverRow < numRows) {
+            int hX = hoverCol * Constants.TILE_SIZE; int hY = hoverRow * Constants.TILE_SIZE;
+            Plant target = getPlantAt(hoverCol, hoverRow);
+            if (target != null) {
+                boolean isGolden = WalletManager.getInstance().getData().hasGoldenShovel;
+                g.setColor(isGolden ? new Color(255, 215, 0, 110) : new Color(255, 60, 60, 100));
+                g.fillRoundRect(hX + 2, hY + 2, Constants.TILE_SIZE - 4, Constants.TILE_SIZE - 4, 10, 10);
+                g.setColor(isGolden ? new Color(255, 235, 100) : new Color(255, 80, 80));
+                g.setStroke(new BasicStroke(2.0f));
+                g.drawRoundRect(hX + 2, hY + 2, Constants.TILE_SIZE - 4, Constants.TILE_SIZE - 4, 10, 10);
+
+                int refund = target.getRefundAmount(isGolden);
+                String tag = isGolden ? ("+" + refund + " ☀️ Hoàn 50%") : "Đào cây";
+                g.setFont(new Font("Arial", Font.BOLD, 12));
+                int tagW = g.getFontMetrics().stringWidth(tag);
+                int tagX = hX + (Constants.TILE_SIZE - tagW) / 2;
+                int tagY = hY - 6;
+
+                g.setColor(new Color(0, 0, 0, 190));
+                g.fillRoundRect(tagX - 5, tagY - 13, tagW + 10, 17, 6, 6);
+                g.setColor(isGolden ? new Color(255, 220, 50) : Color.WHITE);
+                g.drawString(tag, tagX, tagY);
+            }
+        }
+
         for(Plant p : plants) {
             p.draw(g);
             if (p.health < p.maxHealth) {
@@ -849,11 +882,11 @@ public class GameManager {
             g.drawString(lvlText, menuX + (menuW - ltw) / 2, 60);
         }
 
-        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [Phím F] & Kẹo Chocolate [Phím C]
+        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [Phím F], Kẹo Chocolate [Phím C], Xẻng Đào [Phím S]
         int itemW = 52;
         int itemH = 54;
         int itemY = 12;
-        int iceX = bankX - itemW - 12;
+        int iceX = bankX - itemW - 10;
         btnIceShroom.setBounds(iceX, itemY, itemW, itemH);
         drawIceShroomButton(g, btnIceShroom, mouseX, mouseY);
 
@@ -861,13 +894,17 @@ public class GameManager {
         btnChocolate.setBounds(chocX, itemY, itemW, itemH);
         drawChocolateButton(g, btnChocolate, mouseX, mouseY);
 
-        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Bùa/Kẹo/Bank/Shop/Screen
+        int shovelX = chocX - itemW - 8;
+        btnShovel.setBounds(shovelX, itemY, itemW, itemH);
+        drawShovelButton(g, btnShovel, mouseX, mouseY);
+
+        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Xẻng/Bùa/Kẹo/Bank/Shop/Screen
         int cardW = 54;
         int cardH = 68;
         int cardGap = 4;
         int cardY = 6;
         int cardAreaX = 110;
-        int rightBoundary = chocX - 10;
+        int rightBoundary = shovelX - 10;
         int cardAreaW = Math.max(100, rightBoundary - cardAreaX);
         int totalCardsW = uiCards.isEmpty() ? 0 : (uiCards.size() * cardW + (uiCards.size() - 1) * cardGap);
 
@@ -938,6 +975,29 @@ public class GameManager {
         // Hiệu ứng sóng băng tuyết toàn sân của Bùa Đóng Băng
         if (iceShroomDuration > 0) {
             drawIceShroomScreenEffect(g, sw, sh);
+        }
+
+        // Vẽ xẻng bay theo con trỏ chuột khi đang cầm xẻng đào cây
+        if (shovelSelected) {
+            boolean isGolden = WalletManager.getInstance().getData().hasGoldenShovel;
+            int sx = mouseX - 18;
+            int sy = mouseY - 32;
+            if (isGolden) {
+                float pulse = (float) Math.sin(System.currentTimeMillis() * 0.015);
+                g.setColor(new Color(255, 215, 0, (int)(80 + 35 * pulse)));
+                g.fillOval(sx - 4, sy - 4, 44, 44);
+            }
+            if (shovelImg != null) {
+                g.drawImage(shovelImg, sx, sy, 36, 36, null);
+            } else {
+                g.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+                g.drawString("⛏️", mouseX - 14, mouseY - 5);
+            }
+            if (isGolden) {
+                g.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+                g.setColor(Color.YELLOW);
+                g.drawString("✨", sx + 22, sy + 10);
+            }
         }
     }
 
@@ -1179,6 +1239,53 @@ public class GameManager {
         return false;
     }
 
+    public Plant getPlantAt(int col, int row) {
+        for(Plant p : plants) {
+            if (p.x / Constants.TILE_SIZE == col && p.y / Constants.TILE_SIZE == row) return p;
+        }
+        return null;
+    }
+
+    public void toggleShovel() {
+        if (state != GameState.PLAYING) return;
+        shovelSelected = !shovelSelected;
+        if (shovelSelected) {
+            selectedPlant = 0;
+            AudioManager.getInstance().playShovelSound();
+        }
+    }
+
+    public void handleRightClick(int mX, int mY) {
+        if (state == GameState.PLAYING) {
+            if (shovelSelected) {
+                shovelSelected = false;
+                return;
+            }
+            if (selectedPlant > 0) {
+                selectedPlant = 0;
+                return;
+            }
+        }
+    }
+
+    public void digPlant(Plant p) {
+        if (p == null) return;
+        boolean isGolden = WalletManager.getInstance().getData().hasGoldenShovel;
+        plants.remove(p);
+
+        if (isGolden) {
+            int refund = p.getRefundAmount(true);
+            sun += refund;
+            WalletManager.getInstance().floatingTexts.add(new WalletManager.FloatingText(
+                "+" + refund + " ☀️ (Xẻng Vàng)", p.x + 8, p.y - 12, new Color(255, 220, 50)));
+            AudioManager.getInstance().playGoldenShovelSound();
+        } else {
+            WalletManager.getInstance().floatingTexts.add(new WalletManager.FloatingText(
+                "Đã đào cây", p.x + 12, p.y - 12, Color.LIGHT_GRAY));
+            AudioManager.getInstance().playShovelSound();
+        }
+    }
+
     public void handleClick(int mX, int mY) {
         if (state == GameState.MENU) {
             if (btnPlay.contains(mX, mY)) {
@@ -1269,6 +1376,10 @@ public class GameManager {
                 activateChocolate();
                 return;
             }
+            if (btnShovel.contains(mX, mY)) {
+                toggleShovel();
+                return;
+            }
             if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail && petSnail.getBounds().contains(mX, mY)) {
                 activateChocolate();
                 return;
@@ -1295,9 +1406,21 @@ public class GameManager {
                 if (c.rect.contains(mX, mY)) {
                     if (!needsCardScroll || (mX >= cardViewX && mX <= cardViewX + cardViewW)) {
                         selectedPlant = c.id;
+                        shovelSelected = false;
                         return;
                     }
                 }
+            }
+
+            if (shovelSelected) {
+                int col = mX / Constants.TILE_SIZE;
+                int row = mY / Constants.TILE_SIZE;
+                Plant target = getPlantAt(col, row);
+                if (target != null) {
+                    digPlant(target);
+                }
+                shovelSelected = false;
+                return;
             }
 
             if (selectedPlant > 0) {
@@ -1621,6 +1744,143 @@ public class GameManager {
             g2.setColor(new Color(40, 24, 12, 240));
             g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(new Color(255, 195, 90));
+            g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(Color.WHITE);
+            g2.drawString(tip, tipX + 8, tipY);
+        }
+
+        g2.dispose();
+    }
+
+    private void drawShovelButton(Graphics2D g, Rectangle r, int mX, int mY) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        boolean hover = r.contains(mX, mY);
+
+        WalletManager wm = WalletManager.getInstance();
+        boolean isGolden = wm.getData().hasGoldenShovel;
+        boolean active = shovelSelected;
+
+        // Bóng đổ
+        g2.setColor(new Color(0, 0, 0, 110));
+        g2.fillRoundRect(r.x + 2, r.y + 2, r.width, r.height, 10, 10);
+
+        // Nền nút
+        Color topC, botC;
+        if (isGolden) {
+            if (active) {
+                float pulse = (float) Math.sin(System.currentTimeMillis() * 0.015);
+                topC = new Color(190 + (int)(35 * pulse), 140, 20);
+                botC = new Color(130 + (int)(30 * pulse), 85, 10);
+            } else if (hover) {
+                topC = new Color(165, 120, 30);
+                botC = new Color(110, 75, 15);
+            } else {
+                topC = new Color(125, 85, 20);
+                botC = new Color(80, 50, 10);
+            }
+        } else {
+            if (active) {
+                topC = new Color(90, 85, 80);
+                botC = new Color(60, 55, 50);
+            } else if (hover) {
+                topC = new Color(75, 70, 65);
+                botC = new Color(50, 45, 40);
+            } else {
+                topC = new Color(55, 50, 45);
+                botC = new Color(35, 30, 25);
+            }
+        }
+
+        GradientPaint bg = new GradientPaint(r.x, r.y, topC, r.x, r.y + r.height, botC);
+        g2.setPaint(bg);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Viền nút
+        if (active) {
+            float pulse = (float) Math.sin(System.currentTimeMillis() * 0.018);
+            int alpha = Math.min(255, (int)(180 + 75 * pulse));
+            g2.setColor(isGolden ? new Color(255, 240, 120, alpha) : new Color(255, 255, 255, alpha));
+            g2.setStroke(new BasicStroke(2.6f));
+        } else {
+            g2.setColor(isGolden ? (hover ? new Color(255, 225, 100) : new Color(215, 165, 60)) :
+                                   (hover ? new Color(200, 190, 180) : new Color(130, 120, 110)));
+            g2.setStroke(new BasicStroke(hover ? 2.0f : 1.5f));
+        }
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Vẽ xẻng
+        if (shovelImg != null) {
+            int sw = 36, sh = 36;
+            int sx = r.x + (r.width - sw) / 2;
+            int sy = r.y + 4;
+            g2.drawImage(shovelImg, sx, sy, sw, sh, null);
+            if (isGolden) {
+                g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 12));
+                g2.setColor(Color.YELLOW);
+                g2.drawString("✨", sx + 22, sy + 10);
+            }
+        } else {
+            g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+            g2.drawString("⛏️", r.x + 13, r.y + 32);
+        }
+
+        // Badge phím tắt [S] ở góc trên bên trái
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
+        g2.setColor(isGolden ? new Color(255, 235, 150) : Color.LIGHT_GRAY);
+        g2.setFont(new Font("Arial", Font.BOLD, 10));
+        g2.drawString("S", r.x + 8, r.y + 13);
+
+        // Badge hiển thị ở góc dưới bên phải
+        if (isGolden) {
+            String badge = "50% ☀️";
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
+            int tw = g2.getFontMetrics().stringWidth(badge);
+            int bw = tw + 6;
+            int bh = 13;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(0, 0, 0, 210));
+            g2.fillRoundRect(bx, by, bw, bh, 5, 5);
+            g2.setColor(new Color(255, 215, 0));
+            g2.drawRoundRect(bx, by, bw, bh, 5, 5);
+            g2.setColor(new Color(255, 235, 100));
+            g2.drawString(badge, bx + 3, by + 10);
+        } else {
+            String badge = "0% ☀️";
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
+            int tw = g2.getFontMetrics().stringWidth(badge);
+            int bw = tw + 6;
+            int bh = 13;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(40, 40, 40, 210));
+            g2.fillRoundRect(bx, by, bw, bh, 4, 4);
+            g2.setColor(Color.LIGHT_GRAY);
+            g2.drawString(badge, bx + 3, by + 10);
+        }
+
+        // Tooltip hướng dẫn khi hover
+        if (hover) {
+            String tip;
+            if (isGolden) {
+                tip = active ? "Xẻng Vàng [S]: Đang cầm! Click vào cây để đào và nhận lại 50% Mặt trời"
+                             : "Xẻng Vàng [S]: Đào thu hồi cây và nhận lại 50% Mặt trời ☀️";
+            } else {
+                tip = active ? "Xẻng Thường [S]: Đang cầm! Click vào cây để đào bỏ"
+                             : "Xẻng Đào [S]: Đào bỏ cây trồng (Vào Shop mua Xẻng Vàng để được hoàn 50% Mặt trời)";
+            }
+            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
+            int tipX = Math.max(10, r.x + (r.width - tipW) / 2);
+            int tipY = r.y + r.height + 22;
+
+            g2.setColor(new Color(25, 20, 15, 240));
+            g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(isGolden ? new Color(255, 215, 80) : new Color(180, 180, 180));
             g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(Color.WHITE);
             g2.drawString(tip, tipX + 8, tipY);

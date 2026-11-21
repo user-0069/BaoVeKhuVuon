@@ -141,4 +141,21 @@ public abstract class Plant {
     public void takeDamage(int amount) { health -= amount; }
     public boolean isDead() { return health <= 0; }
     public Rectangle getBounds() { return new Rectangle(x, y, Constants.TILE_SIZE, Constants.TILE_SIZE); }
+
+    public int getCost() {
+        if (this instanceof Sunflower) return Constants.COST_SUNFLOWER;
+        if (this instanceof Peashooter) return Constants.COST_PEASHOOTER;
+        if (this instanceof SniperPlant) return Constants.COST_SNIPER;
+        if (this instanceof WallNut) return Constants.COST_WALLNUT;
+        if (this instanceof SnowPea) return Constants.COST_SNOWPEA;
+        if (this instanceof CherryBomb) return Constants.COST_CHERRYBOMB;
+        if (this instanceof Chomper) return Constants.COST_CHOMPER;
+        if (this instanceof Marigold) return Constants.COST_MARIGOLD;
+        return 100;
+    }
+
+    public int getRefundAmount(boolean isGoldenShovel) {
+        if (!isGoldenShovel) return 0;
+        return getCost() / 2;
+    }
 }
