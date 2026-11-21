@@ -54,23 +54,24 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
     
     @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_F) {
+        int code = e.getKeyCode();
+        if (code == KeyEvent.VK_1 || code == KeyEvent.VK_NUMPAD1 || code == KeyEvent.VK_F) {
             gm.activateIceShroom();
             return;
         }
-        if (e.getKeyCode() == KeyEvent.VK_C) {
+        if (code == KeyEvent.VK_2 || code == KeyEvent.VK_NUMPAD2 || code == KeyEvent.VK_C) {
             gm.activateChocolate();
             return;
         }
-        if (e.getKeyCode() == KeyEvent.VK_S) {
+        if (code == KeyEvent.VK_3 || code == KeyEvent.VK_NUMPAD3 || code == KeyEvent.VK_S) {
             gm.toggleShovel();
             return;
         }
-        if (e.getKeyCode() == KeyEvent.VK_M) {
+        if (code == KeyEvent.VK_4 || code == KeyEvent.VK_NUMPAD4 || code == KeyEvent.VK_M) {
             gm.activateLawnMowerItem();
             return;
         }
-        gm.handleKeyPress(e.getKeyCode());
+        gm.handleKeyPress(code);
     }
     
     @Override

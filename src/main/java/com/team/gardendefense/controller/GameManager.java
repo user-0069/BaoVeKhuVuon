@@ -946,25 +946,28 @@ public class GameManager {
             g.drawString(lvlText, menuX + (menuW - ltw) / 2, 60);
         }
 
-        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [F], Kẹo Chocolate [C], Xẻng Đào [S], Xe Cắt Cỏ [M]
+        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [1], Kẹo Chocolate [2], Xẻng Đào [3], Xe Cắt Cỏ [4]
         int itemW = 50;
         int itemH = 54;
         int itemY = 12;
         int gap = 6;
 
-        int iceX = bankX - itemW - 10;
+        int totalHotbarW = itemW * 4 + gap * 3;
+        int startHotbarX = bankX - totalHotbarW - 10;
+
+        int iceX = startHotbarX;
         btnIceShroom.setBounds(iceX, itemY, itemW, itemH);
         drawIceShroomButton(g, btnIceShroom, mouseX, mouseY);
 
-        int chocX = iceX - itemW - gap;
+        int chocX = iceX + itemW + gap;
         btnChocolate.setBounds(chocX, itemY, itemW, itemH);
         drawChocolateButton(g, btnChocolate, mouseX, mouseY);
 
-        int shovelX = chocX - itemW - gap;
+        int shovelX = chocX + itemW + gap;
         btnShovel.setBounds(shovelX, itemY, itemW, itemH);
         drawShovelButton(g, btnShovel, mouseX, mouseY);
 
-        int mowerX = shovelX - itemW - gap;
+        int mowerX = shovelX + itemW + gap;
         btnLawnMower.setBounds(mowerX, itemY, itemW, itemH);
         drawLawnMowerButton(g, btnLawnMower, mouseX, mouseY);
 
@@ -974,7 +977,7 @@ public class GameManager {
         int cardGap = 4;
         int cardY = 6;
         int cardAreaX = 110;
-        int rightBoundary = mowerX - 10;
+        int rightBoundary = startHotbarX - 10;
         int cardAreaW = Math.max(100, rightBoundary - cardAreaX);
         int totalCardsW = uiCards.isEmpty() ? 0 : (uiCards.size() * cardW + (uiCards.size() - 1) * cardGap);
 
@@ -1715,12 +1718,12 @@ public class GameManager {
         g2.setColor(iceShroomDuration > 0 ? Color.WHITE : (count > 0 ? new Color(200, 240, 255) : new Color(130, 160, 185)));
         g2.drawString("❄️", r.x + (r.width - 26) / 2, r.y + 35);
 
-        // Badge phím tắt [F] ở góc trên bên trái
+        // Badge phím tắt [1] ở góc trên bên trái
         g2.setColor(new Color(0, 0, 0, 180));
         g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
         g2.setColor(new Color(200, 230, 255));
         g2.setFont(new Font("Arial", Font.BOLD, 10));
-        g2.drawString("F", r.x + 8, r.y + 13);
+        g2.drawString("1", r.x + 8, r.y + 13);
 
         // Badge hiển thị số lượng xN ở góc dưới bên phải
         if (count > 0) {
@@ -1755,7 +1758,7 @@ public class GameManager {
 
         // Tooltip hướng dẫn khi rê chuột vào nút
         if (hover) {
-            String tip = "Bùa Đóng Băng [Phím F]: Đóng băng & làm chậm toàn sân 5s (" + count + " còn lại)";
+            String tip = "Bùa Đóng Băng [Phím 1]: Đóng băng & làm chậm toàn sân 5s (" + count + " còn lại)";
             g2.setFont(new Font("Arial", Font.BOLD, 12));
             int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
             int tipX = Math.max(10, r.x + (r.width - tipW) / 2);
@@ -1810,12 +1813,12 @@ public class GameManager {
         g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 26));
         g2.drawString("🍫", r.x + (r.width - 26) / 2, r.y + 35);
 
-        // Badge phím tắt [C] ở góc trên bên trái
+        // Badge phím tắt [2] ở góc trên bên trái
         g2.setColor(new Color(0, 0, 0, 180));
         g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
         g2.setColor(new Color(255, 225, 160));
         g2.setFont(new Font("Arial", Font.BOLD, 10));
-        g2.drawString("C", r.x + 8, r.y + 13);
+        g2.drawString("2", r.x + 8, r.y + 13);
 
         // Badge hiển thị ở góc dưới bên phải
         if (isPetBoosted) {
@@ -1868,11 +1871,11 @@ public class GameManager {
         if (hover) {
             String tip;
             if (!hasPet) {
-                tip = "Kẹo Chocolate [Phím C]: Mua Pet Ốc Sên trước để sử dụng!";
+                tip = "Kẹo Chocolate [Phím 2]: Mua Pet Ốc Sên trước để sử dụng!";
             } else if (isPetBoosted) {
                 tip = "Pet đang tăng tốc 250%! Còn " + petSnail.getRemainingSeconds() + "s (Bấm để cộng dồn)";
             } else {
-                tip = "Kẹo Chocolate [Phím C]: Cho Pet ăn tăng 250% tốc độ bò trong 3 phút (" + count + " còn lại)";
+                tip = "Kẹo Chocolate [Phím 2]: Cho Pet ăn tăng 250% tốc độ bò trong 3 phút (" + count + " còn lại)";
             }
             g2.setFont(new Font("Arial", Font.BOLD, 12));
             int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
@@ -1963,12 +1966,12 @@ public class GameManager {
             g2.drawString("⛏️", r.x + 13, r.y + 32);
         }
 
-        // Badge phím tắt [S] ở góc trên bên trái
+        // Badge phím tắt [3] ở góc trên bên trái
         g2.setColor(new Color(0, 0, 0, 180));
         g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
         g2.setColor(isGolden ? new Color(255, 235, 150) : Color.LIGHT_GRAY);
         g2.setFont(new Font("Arial", Font.BOLD, 10));
-        g2.drawString("S", r.x + 8, r.y + 13);
+        g2.drawString("3", r.x + 8, r.y + 13);
 
         // Badge hiển thị ở góc dưới bên phải
         if (isGolden) {
@@ -2005,11 +2008,11 @@ public class GameManager {
         if (hover) {
             String tip;
             if (isGolden) {
-                tip = active ? "Xẻng Vàng [S]: Đang cầm! Click vào cây để đào và nhận lại 50% Mặt trời"
-                             : "Xẻng Vàng [S]: Đào thu hồi cây và nhận lại 50% Mặt trời ☀️";
+                tip = active ? "Xẻng Vàng [Phím 3]: Đang cầm! Click vào cây để đào và nhận lại 50% Mặt trời"
+                             : "Xẻng Vàng [Phím 3]: Đào thu hồi cây và nhận lại 50% Mặt trời ☀️";
             } else {
-                tip = active ? "Xẻng Thường [S]: Đang cầm! Click vào cây để đào bỏ"
-                             : "Xẻng Đào [S]: Đào bỏ cây trồng (Vào Shop mua Xẻng Vàng để được hoàn 50% Mặt trời)";
+                tip = active ? "Xẻng Thường [Phím 3]: Đang cầm! Click vào cây để đào bỏ"
+                             : "Xẻng Đào [Phím 3]: Đào bỏ cây trồng (Vào Shop mua Xẻng Vàng để được hoàn 50% Mặt trời)";
             }
             g2.setFont(new Font("Arial", Font.BOLD, 12));
             int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
@@ -2086,12 +2089,12 @@ public class GameManager {
             g2.drawString("🚜", r.x + (r.width - 24) / 2, r.y + 34);
         }
 
-        // Badge phím tắt [M] ở góc trên bên trái
+        // Badge phím tắt [4] ở góc trên bên trái
         g2.setColor(new Color(0, 0, 0, 180));
         g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
         g2.setColor(new Color(255, 225, 140));
         g2.setFont(new Font("Arial", Font.BOLD, 10));
-        g2.drawString("M", r.x + 6, r.y + 13);
+        g2.drawString("4", r.x + 8, r.y + 13);
 
         // Badge hiển thị ở góc dưới bên phải
         if (active) {
@@ -2141,8 +2144,8 @@ public class GameManager {
 
         // Tooltip hướng dẫn khi hover
         if (hover) {
-            String tip = active ? "Xe Cắt Cỏ [Phím M]: Click 1 hàng ngang để phóng xe (Chuột phải để hủy)!"
-                                : "Xe Cắt Cỏ [Phím M]: Phóng xe càn quét toàn bộ 1 hàng ngang từ phải qua trái (" + count + " còn lại)";
+            String tip = active ? "Xe Cắt Cỏ [Phím 4]: Click 1 hàng ngang để phóng xe (Chuột phải để hủy)!"
+                                : "Xe Cắt Cỏ [Phím 4]: Phóng xe càn quét toàn bộ 1 hàng ngang từ phải qua trái (" + count + " còn lại)";
             g2.setFont(new Font("Arial", Font.BOLD, 12));
             int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
             int tipX = Math.max(10, r.x + (r.width - tipW) / 2);

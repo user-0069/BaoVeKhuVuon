@@ -352,6 +352,27 @@ Theo yêu cầu tùy biến riêng: *"Dùng thì xe sẽ chạy và tiêu diệt
     5. **Xẻng Vàng (`shovel`):** Đào thu hồi cây hoàn trả 50% số Mặt trời (phím `S`).
   - **Tái cấu trúc bố cục Cửa Hàng (Centered 2-Row Grid):** Giao diện 5 thẻ được căn giữa trang trọng và cân đối trên màn hình (Hàng 1 gồm 3 thẻ, Hàng 2 gồm 2 thẻ), thẻ to rõ ràng với đầy đủ nút bấm, trạng thái sở hữu và mức giá.
 
+## Điều chỉnh phím tắt vật phẩm thành 1, 2, 3, 4
+
+Nhằm tối ưu hóa trải nghiệm thao tác nhanh gọn trong trận chiến, toàn bộ các phím tắt của vật phẩm Cửa Hàng đã được chuẩn hóa theo hàng phím số **1, 2, 3, 4**:
+
+### 1. Ánh xạ phím tắt chuẩn hóa
+- **Phím `1` (hoặc Numpad `1`):** **Bùa Đóng Băng (`iceshroom`)** - Kích hoạt đóng băng cứng và làm chậm toàn sân 5 giây.
+- **Phím `2` (hoặc Numpad `2`):** **Kẹo Chocolate (`chocolate`)** - Cho Pet Ốc Sên ăn tăng 250% tốc độ bò trong 3 phút.
+- **Phím `3` (hoặc Numpad `3`):** **Xẻng Vàng / Xẻng Đào (`shovel`)** - Bật/cất xẻng trên tay để đào cây và hoàn trả 50% Mặt trời.
+- **Phím `4` (hoặc Numpad `4`):** **Xe Cắt Cỏ (`lawnmower`)** - Bật/tắt chế độ chọn 1 hàng ngang để phóng xe càn quét.
+*(Ghi chú: Các phím phụ cũ F, C, S, M vẫn được duy trì ngầm để đảm bảo tương thích ngược 100%)*
+
+### 2. Đồng bộ giao diện thanh Header (Hotbar Layout)
+- **Sắp xếp theo thứ tự trực quan 1 -> 4 từ trái qua phải:**
+  - `[1] ❄ Bùa Đóng Băng` (X = 564)
+  - `[2] 🍫 Kẹo Chocolate` (X = 620)
+  - `[3] ⛏ Xẻng Vàng` (X = 676)
+  - `[4] 🚜 Xe Cắt Cỏ` (X = 732)
+  - `[ $ Ví Tiền Dave ]` (Góc phải)
+- **Huy hiệu phím (Badge):** Góc trên bên trái mỗi nút hiển thị rõ ràng số phím tương ứng: `1`, `2`, `3`, `4`.
+- **Tooltip hướng dẫn & Bong bóng tương tác:** Cập nhật đồng bộ các chỉ dẫn `[Phím 1]`, `[Phím 2]`, `[Phím 3]`, `[Phím 4]` khi rê chuột vào các nút và khi rê chuột vào Pet Ốc Sên.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

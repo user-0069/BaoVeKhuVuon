@@ -220,7 +220,7 @@ public class PetSnail implements IAutoCollector {
             g2.setStroke(new java.awt.BasicStroke(1.5f));
             g2.drawRoundRect(drawX - 2, drawY - 2, width + 4, height + 4, 8, 8);
 
-            String tip = "🍫 Cho ăn Kẹo [C]";
+            String tip = "🍫 Cho ăn Kẹo [Phím 2]";
             g2.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 11));
             int tw = g2.getFontMetrics().stringWidth(tip);
             int bx = drawX + (width - tw) / 2;
