@@ -47,7 +47,7 @@ public class ShopScreen {
 
         items.add(new ShopItem("snail", "Pet Ốc Sên Stinky", "Tự động bò nhặt xu và mặt trời rơi trên sân", ShopManager.PRICE_PET_SNAIL, "🐌"));
         items.add(new ShopItem("chocolate", "Kẹo Chocolate", "Tăng 250% tốc độ bò của Pet trong 3 phút", ShopManager.PRICE_CHOCOLATE, "🍫"));
-        items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Dự Phòng", "Hồi phục 1 xe cắt cỏ ở hàng bị Zombie phá", ShopManager.PRICE_LAWN_MOWER, "🚜"));
+        items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Càn Quét", "Kích hoạt phóng xe cắt cỏ càn quét toàn bộ 1 hàng ngang (3.5s)", ShopManager.PRICE_LAWN_MOWER, "🚜"));
         items.add(new ShopItem("plantfood", "Phân Bón Siêu Cấp", "Năng lượng bộc phát kỹ năng tối thượng cho cây", ShopManager.PRICE_PLANT_FOOD, "🧪"));
         items.add(new ShopItem("iceshroom", "Bùa Đóng Băng", "Đóng băng và làm chậm toàn sân đấu trong 5 giây", ShopManager.PRICE_ICE_SHROOM, "❄️"));
         items.add(new ShopItem("shovel", "Xẻng Vàng", "Đào thu hồi cây được hoàn trả 50% số Mặt trời", ShopManager.PRICE_GOLDEN_SHOVEL, "⛏️"));

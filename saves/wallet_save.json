@@ -1,8 +1,8 @@
 {
-  "coins": 13270,
+  "coins": 11860,
   "hasPetSnail": true,
   "chocolateCount": 4,
-  "hasGoldenShovel": false,
+  "hasGoldenShovel": true,
   "iceShroomBlastCount": 2,
   "lawnMowerBackupCount": 1,
   "plantFoodCount": 2,

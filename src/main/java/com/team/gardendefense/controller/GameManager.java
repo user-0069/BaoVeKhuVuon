@@ -24,6 +24,7 @@ import com.team.gardendefense.model.entity.projectile.*;
 import com.team.gardendefense.model.entity.coin.Coin;
 import com.team.gardendefense.model.entity.coin.CoinType;
 import com.team.gardendefense.model.entity.pet.PetSnail;
+import com.team.gardendefense.model.entity.mower.ActiveLawnMower;
 import com.team.gardendefense.system.AudioManager;
 import com.team.gardendefense.system.LootTable;
 import com.team.gardendefense.system.WalletManager;
@@ -176,6 +177,9 @@ public class GameManager {
     public boolean shovelSelected = false;
     public Image shovelImg;
     public Image shovelBankImg;
+    public Rectangle btnLawnMower = new Rectangle(0, 0, 50, 52);
+    public boolean mowerTargeting = false;
+    public List<ActiveLawnMower> activeMowers = new CopyOnWriteArrayList<>();
     public int iceShroomDuration = 0; // Đếm lùi 300 ticks (5 giây)
     public float iceShroomWaveRadius = 0;
 
@@ -337,6 +341,8 @@ public class GameManager {
         plants.clear(); zombies.clear(); projectiles.clear(); coins.clear();
         selectedPlant = 0; passiveSunTimer = 0;
         shovelSelected = false;
+        mowerTargeting = false;
+        activeMowers.clear();
         iceShroomDuration = 0; iceShroomWaveRadius = 0;
         
         if (WalletManager.getInstance().getData().hasPetSnail) {
@@ -386,6 +392,14 @@ public class GameManager {
                 if (!z.isFrozen()) {
                     z.applyFreeze(iceShroomDuration, iceShroomDuration > 180);
                 }
+            }
+        }
+
+        // Cập nhật các Xe Cắt Cỏ đang càn quét
+        for (ActiveLawnMower m : activeMowers) {
+            m.update(this);
+            if (m.finished) {
+                activeMowers.remove(m);
             }
         }
 
@@ -820,6 +834,54 @@ public class GameManager {
             c.draw(g);
         }
 
+        // Vẽ toàn bộ các xe cắt cỏ đang chạy càn quét trên sân
+        for (ActiveLawnMower m : activeMowers) {
+            m.draw(g);
+        }
+
+        // Hiệu ứng tia ngắm chọn hàng ngang phóng Xe Cắt Cỏ
+        if (mowerTargeting && hoverRow >= 0 && hoverRow < numRows) {
+            int rowY = hoverRow * Constants.TILE_SIZE;
+            int lawnW = numCols * Constants.TILE_SIZE;
+            Graphics2D gMower = (Graphics2D) g.create();
+            gMower.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            float pulse = (float) Math.sin(System.currentTimeMillis() * 0.015);
+            int alpha = (int) (65 + 30 * pulse);
+            gMower.setColor(new Color(255, 60, 40, alpha));
+            gMower.fillRect(0, rowY, lawnW, Constants.TILE_SIZE);
+
+            gMower.setColor(new Color(255, 220, 60, 200));
+            gMower.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{12, 8}, (float)(System.currentTimeMillis() * 0.04 % 20)));
+            gMower.drawLine(0, rowY + 2, lawnW, rowY + 2);
+            gMower.drawLine(0, rowY + Constants.TILE_SIZE - 2, lawnW, rowY + Constants.TILE_SIZE - 2);
+
+            // Mũi tên cảnh báo hướng chạy từ phải qua trái ◀ ◀ ◀
+            gMower.setFont(new Font("Arial", Font.BOLD, 18));
+            gMower.setColor(new Color(255, 240, 100, 220));
+            int arrowStep = 80;
+            int arrowOffset = (int) ((System.currentTimeMillis() / 25) % arrowStep);
+            for (int ax = lawnW - arrowOffset; ax > 0; ax -= arrowStep) {
+                gMower.drawString("◀ 🚜", ax, rowY + (Constants.TILE_SIZE + 6) / 2);
+            }
+
+            // Nhãn chỉ dẫn ở cạnh phải
+            String rowTag = "🚜 PHÓNG XE CẮT CỎ HÀNG " + (hoverRow + 1) + " (3.5s) ◀";
+            gMower.setFont(new Font("Arial", Font.BOLD, 14));
+            int rtw = gMower.getFontMetrics().stringWidth(rowTag);
+            int rtx = lawnW - rtw - 20;
+            int rty = rowY + (Constants.TILE_SIZE - 12) / 2;
+
+            gMower.setColor(new Color(40, 10, 10, 230));
+            gMower.fillRoundRect(rtx - 8, rty - 14, rtw + 16, 24, 8, 8);
+            gMower.setColor(new Color(255, 215, 0));
+            gMower.drawRoundRect(rtx - 8, rty - 14, rtw + 16, 24, 8, 8);
+            gMower.setColor(Color.WHITE);
+            gMower.drawString(rowTag, rtx, rty + 4);
+
+            gMower.dispose();
+        }
+
         // UI Header
         int sw = getScreenWidth();
         int sh = getScreenHeight();
@@ -882,29 +944,35 @@ public class GameManager {
             g.drawString(lvlText, menuX + (menuW - ltw) / 2, 60);
         }
 
-        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [Phím F], Kẹo Chocolate [Phím C], Xẻng Đào [Phím S]
-        int itemW = 52;
+        // Các nút vật phẩm hỗ trợ (Items hotbar): Bùa Đóng Băng [F], Kẹo Chocolate [C], Xẻng Đào [S], Xe Cắt Cỏ [M]
+        int itemW = 50;
         int itemH = 54;
         int itemY = 12;
+        int gap = 6;
+
         int iceX = bankX - itemW - 10;
         btnIceShroom.setBounds(iceX, itemY, itemW, itemH);
         drawIceShroomButton(g, btnIceShroom, mouseX, mouseY);
 
-        int chocX = iceX - itemW - 8;
+        int chocX = iceX - itemW - gap;
         btnChocolate.setBounds(chocX, itemY, itemW, itemH);
         drawChocolateButton(g, btnChocolate, mouseX, mouseY);
 
-        int shovelX = chocX - itemW - 8;
+        int shovelX = chocX - itemW - gap;
         btnShovel.setBounds(shovelX, itemY, itemW, itemH);
         drawShovelButton(g, btnShovel, mouseX, mouseY);
 
-        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Xẻng/Bùa/Kẹo/Bank/Shop/Screen
+        int mowerX = shovelX - itemW - gap;
+        btnLawnMower.setBounds(mowerX, itemY, itemW, itemH);
+        drawLawnMowerButton(g, btnLawnMower, mouseX, mouseY);
+
+        // Thanh thẻ bài thực vật: Giới hạn vùng vẽ nghiêm ngặt để không bao giờ tràn ra Xe/Xẻng/Bùa/Kẹo/Bank/Shop/Screen
         int cardW = 54;
         int cardH = 68;
         int cardGap = 4;
         int cardY = 6;
         int cardAreaX = 110;
-        int rightBoundary = shovelX - 10;
+        int rightBoundary = mowerX - 10;
         int cardAreaW = Math.max(100, rightBoundary - cardAreaX);
         int totalCardsW = uiCards.isEmpty() ? 0 : (uiCards.size() * cardW + (uiCards.size() - 1) * cardGap);
 
@@ -1257,6 +1325,10 @@ public class GameManager {
 
     public void handleRightClick(int mX, int mY) {
         if (state == GameState.PLAYING) {
+            if (mowerTargeting) {
+                mowerTargeting = false;
+                return;
+            }
             if (shovelSelected) {
                 shovelSelected = false;
                 return;
@@ -1380,6 +1452,10 @@ public class GameManager {
                 toggleShovel();
                 return;
             }
+            if (btnLawnMower.contains(mX, mY)) {
+                activateLawnMowerItem();
+                return;
+            }
             if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail && petSnail.getBounds().contains(mX, mY)) {
                 activateChocolate();
                 return;
@@ -1407,9 +1483,19 @@ public class GameManager {
                     if (!needsCardScroll || (mX >= cardViewX && mX <= cardViewX + cardViewW)) {
                         selectedPlant = c.id;
                         shovelSelected = false;
+                        mowerTargeting = false;
                         return;
                     }
                 }
+            }
+
+            if (mowerTargeting) {
+                int row = mY / Constants.TILE_SIZE;
+                if (row >= 0 && row < getRows()) {
+                    launchLawnMower(row);
+                }
+                mowerTargeting = false;
+                return;
             }
 
             if (shovelSelected) {
@@ -1546,6 +1632,46 @@ public class GameManager {
             "⚡ PET TĂNG TỐC 250%! (3 PHÚT) 🍫", 
             spawnX, spawnY, 
             new Color(255, 215, 0)));
+    }
+
+    public void activateLawnMowerItem() {
+        if (state != GameState.PLAYING) return;
+        WalletManager wm = WalletManager.getInstance();
+
+        if (wm.getData().lawnMowerBackupCount <= 0) {
+            wm.floatingTexts.add(new WalletManager.FloatingText(
+                "Hết Xe Cắt Cỏ! Mở Shop 🛒 để mua thêm", mouseX, mouseY, new Color(255, 140, 0)));
+            AudioManager.getInstance().playBuySound();
+            openShop(GameState.PLAYING);
+            return;
+        }
+
+        mowerTargeting = !mowerTargeting;
+        if (mowerTargeting) {
+            selectedPlant = 0;
+            shovelSelected = false;
+            AudioManager.getInstance().playMowerRevSound();
+            wm.floatingTexts.add(new WalletManager.FloatingText(
+                "🚜 CHỌN 1 HÀNG ĐỂ PHÓNG XE! (Chuột phải để hủy)", getScreenWidth() / 2, 100, Color.CYAN));
+        }
+    }
+
+    public void launchLawnMower(int row) {
+        WalletManager wm = WalletManager.getInstance();
+        if (wm.getData().lawnMowerBackupCount <= 0) return;
+
+        wm.getData().lawnMowerBackupCount--;
+        wm.save();
+
+        float startX = getCols() * Constants.TILE_SIZE + 30f;
+        float endX = -90f;
+        activeMowers.add(new ActiveLawnMower(row, startX, endX));
+        AudioManager.getInstance().playMowerLaunchSound();
+
+        int notifyX = (int) (getCols() * Constants.TILE_SIZE * 0.6f);
+        int notifyY = row * Constants.TILE_SIZE + 20;
+        wm.floatingTexts.add(new WalletManager.FloatingText(
+            "🚜 XE CẮT CỎ XUẤT KÍCH! HÀNG " + (row + 1), notifyX, notifyY, new Color(255, 215, 0)));
     }
 
     private void drawIceShroomButton(Graphics2D g, Rectangle r, int mX, int mY) {
@@ -1881,6 +2007,126 @@ public class GameManager {
             g2.setColor(new Color(25, 20, 15, 240));
             g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(isGolden ? new Color(255, 215, 80) : new Color(180, 180, 180));
+            g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(Color.WHITE);
+            g2.drawString(tip, tipX + 8, tipY);
+        }
+
+        g2.dispose();
+    }
+
+    private void drawLawnMowerButton(Graphics2D g, Rectangle r, int mX, int mY) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        boolean hover = r.contains(mX, mY);
+        boolean active = mowerTargeting;
+
+        WalletManager wm = WalletManager.getInstance();
+        int count = wm.getData().lawnMowerBackupCount;
+
+        // Bóng đổ
+        g2.setColor(new Color(0, 0, 0, 110));
+        g2.fillRoundRect(r.x + 2, r.y + 2, r.width, r.height, 10, 10);
+
+        // Nền nút
+        Color topC, botC;
+        if (active) {
+            float pulse = (float) Math.sin(System.currentTimeMillis() * 0.018);
+            topC = new Color(200 + (int)(35 * pulse), 40, 30);
+            botC = new Color(130 + (int)(30 * pulse), 20, 15);
+        } else if (hover) {
+            topC = new Color(165, 45, 35);
+            botC = new Color(110, 25, 20);
+        } else {
+            topC = new Color(125, 35, 25);
+            botC = new Color(80, 20, 15);
+        }
+
+        GradientPaint bg = new GradientPaint(r.x, r.y, topC, r.x, r.y + r.height, botC);
+        g2.setPaint(bg);
+        g2.fillRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Viền nút
+        if (active) {
+            float pulse = (float) Math.sin(System.currentTimeMillis() * 0.02);
+            int alpha = Math.min(255, (int)(180 + 75 * pulse));
+            g2.setColor(new Color(255, 220, 50, alpha));
+            g2.setStroke(new BasicStroke(2.6f));
+        } else {
+            g2.setColor(hover ? new Color(255, 180, 120) : new Color(200, 90, 70));
+            g2.setStroke(new BasicStroke(hover ? 2.0f : 1.5f));
+        }
+        g2.drawRoundRect(r.x, r.y, r.width, r.height, 14, 14);
+
+        // Icon Xe Cắt Cỏ 🚜 ở trung tâm
+        g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+        g2.drawString("🚜", r.x + (r.width - 24) / 2, r.y + 34);
+
+        // Badge phím tắt [M] ở góc trên bên trái
+        g2.setColor(new Color(0, 0, 0, 180));
+        g2.fillRoundRect(r.x + 3, r.y + 3, 16, 13, 4, 4);
+        g2.setColor(new Color(255, 225, 140));
+        g2.setFont(new Font("Arial", Font.BOLD, 10));
+        g2.drawString("M", r.x + 6, r.y + 13);
+
+        // Badge hiển thị ở góc dưới bên phải
+        if (active) {
+            String badge = "TARGET";
+            g2.setFont(new Font("Arial", Font.BOLD, 8));
+            int tw = g2.getFontMetrics().stringWidth(badge);
+            int bw = tw + 6;
+            int bh = 13;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(220, 30, 20, 230));
+            g2.fillRoundRect(bx, by, bw, bh, 5, 5);
+            g2.setColor(new Color(255, 240, 100));
+            g2.drawRoundRect(bx, by, bw, bh, 5, 5);
+            g2.setColor(Color.WHITE);
+            g2.drawString(badge, bx + 3, by + 10);
+        } else if (count > 0) {
+            String countText = "x" + count;
+            g2.setFont(new Font("Arial", Font.BOLD, 11));
+            int tw = g2.getFontMetrics().stringWidth(countText);
+            int bw = Math.max(22, tw + 8);
+            int bh = 14;
+            int bx = r.x + r.width - bw - 3;
+            int by = r.y + r.height - bh - 3;
+
+            g2.setColor(new Color(0, 0, 0, 210));
+            g2.fillRoundRect(bx, by, bw, bh, 6, 6);
+            g2.setColor(new Color(255, 140, 80));
+            g2.drawRoundRect(bx, by, bw, bh, 6, 6);
+            g2.setColor(new Color(255, 225, 50));
+            g2.drawString(countText, bx + (bw - tw) / 2, by + 11);
+        } else {
+            String buyText = "+MUA";
+            g2.setFont(new Font("Arial", Font.BOLD, 9));
+            int tw = g2.getFontMetrics().stringWidth(buyText);
+            int bw = tw + 6;
+            int bh = 13;
+            int bx = r.x + r.width - bw - 2;
+            int by = r.y + r.height - bh - 2;
+
+            g2.setColor(new Color(180, 50, 40, 220));
+            g2.fillRoundRect(bx, by, bw, bh, 4, 4);
+            g2.setColor(Color.WHITE);
+            g2.drawString(buyText, bx + 3, by + 10);
+        }
+
+        // Tooltip hướng dẫn khi hover
+        if (hover) {
+            String tip = active ? "Xe Cắt Cỏ [Phím M]: Click 1 hàng ngang để phóng xe (Chuột phải để hủy)!"
+                                : "Xe Cắt Cỏ [Phím M]: Phóng xe càn quét toàn bộ 1 hàng ngang từ phải qua trái trong 3.5s (" + count + " còn lại)";
+            g2.setFont(new Font("Arial", Font.BOLD, 12));
+            int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
+            int tipX = Math.max(10, r.x + (r.width - tipW) / 2);
+            int tipY = r.y + r.height + 22;
+
+            g2.setColor(new Color(35, 15, 10, 240));
+            g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
+            g2.setColor(new Color(255, 140, 70));
             g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(Color.WHITE);
             g2.drawString(tip, tipX + 8, tipY);

@@ -78,6 +78,118 @@ public class AudioManager {
      * Phát âm thanh đóng băng toàn sân (hiệu ứng tinh thể băng giá ngân vang).
      */
     /**
+     * Phát âm thanh gầm rú khởi động xe cắt cỏ khi chuẩn bị chọn hàng.
+     */
+    public void playMowerRevSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(this::generateMowerRevTone);
+    }
+
+    /**
+     * Phát âm thanh động cơ xe cắt cỏ gầm rú xuất kích càn quét.
+     */
+    public void playMowerLaunchSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(() -> {
+            boolean played = playAudioFile("src/main/resources/assets/sounds/lawnmower.wav");
+            if (!played) {
+                generateMowerLaunchTone();
+            }
+        });
+    }
+
+    /**
+     * Phát âm thanh xe cắt cỏ nghiền nát zombie.
+     */
+    public void playMowerKillSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(this::generateMowerKillTone);
+    }
+
+    private void generateMowerRevTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 260;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            for (int i = 0; i < totalSamples; i++) {
+                double time = i / (double) sampleRate;
+                float progress = (float) i / totalSamples;
+                double freq = 120.0 + 160.0 * progress;
+                double wave = Math.sin(2.0 * Math.PI * freq * time) * 0.6 +
+                              Math.sin(2.0 * Math.PI * (freq * 2.0) * time) * 0.3 +
+                              (Math.random() * 2.0 - 1.0) * 0.15;
+                double decay = Math.min(1.0, progress * 4.0) * (1.0 - progress * 0.3);
+                buffer[i] = (byte) (wave * decay * 110.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void generateMowerLaunchTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 500;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            for (int i = 0; i < totalSamples; i++) {
+                double time = i / (double) sampleRate;
+                double rumble = Math.sin(2.0 * Math.PI * 160.0 * time) * 0.5 +
+                                Math.sin(2.0 * Math.PI * 320.0 * time) * 0.3 +
+                                (Math.random() * 2.0 - 1.0) * 0.25;
+                double pulse = 0.8 + 0.2 * Math.sin(2.0 * Math.PI * 25.0 * time);
+                double decay = Math.exp(-2.5 * (i / (double) totalSamples));
+                buffer[i] = (byte) (rumble * pulse * decay * 115.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void generateMowerKillTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 220;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+
+            for (int i = 0; i < totalSamples; i++) {
+                double time = i / (double) sampleRate;
+                double crunch = (Math.random() * 2.0 - 1.0) * 0.7;
+                double thud = Math.sin(2.0 * Math.PI * 130.0 * time) * 0.4;
+                double decay = Math.exp(-9.0 * (i / (double) totalSamples));
+                buffer[i] = (byte) ((crunch + thud) * decay * 120.0);
+            }
+
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
+    /**
      * Phát âm thanh đào cây bằng Xẻng thường.
      */
     public void playShovelSound() {

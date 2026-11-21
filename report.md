@@ -271,6 +271,43 @@ Theo mô tả trong Cửa hàng: *"Đào thu hồi cây được hoàn trả 50%
   - Khi rê chuột lên một ô có cây trồng: Ô cây sáng viền nổi bật (viền vàng kim nếu có Xẻng Vàng, viền đỏ nếu là xẻng thường) kèm theo nhãn thông tin xem trước số Mặt trời sẽ nhận lại: `"+XX ☀️ Hoàn 50%"`.
   - Click vào cây để đào bỏ, hoặc click vào ô đất trống để cất xẻng an toàn.
 
+## Triển khai công năng vật phẩm Cửa Hàng: Xe Cắt Cỏ (Lawn Mower Row Sweep)
+
+Theo yêu cầu tùy biến riêng: *"Dùng thì xe sẽ chạy và tiêu diệt toàn bộ zombie trên 1 hàng ngang mà người chơi chọn, có hoạt ảnh xe cắt cỏ chạy từ bên phải qua bên trái trong vòng 3.5s"*.
+
+### 1. Cơ chế hoạt động (Gameplay Mechanics)
+- **Kích hoạt ngắm hàng ngang (Row Targeting Mode):**
+  - Người chơi bấm vào nút `[🚜 M]` trên thanh Header hoặc nhấn phím tắt **`M`**.
+  - Con trỏ chuột chuyển sang chế độ chọn hàng. Toàn bộ hàng ngang nơi con trỏ đang rê qua sẽ được quét sáng bằng một chùm tia cảnh báo nguy hiểm (hazard beam) với dải viền cảnh báo sọc chéo vàng-đen và các mũi tên chỉ hướng phóng xe `◀ ◀ ◀ 🚜`.
+  - Nhấp chuột trái vào bất kỳ ô nào trên hàng để xác nhận phóng xe cắt cỏ càn quét hàng đó.
+  - Nhấp chuột phải bất kỳ lúc nào để hủy thao tác ngắm an toàn.
+- **Thời lượng và Hướng chạy:**
+  - **3.5 giây chuẩn xác:** `TOTAL_TICKS = 210` tick ở tốc độ 60 FPS.
+  - **Từ phải qua trái:** Xe xuất phát từ mép phải màn hình (`startX = getScreenWidth() + 30px`) và lao sang mép trái ngoài màn hình (`endX = -90px`) với vận tốc đều đặn `speed = (startX - endX) / 210` (khoảng 5.45 px/tick).
+- **Càn quét và Tiêu diệt triệt để:**
+  - Toàn bộ Zombie trên hàng ngang được chọn (kể cả Zombie thường, Zombie đội xô, Cột giao thông hay Mini-Boss) khi chạm phải xe cắt cỏ đều nhận sát thương cực đại (`99,999 DMG`) và bị nghiền nát ngay lập tức.
+  - Zombie ở các hàng khác hoàn toàn không bị ảnh hưởng.
+  - Sau khi hoàn tất hành trình 3.5 giây hoặc chạy khuất mép trái màn hình, xe cắt cỏ tự động giải phóng bộ nhớ.
+
+### 2. Hoạt ảnh và Hiệu ứng (Animations & Visual Effects)
+- **Hoạt ảnh khung xương Reanim (`LawnMower.reanim`):**
+  - Xe được dựng hình hoạt ảnh reanim chân thực: bánh xe trước/sau cuộn tròn liên tục theo tốc độ di chuyển, thân xe và động cơ rung giật cơ học (`engineBob`), lật mặt quay sang trái chuẩn xác.
+- **Vết cỏ bị san phẳng (Mowed Grass Trail):**
+  - Xe chạy qua đến đâu để lại vệt cỏ bị cắt phẳng lì màu xanh đậm sắc nét kéo dài từ mép phải tới vị trí xe hiện tại.
+- **Hệ thống hạt động lực học (Dynamic Particles):**
+  - Khói xả động cơ xám mù mịt phụt ra từ ống bô phía sau xe.
+  - Mảnh cỏ tươi xanh biếc văng tung tóe từ gầm lưỡi cắt phía trước.
+  - Các mảnh vụn văng tung tóe (đỏ rực, xanh zombie) khi Zombie bị xe cắt cỏ nghiền nát.
+- **Hiệu ứng âm thanh (Audio SFX):**
+  - `playMowerRevSound()`: Tiếng động cơ xe giật nổ gầm rú khi người chơi kích hoạt chọn hàng.
+  - `playMowerLaunchSound()`: Tiếng xe phóng vút đi với động cơ rít lên mạnh mẽ khi xuất phát.
+  - `playMowerKillSound()`: Tiếng va chạm cơ học lưỡi cắt nghiền nát zombie.
+
+### 3. Giao diện và Ví tiền (UI & Wallet)
+- **Nút bấm trên thanh Header:** Nút `[🚜 M]` nằm cạnh nút Xẻng `[⛏️ S]`, Bùa Đóng Băng `[❄ F]`, Kẹo Chocolate `[🍫 C]` và Ví Tiền.
+- **Huy hiệu số lượng:** Hiển thị số lượng xe sở hữu `xN` hoặc nút `+MUA` khi trong kho đã hết.
+- **Lưu trữ dữ liệu:** Trừ 1 xe trong `lawnMowerBackupCount` và lưu an toàn vào `saves/wallet_save.json`.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

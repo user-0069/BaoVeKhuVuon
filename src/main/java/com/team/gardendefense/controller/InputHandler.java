@@ -66,6 +66,10 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
             gm.toggleShovel();
             return;
         }
+        if (e.getKeyCode() == KeyEvent.VK_M) {
+            gm.activateLawnMowerItem();
+            return;
+        }
         gm.handleKeyPress(e.getKeyCode());
     }
     
