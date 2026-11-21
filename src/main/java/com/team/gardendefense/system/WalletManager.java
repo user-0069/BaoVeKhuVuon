@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,7 +40,8 @@ public class WalletManager {
         public int coins = 100; // Tặng sẵn 100 xu khởi đầu trải nghiệm
         public boolean hasPetSnail = false;
         public int chocolateCount = 0;
-        public boolean hasGoldenShovel = false;
+        public int goldenShovelCount = 3; // Dùng theo lượt (tặng 3 lượt xẻng vàng khởi đầu)
+        public boolean hasGoldenShovel = false; // Trường cũ để tương thích dữ liệu
         public int iceShroomBlastCount = 1; // Tặng 1 bùa dùng thử
         public int lawnMowerBackupCount = 1; // Tặng 1 xe dự phòng
         public int plantFoodCount = 2; // Tặng 2 phân bón
@@ -81,7 +83,7 @@ public class WalletManager {
             return life <= 0;
         }
     }
-    public final List<FloatingText> floatingTexts = new ArrayList<>();
+    public final List<FloatingText> floatingTexts = new CopyOnWriteArrayList<>();
 
     private WalletManager() {
         load();
@@ -92,7 +94,7 @@ public class WalletManager {
     }
 
     public synchronized void addCoins(int amount, CoinType type, float uiX, float uiY) {
-        data.coins += amount;
+        data.coins = (int) Math.min(2_000_000_000L, (long) data.coins + amount);
         save();
 
         // Tạo hiệu ứng chữ nổi
@@ -126,13 +128,10 @@ public class WalletManager {
     }
 
     public synchronized void updateFloatingTexts() {
-        for (int i = floatingTexts.size() - 1; i >= 0; i--) {
-            FloatingText ft = floatingTexts.get(i);
+        for (FloatingText ft : floatingTexts) {
             ft.update();
-            if (ft.isDead()) {
-                floatingTexts.remove(i);
-            }
         }
+        floatingTexts.removeIf(FloatingText::isDead);
     }
 
     public synchronized void save() {
@@ -158,6 +157,10 @@ public class WalletManager {
             SaveData loaded = new Gson().fromJson(reader, SaveData.class);
             if (loaded != null) {
                 this.data = loaded;
+                // Di chuyển dữ liệu cũ nếu người chơi trước đó đã sở hữu xẻng vàng
+                if (this.data.hasGoldenShovel && this.data.goldenShovelCount <= 0) {
+                    this.data.goldenShovelCount = 10;
+                }
                 if (!source.equals(SAVE_PATH)) {
                     save();
                 }

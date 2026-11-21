@@ -52,7 +52,7 @@ public class ShopScreen {
         items.add(new ShopItem("chocolate", "Kẹo Chocolate", "Tăng 250% tốc độ bò của Pet trong 3 phút", ShopManager.PRICE_CHOCOLATE, "🍫"));
         items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Càn Quét", "Kích hoạt phóng xe cắt cỏ càn quét toàn bộ 1 hàng ngang", ShopManager.PRICE_LAWN_MOWER, "🚜"));
         items.add(new ShopItem("iceshroom", "Bùa Đóng Băng", "Đóng băng và làm chậm toàn sân đấu trong 5 giây", ShopManager.PRICE_ICE_SHROOM, "❄️"));
-        items.add(new ShopItem("shovel", "Xẻng Vàng", "Đào thu hồi cây được hoàn trả 50% số Mặt trời", ShopManager.PRICE_GOLDEN_SHOVEL, "⛏️"));
+        items.add(new ShopItem("shovel", "Xẻng Vàng", "Đào thu hồi cây được hoàn trả 50% số Mặt trời (dùng theo lượt)", ShopManager.PRICE_GOLDEN_SHOVEL, "⛏️"));
     }
 
     public void update() {
@@ -78,14 +78,21 @@ public class ShopScreen {
         btnBack.setBounds(40, 30, 110, 40);
         drawCustomButton(g, btnBack, "⬅ QUAY LẠI", gm.mouseX, gm.mouseY, new Color(139, 69, 19));
 
-        // Khung ví tiền ở góc phải
+        // Khung ví tiền ở góc phải (co giãn linh hoạt theo số chữ số)
         WalletManager wm = WalletManager.getInstance();
-        int bankX = sw - 230;
+        int coins = wm.getCoins();
+        String coinStr = "$ " + String.format(java.util.Locale.US, "%,d", coins);
+        Font coinFont = new Font("Arial", Font.BOLD, 22);
+        FontMetrics fm = g.getFontMetrics(coinFont);
+        int textW = fm.stringWidth(coinStr);
+        int bankW = Math.max(190, textW + 68);
+        int bankX = sw - bankW - 24;
         int bankY = 25;
+
         g.setColor(new Color(0, 0, 0, 180));
-        g.fillRoundRect(bankX, bankY, 190, 48, 12, 12);
+        g.fillRoundRect(bankX, bankY, bankW, 48, 12, 12);
         g.setColor(new Color(255, 215, 0));
-        g.drawRoundRect(bankX, bankY, 190, 48, 12, 12);
+        g.drawRoundRect(bankX, bankY, bankW, 48, 12, 12);
 
         if (coinBankImg != null) {
             g.drawImage(coinBankImg, bankX + 8, bankY + 4, 40, 40, null);
@@ -93,8 +100,8 @@ public class ShopScreen {
             g.fillOval(bankX + 12, bankY + 10, 28, 28);
         }
         g.setColor(new Color(255, 220, 50));
-        g.setFont(new Font("Arial", Font.BOLD, 22));
-        g.drawString("$ " + wm.getCoins(), bankX + 58, bankY + 32);
+        g.setFont(coinFont);
+        g.drawString(coinStr, bankX + 54, bankY + 32);
 
         // Thông báo
         if (noticeTimer > 0) {
@@ -164,7 +171,7 @@ public class ShopScreen {
             } else if (item.id.equals("iceshroom")) {
                 status = "Đang có: x" + data.iceShroomBlastCount;
             } else if (item.id.equals("shovel")) {
-                if (data.hasGoldenShovel) { status = "ĐÃ SỞ HỮU"; isOwned = true; }
+                status = "Đang có: x" + data.goldenShovelCount;
             }
 
             if (!status.isEmpty()) {
@@ -215,6 +222,9 @@ public class ShopScreen {
                 switch (item.id) {
                     case "snail":
                         success = sm.buyPetSnail();
+                        if (success && gm.petSnail == null) {
+                            gm.petSnail = new com.team.gardendefense.model.entity.pet.PetSnail(50, gm.getMapHeight() - 60);
+                        }
                         break;
                     case "chocolate":
                         success = sm.buyChocolate();
@@ -231,9 +241,13 @@ public class ShopScreen {
                 }
 
                 if (success) {
-                    showNotice("Đã mua thành công " + item.name + "!", Color.GREEN);
+                    String notice = "Đã mua thành công " + item.name + "!";
+                    if (item.id.equals("shovel")) {
+                        notice += " (Hiện có: x" + wm.getData().goldenShovelCount + ")";
+                    }
+                    showNotice(notice, Color.GREEN);
                 } else {
-                    showNotice("Vật phẩm này bạn đã sở hữu rồi!", Color.YELLOW);
+                    showNotice("Không thể mua vật phẩm!", Color.YELLOW);
                 }
                 return;
             }

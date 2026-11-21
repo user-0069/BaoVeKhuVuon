@@ -373,6 +373,93 @@ Nhằm tối ưu hóa trải nghiệm thao tác nhanh gọn trong trận chiến
 - **Huy hiệu phím (Badge):** Góc trên bên trái mỗi nút hiển thị rõ ràng số phím tương ứng: `1`, `2`, `3`, `4`.
 - **Tooltip hướng dẫn & Bong bóng tương tác:** Cập nhật đồng bộ các chỉ dẫn `[Phím 1]`, `[Phím 2]`, `[Phím 3]`, `[Phím 4]` khi rê chuột vào các nút và khi rê chuột vào Pet Ốc Sên.
 
+## Rà soát toàn bộ dự án, khắc phục bug ẩn và tối ưu hóa hệ thống
+
+Tiến hành rà soát toàn diện mã nguồn trò chơi (Gameplay, Audio, Graphics Rendering, Concurrency & Thread-safety), phát hiện và tối ưu triệt để các lỗi tiềm ẩn sau:
+
+### 1. Khắc phục nguy cơ xung đột đa luồng (`ConcurrentModificationException`) giữa Swing EDT và GameThread
+- **Nguyên nhân tiềm ẩn:** Trò chơi vận hành mô hình đa luồng: `GameManager.update()` chạy trên luồng phụ (`gameThread`), trong khi `GameManager.draw()` chạy trên luồng giao diện người dùng Swing EDT (`paintComponent`).
+  - Danh sách `WalletManager.floatingTexts` (các con số/chữ nổi bay lên UI khi nhặt tiền, kích hoạt vật phẩm) trước đây sử dụng `ArrayList`. Khi `gameThread` gọi `add()` hoặc xóa phần tử đã hết hạn (`remove()`) cùng lúc với Swing EDT duyệt qua để vẽ, sẽ làm phát sinh ngoại lệ `ConcurrentModificationException` làm đứng hình trò chơi.
+  - Tương tự, danh sách hiệu ứng hạt `ActiveLawnMower.particles` (khói xả động cơ, mảnh cỏ xanh, tia lửa) trước đây sử dụng `ArrayList`, có nguy cơ lỗi đa luồng khi vẽ xe đang chạy.
+- **Giải pháp tối ưu:**
+  - Chuyển `WalletManager.floatingTexts` và `ActiveLawnMower.particles` sang `CopyOnWriteArrayList`.
+  - Cập nhật cơ chế dọn dẹp bằng biểu thức lambda an toàn luồng `removeIf()` thay cho `Iterator.remove()`, triệt tiêu hoàn toàn xung đột đa luồng mà không làm suy giảm FPS.
+
+### 2. Khắc phục rò rỉ tài nguyên âm thanh (Native Sound Mixer Resource Leak) trong `AudioManager`
+- **Nguyên nhân tiềm ẩn:** Trong phương thức `AudioManager.playAudioFile(String path)`, luồng âm thanh `AudioInputStream` và đối tượng `Clip` được mở và phát nhưng không có bộ lắng nghe sự kiện (`LineListener`). Trong Java Sound API, hệ điều hành chỉ cấp một số lượng hữu hạn các đường truyền trộn âm thanh (mixer lines). Nếu chơi game lâu hoặc phát nhiều hiệu ứng file WAV/AU liên tục, các đường mixer sẽ bị cạn kiệt, dẫn đến lỗi `LineUnavailableException` và mất tiếng toàn bộ game.
+- **Giải pháp tối ưu:**
+  - Đăng ký `clip.addLineListener(...)` bắt sự kiện `LineEvent.Type.STOP`. Ngay khi âm thanh phát xong, hệ thống tự động gọi `clip.close()` và `stream.close()`, giải phóng lập tức tài nguyên về cho hệ điều hành.
+
+### 3. Tối ưu hóa dọn dẹp trạng thái ngắm (`cancelAllTargetingModes`) trong mọi tình huống kết thúc
+- **Giải pháp tối ưu:**
+  - Khi trồng cây thành công, khi không đủ Mặt trời hoặc khi click vào ô không hợp lệ: gọi tập trung `cancelAllTargetingModes()` để đảm bảo không còn trạng thái thừa hoặc xung đột với xẻng/xe cắt cỏ.
+  - Khi màn chơi đạt trạng thái Chiến Thắng (`GAMEWON`) hoặc Thất Bại (`GAMEOVER`): tự động gọi `cancelAllTargetingModes()`, xóa sạch toàn bộ chùm tia ngắm và xẻng theo chuột trên màn hình tổng kết.
+
+## Khắc phục lỗi tương tác Zombie - Cây đào bỏ & Xuất hiện Pet Ốc Sên khi mua trong trận
+
+Đã xử lý dứt điểm 2 lỗi trực tiếp do người chơi phát hiện và mở rộng xử lý triệt để toàn bộ các lỗi mục tiêu "ma" tương tự:
+
+### 1. Khắc phục lỗi Zombie tiếp tục nhai không khí khi đào cây bị chặn (Ghost Target / Eating Air)
+- **Nguyên nhân cốt lõi:**
+  - Khi người chơi dùng xẻng đào cây (`digPlant`), hệ thống gọi `plants.remove(p)` nhưng máu của cây `p.health` vẫn giữ nguyên (> 0), dẫn đến `p.isDead()` trả về `false`.
+  - Zombie đang gặm cây đó vẫn giữ biến `attackTarget = p`. Trong vòng lặp `Zombie.update()` chỉ kiểm tra `if (attackTarget.isDead())`, do `isDead()` là `false` nên zombie tiếp tục kích hoạt nhịp cắn và lệnh `return;` khiến zombie đứng yên vĩnh viễn và nhai trong không khí tại ô vừa đào.
+- **Giải pháp khắc phục toàn diện:**
+  - Trong `GameManager.digPlant(p)`: đánh dấu sát thương hủy diệt `p.takeDamage(999999)` để `p.isDead()` lập tức thành `true`, đồng thời duyệt qua toàn bộ `gm.zombies` và đặt `z.attackTarget = null` nếu đang nhắm vào cây `p`.
+  - Trong `Zombie.java` và `ShooterZombie.java`: cập nhật điều kiện kiểm tra an toàn `if (attackTarget.isDead() || (gm != null && !gm.plants.contains(attackTarget))) { attackTarget = null; }`.
+  - Trong vòng lặp chính `GameManager.java`: zombie tự động hủy mục tiêu nếu cây không còn tồn tại trong `plants`, và chỉ bắt mục tiêu mới nếu cây đó còn sống `!p.isDead()`.
+
+### 2. Khắc phục lỗi Pet Ốc Sên không xuất hiện ngay khi mua trong lúc đang chơi
+- **Nguyên nhân cốt lõi:**
+  - Biến `petSnail` trước đây chỉ được khởi tạo một lần duy nhất tại `resetGame()` khi bắt đầu màn chơi mới. Nếu người chơi bấm vào Shop giữa trận và mua Pet Ốc Sên, biến `hasPetSnail` được lưu vào `WalletManager` nhưng đối tượng `gm.petSnail` vẫn là `null`.
+- **Giải pháp khắc phục:**
+  - Trong `ShopScreen.handleClick()`: khi mua thành công Pet Snail (`buyPetSnail()`), tự động khởi tạo ngay lập tức `gm.petSnail = new PetSnail(50, gm.getMapHeight() - 60)`.
+  - Trong `GameManager.closeShop()`: khi đóng cửa hàng quay lại trận đấu (`state == GameState.PLAYING`), kiểm tra nếu người chơi đã sở hữu ốc sên mà trên sân chưa có thì tự động sinh ra ngay.
+  - Cơ chế tự phục hồi tại `updateCollectibles()` và `drawPlaying()`: nếu người chơi đã sở hữu ốc sên nhưng `petSnail == null`, hệ thống sẽ tự động tạo đối tượng ốc sên ngay trong frame tiếp theo.
+
+### 3. Rà soát và khắc phục các lỗi mục tiêu "ma" tương tự (Similar Ghost Target Defects)
+- **Cây bắn (Peashooter, SnowPea, SniperPlant) nhắm bắn Zombie đã chết:**
+  - Trước đây trong hàm tìm kiếm mục tiêu `getClosestZombie()`, các cây đậu duyệt `gm.zombies` mà không kiểm tra `if (z.isDead()) continue;`. Khi một zombie đã bị tiêu diệt (bởi xe cắt cỏ, nổ CherryBomb hoặc đạn trước) nhưng chưa kịp gỡ khỏi danh sách ở cuối frame, các cây đậu vẫn ngắm và bắn thêm đạn vào xác chết.
+  - *Đã khắc phục:* Bổ sung kiểm tra `if (z.isDead()) continue;` cho toàn bộ các lớp cây Peashooter, SnowPea và SniperPlant.
+- **Đạn bắn (Projectiles) va chạm với xác Zombie hoặc Cây đã chết:**
+  - Đạn đậu của người chơi trước đây va chạm với bất kỳ zombie nào trên đường bay kể cả khi zombie đã chết (`isDead() == true`), làm lãng phí đạn thay vì bay xuyên qua để bắn trúng con zombie sống phía sau. Tương tự, xương của ShooterZombie có thể va chạm với cây đã chết.
+  - *Đã khắc phục:* Thêm điều kiện `!z.isDead()` và `!plant.isDead()` trong khối xử lý va chạm đạn của `GameManager`.
+- **ShooterZombie bắn tầm xa vào Cây đã chết:**
+  - Trong `ShooterZombie.update()`, vòng lặp tìm cây gần nhất `closestPlant` chưa bỏ qua cây đã chết (`p.isDead()`).
+  - *Đã khắc phục:* Thêm điều kiện `if (p.isDead()) continue;`.
+- **Chomper (Cây ngoạm) ngoạm trúng khoảng không khi Zombie bị hạ gục trước nhịp cắn:**
+  - Khi Chomper đang há mồm vươn tới (tick 1 đến 12) mà con mồi bị xe cắt cỏ hoặc đạn tiêu diệt trước tick 13, Chomper sẽ nuốt không khí và chuyển sang trạng thái nhai (chewing 7 giây).
+  - *Đã khắc phục:* Kiểm tra nếu `biteTarget` đã chết hoặc không còn trên sân, Chomper lập tức hủy động tác cắn và quay về trạng thái nghỉ (`idle`) ngay lập tức.
+
+## Cập nhật cơ chế Xẻng Vàng dùng theo lượt & Tối ưu hóa hiển thị số lượng Xu lớn
+
+Theo yêu cầu mới nhất của người chơi, hệ thống đã điều chỉnh kinh tế vật phẩm Xẻng và nâng cấp toàn diện giao diện hiển thị tiền xu:
+
+### 1. Đổi Xẻng Vàng thành vật phẩm dùng theo lượt (Consumable Shovel Charges)
+- **Giá bán trong Cửa Hàng:** Giảm từ **$ 2,500** xuống còn **$ 150 xu** cho mỗi lượt mua (`goldenShovelCount++`).
+- **Cơ chế hoạt động:**
+  - Mỗi lần đào một cây sẽ tiêu hao đúng **1 lượt xẻng** (`goldenShovelCount--`).
+  - Hoàn trả ngay **50% số lượng Mặt trời** của cây được đào về ví năng lượng trận đấu, đồng thời hiển thị số Mặt trời hoàn và số lượt xẻng còn lại nổi trên màn hình.
+  - Sau khi đào, nếu số lượt xẻng giảm về `0`, hệ thống tự động cất xẻng an toàn (`cancelAllTargetingModes()`).
+  - Nếu số lượt xẻng bằng `0`, khi bấm phím tắt `[3]` hoặc click vào nút Xẻng trên thanh Header, trò chơi sẽ hiện thông báo nổi `"Hết lượt dùng Xẻng! Mua thêm trong Shop ($ 150) 🛒"` và tự động mở Cửa Hàng Dave để người chơi mua bổ sung.
+- **Đồng bộ Hotbar Header:**
+  - Nút Xẻng `[3]` được trang bị huy hiệu số lượng `xN` ở góc dưới bên phải, đồng bộ hoàn hảo với 3 vật phẩm còn lại: `[1] Bùa Đóng Băng (xN)`, `[2] Kẹo Chocolate (xN)`, `[3] Xẻng Vàng (xN)`, `[4] Xe Cắt Cỏ (xN)`.
+  - Tooltip rê chuột cập nhật chính xác số lượt còn lại và hướng dẫn mua thêm.
+- **Tương thích dữ liệu cũ:**
+  - Nếu người chơi đã có file save với xẻng vĩnh viễn trước đây (`hasGoldenShovel = true`), hệ thống tự động quy đổi thành 10 lượt xẻng miễn phí để người chơi không bị thiệt thòi. Người chơi mới được tặng sẵn 3 lượt xẻng dùng thử.
+
+### 2. Khắc phục triệt để lỗi hiển thị số lượng Xu lớn (Dynamic Bank Layout & Number Formatting)
+- **Nguyên nhân lỗi trước đây:**
+  - Các khung hiển thị Ví Tiền ở Main Menu (145px), In-Game Header (120px) và Shop (190px) đều có chiều rộng cố định (hardcoded).
+  - Khi người chơi tích lũy số lượng xu lớn (ví dụ: hàng chục nghìn, hàng trăm nghìn hoặc hàng triệu xu), chuỗi ký tự bị tràn ra ngoài viền khung, chồng lấn lên nút Menu/Shop hoặc bị che khuất một phần.
+  - Ngoài ra, chuỗi số không có dấu phẩy phân tách hàng nghìn khiến dãy số dài rất khó nhìn.
+- **Giải pháp tối ưu hóa:**
+  - **Khung tự động co giãn linh hoạt (Dynamic Sizing):** Sử dụng `FontMetrics` để đo chính xác chiều dài chuỗi số tiền theo thời gian thực:
+    - Main Menu: `mbW = Math.max(150, textW + 54)`, neo mép phải màn hình `mbX = sw - mbW - 20`.
+    - In-Game Header: `bankW = Math.max(125, textW + 42)`, tự động neo bên trái nút MENU `bankX = menuX - bankW - 12`. Nút Shop bên dưới cũng đồng bộ độ rộng và vị trí với khung tiền.
+    - Shop Dave: `bankW = Math.max(190, textW + 68)`, neo mép phải `bankX = sw - bankW - 24`.
+  - **Định dạng số chuẩn quốc tế:** Chuỗi số được format qua `String.format(Locale.US, "%,d", coins)` tự động chèn dấu phẩy phân tách hàng nghìn (ví dụ: `$ 150,000`, `$ 1,000,000`), giúp hiển thị rõ ràng, chuyên nghiệp.
+  - **Chống tràn số học (Integer Overflow Guard):** Giới hạn tối đa an toàn `Math.min(2_000_000_000L, ...)` tránh trường hợp tràn số nguyên 32-bit thành số âm.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

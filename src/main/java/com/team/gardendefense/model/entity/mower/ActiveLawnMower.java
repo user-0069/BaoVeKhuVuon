@@ -11,6 +11,7 @@ import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Xe Cắt Cỏ càn quét (Active LawnMower):
@@ -47,7 +48,7 @@ public class ActiveLawnMower {
         }
     }
 
-    private final List<Particle> particles = new ArrayList<>();
+    private final List<Particle> particles = new CopyOnWriteArrayList<>();
 
     public ActiveLawnMower(int row, float startX, float endX) {
         this.row = row;
@@ -85,16 +86,12 @@ public class ActiveLawnMower {
         }
 
         // Cập nhật các hạt
-        Iterator<Particle> pIt = particles.iterator();
-        while (pIt.hasNext()) {
-            Particle p = pIt.next();
+        for (Particle p : particles) {
             p.px += p.vx;
             p.py += p.vy;
             p.life--;
-            if (p.life <= 0) {
-                pIt.remove();
-            }
         }
+        particles.removeIf(p -> p.life <= 0);
 
         // Tiêu diệt toàn bộ zombie trên cùng hàng ngang chạm phải xe cắt cỏ
         Rectangle mowerHitbox = new Rectangle((int) x - 15, (int) y - 10, 85, 70);

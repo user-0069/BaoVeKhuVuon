@@ -25,6 +25,12 @@ public class Chomper extends Plant {
     public void update(GameManager gm) {
         if (state == 1) { // Biting: lunging forward with mouth opening
             biteTimer++;
+            // Nếu con mồi đã chết hoặc bị tiêu diệt trước khi táp, hủy cắn quay về nghỉ
+            if (biteTarget != null && (biteTarget.isDead() || (gm != null && !gm.zombies.contains(biteTarget)))) {
+                state = 0;
+                biteTarget = null;
+                return;
+            }
             // At tick 13 (mouth snaps shut), deal damage and consume target
             if (biteTimer == 13) {
                 if (biteTarget != null && biteTarget.health > 0) {

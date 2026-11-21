@@ -11,7 +11,7 @@ public class ShopManager {
     public static final int PRICE_CHOCOLATE = 50;
     public static final int PRICE_LAWN_MOWER = 500;
     public static final int PRICE_ICE_SHROOM = 350;
-    public static final int PRICE_GOLDEN_SHOVEL = 2500;
+    public static final int PRICE_GOLDEN_SHOVEL = 150;
 
     private ShopManager() {}
 
@@ -58,9 +58,8 @@ public class ShopManager {
 
     public boolean buyGoldenShovel() {
         WalletManager wm = WalletManager.getInstance();
-        if (wm.getData().hasGoldenShovel) return false;
         if (wm.spendCoins(PRICE_GOLDEN_SHOVEL)) {
-            wm.getData().hasGoldenShovel = true;
+            wm.getData().goldenShovelCount++;
             wm.save();
             return true;
         }

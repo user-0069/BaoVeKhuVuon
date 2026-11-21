@@ -62,6 +62,7 @@ public class SnowPea extends Plant {
     private Monster getClosestZombie(GameManager gm) {
         Monster closest = null; float minDist = Constants.RANGE_SNOWPEA;
         for(Monster z : gm.zombies) {
+            if (z.isDead()) continue;
             float dx = z.x - x; float dy = z.y - y;
             boolean inLine = false; float dist = 0;
             if (direction == 0 && dy < 0 && Math.abs(dx) < 30) { inLine = true; dist = -dy; }

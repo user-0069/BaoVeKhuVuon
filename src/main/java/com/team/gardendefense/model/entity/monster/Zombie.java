@@ -45,8 +45,9 @@ public class Zombie extends Monster {
         advanceAnimation(speed / baseSpeed);
 
         if (attackTarget != null) {
-            if (attackTarget.isDead()) { attackTarget = null; } 
-            else {
+            if (attackTarget.isDead() || (gm != null && !gm.plants.contains(attackTarget))) {
+                attackTarget = null;
+            } else {
                 attackTimer++;
                 if (attackTimer >= Constants.RATE_ZOMBIE_RED_ATK) { 
                     attackTarget.takeDamage(Constants.DMG_ZOMBIE_RED); 

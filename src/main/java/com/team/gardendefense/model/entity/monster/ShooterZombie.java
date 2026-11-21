@@ -48,8 +48,9 @@ public class ShooterZombie extends Monster {
         advanceAnimation(speed / baseSpeed);
 
         if (attackTarget != null) {
-            if (attackTarget.isDead()) { attackTarget = null; }
-            else {
+            if (attackTarget.isDead() || (gm != null && !gm.plants.contains(attackTarget))) {
+                attackTarget = null;
+            } else {
                 // Đứng lại cắn nếu đụng trúng cây
                 shootTimer++;
                 if (shootTimer >= Constants.RATE_ZOMBIE_SHOOTER) {
@@ -62,6 +63,7 @@ public class ShooterZombie extends Monster {
 
         Plant closestPlant = null; float minDist = Constants.RANGE_ZOMBIE_SHOOTER;
         for(Plant p : gm.plants) {
+            if (p.isDead()) continue;
             float dist = (float) Math.hypot((p.x + 32) - (x + 32), (p.y + 32) - (y + 32));
             if (dist <= minDist) { minDist = dist; closestPlant = p; }
         }

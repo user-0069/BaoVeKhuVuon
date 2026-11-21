@@ -447,6 +447,12 @@ public class AudioManager {
             AudioInputStream stream = AudioSystem.getAudioInputStream(soundFile);
             Clip clip = AudioSystem.getClip();
             clip.open(stream);
+            clip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP) {
+                    clip.close();
+                    try { stream.close(); } catch (Exception ignored) {}
+                }
+            });
             clip.start();
             return true;
         } catch (Exception e) {

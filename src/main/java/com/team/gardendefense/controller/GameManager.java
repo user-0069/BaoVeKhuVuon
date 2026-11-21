@@ -39,6 +39,7 @@ import com.team.gardendefense.view.renderer.GamePanel;
 import java.awt.RenderingHints;
 import java.awt.GradientPaint;
 import java.awt.Shape;
+import java.awt.FontMetrics;
 
 public class GameManager {
     private static final Logger LOGGER = Logger.getLogger(GameManager.class.getName());
@@ -94,6 +95,11 @@ public class GameManager {
         if (state == GameState.SHOP) {
             state = shopReturnState;
             shopReturnState = GameState.MENU;
+            if (state == GameState.PLAYING) {
+                if (WalletManager.getInstance().getData().hasPetSnail && petSnail == null) {
+                    petSnail = new PetSnail(50, getMapHeight() - 60);
+                }
+            }
         }
     }
 
@@ -414,6 +420,7 @@ public class GameManager {
                 if (state != GameState.GAMEWON) {
                     // Thưởng Kim Cương khi thắng trọn vẹn màn chơi!
                     spawnCoin(getScreenWidth() / 2.0f, getScreenHeight() / 2.0f, CoinType.DIAMOND);
+                    cancelAllTargetingModes();
                 }
                 state = GameState.GAMEWON; // Thắng!
             }
@@ -439,13 +446,13 @@ public class GameManager {
             Rectangle pBounds = p.getBounds();
             if (p.isEnemy) {
                 for (Plant plant : plants) {
-                    if (plant.getBounds().intersects(pBounds)) {
+                    if (!plant.isDead() && plant.getBounds().intersects(pBounds)) {
                         plant.takeDamage(p.damage); p.hit(); break;
                     }
                 }
             } else {
                 for (Monster z : zombies) {
-                    if (z.getBounds().intersects(pBounds)) {
+                    if (!z.isDead() && z.getBounds().intersects(pBounds)) {
                         z.takeDamage(p.damage);
                         if (p.isFreeze) z.applyFreeze();
                         p.hit(); break;
@@ -467,12 +474,19 @@ public class GameManager {
                 }
             }
             if (reachedEnd) {
+                cancelAllTargetingModes();
                 state = GameState.GAMEOVER;
                 continue;
             }
-            if (z.attackTarget == null ) {
+            if (z.attackTarget != null && (z.attackTarget.isDead() || !plants.contains(z.attackTarget))) {
+                z.attackTarget = null;
+            }
+            if (z.attackTarget == null) {
                 for (Plant p : plants) {
-                    if (z.getBounds().intersects(p.getBounds())) { z.attackTarget = p; break; }
+                    if (!p.isDead() && z.getBounds().intersects(p.getBounds())) {
+                        z.attackTarget = p;
+                        break;
+                    }
                 }
             }
             z.update(this);
@@ -493,7 +507,10 @@ public class GameManager {
             c.update(this);
             if (c.isDead()) coins.remove(c);
         }
-        if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
+        if (WalletManager.getInstance().getData().hasPetSnail) {
+            if (petSnail == null) {
+                petSnail = new PetSnail(50, getMapHeight() - 60);
+            }
             petSnail.update(this);
         }
         WalletManager.getInstance().updateFloatingTexts();
@@ -575,19 +592,26 @@ public class GameManager {
         drawButton(g, btnEditor, "LEVEL EDITOR", mouseX, mouseY);
         drawButton(g, btnExit, "THOÁT", mouseX, mouseY);
 
-        // Hiển thị khung số dư xu nhỏ ở góc phải menu chính
-        int mbX = sw - 170;
+        // Hiển thị khung số dư xu nhỏ ở góc phải menu chính (co giãn linh hoạt theo số chữ số)
+        int coins = WalletManager.getInstance().getCoins();
+        String coinStr = "$ " + String.format(java.util.Locale.US, "%,d", coins);
+        Font coinFont = new Font("Arial", Font.BOLD, 18);
+        FontMetrics fm = g.getFontMetrics(coinFont);
+        int textW = fm.stringWidth(coinStr);
+        int mbW = Math.max(150, textW + 54);
+        int mbX = sw - mbW - 20;
         int mbY = 20;
+
         g.setColor(new Color(0, 0, 0, 160));
-        g.fillRoundRect(mbX, mbY, 145, 40, 10, 10);
+        g.fillRoundRect(mbX, mbY, mbW, 40, 10, 10);
         g.setColor(new Color(255, 215, 0));
-        g.drawRoundRect(mbX, mbY, 145, 40, 10, 10);
+        g.drawRoundRect(mbX, mbY, mbW, 40, 10, 10);
         if (coinBankImg != null) {
             g.drawImage(coinBankImg, mbX + 6, mbY + 4, 32, 32, null);
         }
-        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.setFont(coinFont);
         g.setColor(new Color(255, 220, 50));
-        g.drawString("$ " + WalletManager.getInstance().getCoins(), mbX + 44, mbY + 27);
+        g.drawString(coinStr, mbX + 44, mbY + 27);
     }
 
     private void drawLevelSelect(Graphics2D g) {
@@ -796,7 +820,7 @@ public class GameManager {
             int hX = hoverCol * Constants.TILE_SIZE; int hY = hoverRow * Constants.TILE_SIZE;
             Plant target = getPlantAt(hoverCol, hoverRow);
             if (target != null) {
-                boolean isGolden = WalletManager.getInstance().getData().hasGoldenShovel;
+                boolean isGolden = WalletManager.getInstance().getData().goldenShovelCount > 0;
                 g.setColor(isGolden ? new Color(255, 215, 0, 110) : new Color(255, 60, 60, 100));
                 g.fillRoundRect(hX + 2, hY + 2, Constants.TILE_SIZE - 4, Constants.TILE_SIZE - 4, 10, 10);
                 g.setColor(isGolden ? new Color(255, 235, 100) : new Color(255, 80, 80));
@@ -827,7 +851,10 @@ public class GameManager {
         for(Projectile p : projectiles) p.draw(g);
 
         // Vẽ Pet Ốc sên Stinky nếu đã mở khóa
-        if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail) {
+        if (WalletManager.getInstance().getData().hasPetSnail) {
+            if (petSnail == null) {
+                petSnail = new PetSnail(50, getMapHeight() - 60);
+            }
             petSnail.draw(g, mouseX, mouseY);
         }
 
@@ -896,10 +923,22 @@ public class GameManager {
         }
         g.setColor(Color.WHITE); g.setFont(new Font("Arial", Font.BOLD, 22)); g.drawString(String.valueOf(sun), 58, 48);
 
-        // Khung hiển thị Ví Tiền ở góc trên bên phải (bố cục gọn gàng, tránh chồng lấn thẻ bài)
-        int bankW = 120;
-        int bankX = sw - 232;
+        // Nút Menu ở góc trên cùng bên phải
+        int menuW = 88;
+        int menuX = sw - 98;
+        btnInGameMenu.setBounds(menuX, 12, menuW, 32);
+        drawPvZWoodButton(g, btnInGameMenu, "MENU", mouseX, mouseY);
+
+        // Khung hiển thị Ví Tiền ở bên trái nút Menu (co giãn linh hoạt, không bao giờ tràn khung hay che nút khác)
+        int coins = WalletManager.getInstance().getCoins();
+        String coinStr = "$ " + String.format(java.util.Locale.US, "%,d", coins);
+        Font coinFont = new Font("Arial", Font.BOLD, 15);
+        FontMetrics fm = g.getFontMetrics(coinFont);
+        int textW = fm.stringWidth(coinStr);
+        int bankW = Math.max(125, textW + 42);
+        int bankX = menuX - bankW - 12;
         int bankY = 12;
+
         g.setColor(new Color(0, 0, 0, 180));
         g.fillRoundRect(bankX, bankY, bankW, 32, 10, 10);
         g.setColor(new Color(255, 215, 0));
@@ -910,10 +949,10 @@ public class GameManager {
             g.fillOval(bankX + 6, bankY + 4, 24, 24);
         }
         g.setColor(new Color(255, 220, 50));
-        g.setFont(new Font("Arial", Font.BOLD, 15));
-        g.drawString("$ " + WalletManager.getInstance().getCoins(), bankX + 34, bankY + 22);
+        g.setFont(coinFont);
+        g.drawString(coinStr, bankX + 34, bankY + 22);
 
-        // Nút Shop trong game
+        // Nút Shop trong game đồng bộ kích thước và vị trí ngay dưới Ví Tiền
         btnInGameShop.setBounds(bankX, 48, bankW, 24);
         drawSmallButton(g, btnInGameShop, "Shop 🛒", mouseX, mouseY);
 
@@ -924,12 +963,6 @@ public class GameManager {
             g.setFont(new Font("Arial", Font.BOLD, 18));
             g.drawString(ft.text, (int) ft.x, (int) ft.y);
         }
-
-        // Nút Menu và Thông tin Level hiện tại ở góc trên cùng bên phải
-        int menuW = 88;
-        int menuX = sw - 98;
-        btnInGameMenu.setBounds(menuX, 12, menuW, 32);
-        drawPvZWoodButton(g, btnInGameMenu, "MENU", mouseX, mouseY);
 
         if (currentLevel != null) {
             g.setFont(new Font("Arial", Font.BOLD, 12));
@@ -1332,6 +1365,15 @@ public class GameManager {
 
     public void toggleShovel() {
         if (state != GameState.PLAYING) return;
+        WalletManager wm = WalletManager.getInstance();
+        if (wm.getData().goldenShovelCount <= 0) {
+            wm.floatingTexts.add(new WalletManager.FloatingText(
+                "Hết lượt dùng Xẻng! Mua thêm trong Shop ($ 150) 🛒", mouseX, mouseY, new Color(255, 140, 0)));
+            AudioManager.getInstance().playBuySound();
+            openShop(GameState.PLAYING);
+            return;
+        }
+
         boolean willActivate = !shovelSelected;
         cancelAllTargetingModes();
         if (willActivate) {
@@ -1351,19 +1393,36 @@ public class GameManager {
 
     public void digPlant(Plant p) {
         if (p == null) return;
-        boolean isGolden = WalletManager.getInstance().getData().hasGoldenShovel;
+        WalletManager wm = WalletManager.getInstance();
+        if (wm.getData().goldenShovelCount <= 0) {
+            cancelAllTargetingModes();
+            return;
+        }
+
+        // Tiêu hao 1 lượt dùng xẻng
+        wm.getData().goldenShovelCount--;
+        wm.save();
+
+        p.takeDamage(999999); // Đánh dấu cây đã chết để zombie lập tức nhận biết isDead()
         plants.remove(p);
 
-        if (isGolden) {
-            int refund = p.getRefundAmount(true);
-            sun += refund;
-            WalletManager.getInstance().floatingTexts.add(new WalletManager.FloatingText(
-                "+" + refund + " ☀️ (Xẻng Vàng)", p.x + 8, p.y - 12, new Color(255, 220, 50)));
-            AudioManager.getInstance().playGoldenShovelSound();
-        } else {
-            WalletManager.getInstance().floatingTexts.add(new WalletManager.FloatingText(
-                "Đã đào cây", p.x + 12, p.y - 12, Color.LIGHT_GRAY));
-            AudioManager.getInstance().playShovelSound();
+        // Hủy ngay lập tức mục tiêu cắn của toàn bộ zombie đang gặm cây này
+        for (Monster z : zombies) {
+            if (z.attackTarget == p) {
+                z.attackTarget = null;
+            }
+        }
+
+        int refund = p.getRefundAmount(true);
+        sun += refund;
+        int remaining = wm.getData().goldenShovelCount;
+        wm.floatingTexts.add(new WalletManager.FloatingText(
+            "+" + refund + " ☀️ (Còn " + remaining + " lượt)", p.x + 8, p.y - 12, new Color(255, 220, 50)));
+        AudioManager.getInstance().playGoldenShovelSound();
+
+        // Nếu đã hết lượt dùng thì tự động cất xẻng
+        if (remaining <= 0) {
+            cancelAllTargetingModes();
         }
     }
 
@@ -1535,7 +1594,7 @@ public class GameManager {
                 
                 if (isPlanted(col, row)) { canPlant = false; }
 
-                if (!canPlant) { selectedPlant = 0; return; }
+                if (!canPlant) { cancelAllTargetingModes(); return; }
 
                 int cost = 0;
                 if (selectedPlant == 1) cost = Constants.COST_SUNFLOWER; 
@@ -1565,8 +1624,8 @@ public class GameManager {
                         plants.add(p);
                         sun -= cost; 
                     }
-                    selectedPlant = 0; 
-                } else { selectedPlant = 0; }
+                    cancelAllTargetingModes(); 
+                } else { cancelAllTargetingModes(); }
             }
         }
     }
@@ -1899,7 +1958,8 @@ public class GameManager {
         boolean hover = r.contains(mX, mY);
 
         WalletManager wm = WalletManager.getInstance();
-        boolean isGolden = wm.getData().hasGoldenShovel;
+        int count = wm.getData().goldenShovelCount;
+        boolean isGolden = count > 0;
         boolean active = shovelSelected;
 
         // Bóng đổ
@@ -1973,16 +2033,16 @@ public class GameManager {
         g2.setFont(new Font("Arial", Font.BOLD, 10));
         g2.drawString("3", r.x + 8, r.y + 13);
 
-        // Badge hiển thị ở góc dưới bên phải
-        if (isGolden) {
-            String badge = "50% ☀️";
-            g2.setFont(new Font("Arial", Font.BOLD, 9));
-            int tw = g2.getFontMetrics().stringWidth(badge);
-            int bw = tw + 6;
-            int bh = 13;
-            int bx = r.x + r.width - bw - 2;
-            int by = r.y + r.height - bh - 3;
+        // Badge hiển thị số lượng lượt dùng xN ở góc dưới bên phải (đồng bộ với nút [1], [2], [4])
+        String badge = "x" + count;
+        g2.setFont(new Font("Arial", Font.BOLD, 10));
+        int tw = g2.getFontMetrics().stringWidth(badge);
+        int bw = tw + 6;
+        int bh = 13;
+        int bx = r.x + r.width - bw - 2;
+        int by = r.y + r.height - bh - 3;
 
+        if (count > 0) {
             g2.setColor(new Color(0, 0, 0, 210));
             g2.fillRoundRect(bx, by, bw, bh, 5, 5);
             g2.setColor(new Color(255, 215, 0));
@@ -1990,14 +2050,6 @@ public class GameManager {
             g2.setColor(new Color(255, 235, 100));
             g2.drawString(badge, bx + 3, by + 10);
         } else {
-            String badge = "0% ☀️";
-            g2.setFont(new Font("Arial", Font.BOLD, 9));
-            int tw = g2.getFontMetrics().stringWidth(badge);
-            int bw = tw + 6;
-            int bh = 13;
-            int bx = r.x + r.width - bw - 2;
-            int by = r.y + r.height - bh - 3;
-
             g2.setColor(new Color(40, 40, 40, 210));
             g2.fillRoundRect(bx, by, bw, bh, 4, 4);
             g2.setColor(Color.LIGHT_GRAY);
@@ -2007,12 +2059,11 @@ public class GameManager {
         // Tooltip hướng dẫn khi hover
         if (hover) {
             String tip;
-            if (isGolden) {
-                tip = active ? "Xẻng Vàng [Phím 3]: Đang cầm! Click vào cây để đào và nhận lại 50% Mặt trời"
-                             : "Xẻng Vàng [Phím 3]: Đào thu hồi cây và nhận lại 50% Mặt trời ☀️";
+            if (count > 0) {
+                tip = active ? "Xẻng Vàng [Phím 3]: Đang cầm! Click vào cây để đào (hoàn 50% Mặt trời, còn " + count + " lượt)"
+                             : "Xẻng Vàng [Phím 3]: Đào thu hồi cây, nhận lại 50% Mặt trời (" + count + " lượt còn lại)";
             } else {
-                tip = active ? "Xẻng Thường [Phím 3]: Đang cầm! Click vào cây để đào bỏ"
-                             : "Xẻng Đào [Phím 3]: Đào bỏ cây trồng (Vào Shop mua Xẻng Vàng để được hoàn 50% Mặt trời)";
+                tip = "Xẻng Vàng [Phím 3]: Đã hết lượt dùng! Bấm phím 3 hoặc vào Shop để mua thêm ($ 150 xu)";
             }
             g2.setFont(new Font("Arial", Font.BOLD, 12));
             int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
@@ -2021,7 +2072,7 @@ public class GameManager {
 
             g2.setColor(new Color(25, 20, 15, 240));
             g2.fillRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
-            g2.setColor(isGolden ? new Color(255, 215, 80) : new Color(180, 180, 180));
+            g2.setColor(count > 0 ? new Color(255, 215, 80) : new Color(180, 180, 180));
             g2.drawRoundRect(tipX, tipY - 14, tipW, 20, 8, 8);
             g2.setColor(Color.WHITE);
             g2.drawString(tip, tipX + 8, tipY);
