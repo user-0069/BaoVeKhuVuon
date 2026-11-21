@@ -85,6 +85,7 @@ public class GameManager {
     }
 
     public void openShop(GameState returnState) {
+        cancelAllTargetingModes();
         shopReturnState = returnState;
         state = GameState.SHOP;
     }
@@ -179,6 +180,7 @@ public class GameManager {
     public Image shovelBankImg;
     public Rectangle btnLawnMower = new Rectangle(0, 0, 50, 52);
     public boolean mowerTargeting = false;
+    public Image mowerIconImg;
     public List<ActiveLawnMower> activeMowers = new CopyOnWriteArrayList<>();
     public int iceShroomDuration = 0; // Đếm lùi 300 ticks (5 giây)
     public float iceShroomWaveRadius = 0;
@@ -189,6 +191,7 @@ public class GameManager {
         coinBankImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/coinbank.png");
         shovelImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/Shovel.png");
         shovelBankImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/ShovelBank.png");
+        mowerIconImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/icon_roofcleaner.png");
         mainMenuBackgroundImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/mainbg.png");
         mainMenuTitleImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/titlegame.png");
         sunIconImg = loadSunIconImage();
@@ -339,9 +342,8 @@ public class GameManager {
 
     public void resetGame() {
         plants.clear(); zombies.clear(); projectiles.clear(); coins.clear();
-        selectedPlant = 0; passiveSunTimer = 0;
-        shovelSelected = false;
-        mowerTargeting = false;
+        passiveSunTimer = 0;
+        cancelAllTargetingModes();
         activeMowers.clear();
         iceShroomDuration = 0; iceShroomWaveRadius = 0;
         
@@ -1314,27 +1316,31 @@ public class GameManager {
         return null;
     }
 
+    /**
+     * Hủy bỏ toàn bộ các trạng thái ngắm/chọn công cụ trên tay (Cây, Xẻng, Xe cắt cỏ, Phân bón...)
+     * Đảm bảo các chế độ chọn là độc quyền (mutually exclusive) và không bao giờ bị dùng cùng lúc đè lên nhau.
+     */
+    public void cancelAllTargetingModes() {
+        selectedPlant = 0;
+        shovelSelected = false;
+        mowerTargeting = false;
+        // Bất kỳ công cụ/chế độ ngắm tương lai nào cũng sẽ được tự động dọn dẹp tại đây
+    }
+
     public void toggleShovel() {
         if (state != GameState.PLAYING) return;
-        shovelSelected = !shovelSelected;
-        if (shovelSelected) {
-            selectedPlant = 0;
+        boolean willActivate = !shovelSelected;
+        cancelAllTargetingModes();
+        if (willActivate) {
+            shovelSelected = true;
             AudioManager.getInstance().playShovelSound();
         }
     }
 
     public void handleRightClick(int mX, int mY) {
         if (state == GameState.PLAYING) {
-            if (mowerTargeting) {
-                mowerTargeting = false;
-                return;
-            }
-            if (shovelSelected) {
-                shovelSelected = false;
-                return;
-            }
-            if (selectedPlant > 0) {
-                selectedPlant = 0;
+            if (mowerTargeting || shovelSelected || selectedPlant > 0) {
+                cancelAllTargetingModes();
                 return;
             }
         }
@@ -1441,10 +1447,12 @@ public class GameManager {
                 return;
             }
             if (btnIceShroom.contains(mX, mY)) {
+                cancelAllTargetingModes();
                 activateIceShroom();
                 return;
             }
             if (btnChocolate.contains(mX, mY)) {
+                cancelAllTargetingModes();
                 activateChocolate();
                 return;
             }
@@ -1457,6 +1465,7 @@ public class GameManager {
                 return;
             }
             if (petSnail != null && WalletManager.getInstance().getData().hasPetSnail && petSnail.getBounds().contains(mX, mY)) {
+                cancelAllTargetingModes();
                 activateChocolate();
                 return;
             }
@@ -1481,9 +1490,11 @@ public class GameManager {
             for(PlantCard c : uiCards) {
                 if (c.rect.contains(mX, mY)) {
                     if (!needsCardScroll || (mX >= cardViewX && mX <= cardViewX + cardViewW)) {
-                        selectedPlant = c.id;
-                        shovelSelected = false;
-                        mowerTargeting = false;
+                        boolean wasSelected = (selectedPlant == c.id);
+                        cancelAllTargetingModes();
+                        if (!wasSelected) {
+                            selectedPlant = c.id;
+                        }
                         return;
                     }
                 }
@@ -1494,7 +1505,7 @@ public class GameManager {
                 if (row >= 0 && row < getRows()) {
                     launchLawnMower(row);
                 }
-                mowerTargeting = false;
+                cancelAllTargetingModes();
                 return;
             }
 
@@ -1505,7 +1516,7 @@ public class GameManager {
                 if (target != null) {
                     digPlant(target);
                 }
-                shovelSelected = false;
+                cancelAllTargetingModes();
                 return;
             }
 
@@ -1639,6 +1650,7 @@ public class GameManager {
         WalletManager wm = WalletManager.getInstance();
 
         if (wm.getData().lawnMowerBackupCount <= 0) {
+            cancelAllTargetingModes();
             wm.floatingTexts.add(new WalletManager.FloatingText(
                 "Hết Xe Cắt Cỏ! Mở Shop 🛒 để mua thêm", mouseX, mouseY, new Color(255, 140, 0)));
             AudioManager.getInstance().playBuySound();
@@ -1646,10 +1658,10 @@ public class GameManager {
             return;
         }
 
-        mowerTargeting = !mowerTargeting;
-        if (mowerTargeting) {
-            selectedPlant = 0;
-            shovelSelected = false;
+        boolean willActivate = !mowerTargeting;
+        cancelAllTargetingModes();
+        if (willActivate) {
+            mowerTargeting = true;
             AudioManager.getInstance().playMowerRevSound();
             wm.floatingTexts.add(new WalletManager.FloatingText(
                 "🚜 CHỌN 1 HÀNG ĐỂ PHÓNG XE! (Chuột phải để hủy)", getScreenWidth() / 2, 100, Color.CYAN));
@@ -2058,9 +2070,21 @@ public class GameManager {
         }
         g2.drawRoundRect(r.x, r.y, r.width, r.height, 14, 14);
 
-        // Icon Xe Cắt Cỏ 🚜 ở trung tâm
-        g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
-        g2.drawString("🚜", r.x + (r.width - 24) / 2, r.y + 34);
+        // Icon Xe Cắt Cỏ ở trung tâm
+        if (mowerIconImg != null) {
+            int iw = 36;
+            int ih = 28;
+            int ix = r.x + (r.width - iw) / 2;
+            int iy = r.y + (r.height - ih) / 2 - 2;
+            Graphics2D gIcon = (Graphics2D) g2.create();
+            gIcon.translate(ix + iw, iy);
+            gIcon.scale(-1, 1);
+            gIcon.drawImage(mowerIconImg, 0, 0, iw, ih, null);
+            gIcon.dispose();
+        } else {
+            g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+            g2.drawString("🚜", r.x + (r.width - 24) / 2, r.y + 34);
+        }
 
         // Badge phím tắt [M] ở góc trên bên trái
         g2.setColor(new Color(0, 0, 0, 180));

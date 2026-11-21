@@ -40,10 +40,12 @@ public class ShopScreen {
     private int noticeTimer = 0;
     private Color noticeColor = Color.GREEN;
     private Image coinBankImg;
+    private Image mowerShopImg;
 
     public ShopScreen(GameManager gm) {
         this.gm = gm;
         this.coinBankImg = ImageLoader.getImage("src/main/resources/assets/images/coinbank.png");
+        this.mowerShopImg = ImageLoader.getImage("src/main/resources/assets/images/icon_roofcleaner.png");
 
         items.add(new ShopItem("snail", "Pet Ốc Sên Stinky", "Tự động bò nhặt xu và mặt trời rơi trên sân", ShopManager.PRICE_PET_SNAIL, "🐌"));
         items.add(new ShopItem("chocolate", "Kẹo Chocolate", "Tăng 250% tốc độ bò của Pet trong 3 phút", ShopManager.PRICE_CHOCOLATE, "🍫"));
@@ -128,8 +130,14 @@ public class ShopScreen {
             g.drawRoundRect(cx, cy, cardW, cardH, 16, 16);
 
             // Icon
-            g.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 46));
-            g.drawString(item.iconEmoji, cx + (cardW - 46) / 2, cy + 60);
+            if (item.id.equals("lawnmower") && mowerShopImg != null) {
+                int iw = 56;
+                int ih = 43;
+                g.drawImage(mowerShopImg, cx + (cardW - iw) / 2, cy + 22, iw, ih, null);
+            } else {
+                g.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 46));
+                g.drawString(item.iconEmoji, cx + (cardW - 46) / 2, cy + 60);
+            }
 
             // Tên
             g.setColor(Color.WHITE);

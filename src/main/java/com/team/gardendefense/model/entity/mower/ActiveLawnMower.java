@@ -28,8 +28,7 @@ public class ActiveLawnMower {
     public static final int TOTAL_TICKS = 210; // 3.5 giây * 60 FPS = 210 ticks
     public boolean finished = false;
 
-    private Reanim animation;
-    private double animationTicks = 0;
+    private Image mowerImg;
     private Image bodyImg;
     private Image engineImg;
     private Image wheelImg;
@@ -58,7 +57,10 @@ public class ActiveLawnMower {
         this.y = row * Constants.TILE_SIZE + (Constants.TILE_SIZE - 56) / 2.0f;
         this.speed = (startX - endX) / (float) TOTAL_TICKS;
 
-        this.animation = Reanim.load("LawnMower.reanim");
+        this.mowerImg = ImageLoader.getImage("src/main/resources/assets/images/icon_roofcleaner.png");
+        if (this.mowerImg == null) {
+            this.mowerImg = ImageLoader.getImage("assets/images/icon_roofcleaner.png");
+        }
         this.bodyImg = ImageLoader.getImage("src/main/resources/assets/reanim/LawnMower_body.png");
         this.engineImg = ImageLoader.getImage("src/main/resources/assets/reanim/LawnMower_engine.png");
         this.wheelImg = ImageLoader.getImage("src/main/resources/assets/reanim/LawnMower_wheel1.png");
@@ -69,7 +71,6 @@ public class ActiveLawnMower {
 
         x -= speed;
         elapsedTicks++;
-        animationTicks += 2.0;
 
         // Sinh hạt khói xả ở phía sau xe (bên phải vì xe chạy sang trái)
         if (elapsedTicks % 2 == 0) {
@@ -152,19 +153,19 @@ public class ActiveLawnMower {
         // 4. Vẽ xe cắt cỏ hướng sang trái (quay đầu sang trái từ phải sang)
         int drawX = (int) x;
         int drawY = (int) y + engineBob;
+        int drawW = 68;
+        int drawH = 52;
 
         // Bóng đổ
         g2.setColor(new Color(0, 0, 0, 90));
-        g2.fillOval(drawX + 4, drawY + 38, 56, 16);
+        g2.fillOval(drawX + 4, drawY + drawH - 12, drawW - 8, 14);
 
-        // Vẽ bằng hoạt ảnh Reanim nếu có, lật sang trái (vì gốc hướng sang phải)
-        if (animation != null) {
+        if (mowerImg != null) {
             Graphics2D gMower = (Graphics2D) g2.create();
-            // Lật ngang tại tâm xe (rộng 64px)
-            gMower.translate(drawX + 32, drawY + 28);
+            // Lật ngang ảnh để xe quay đầu sang trái (chạy từ phải qua trái)
+            gMower.translate(drawX + drawW, drawY);
             gMower.scale(-1, 1);
-            gMower.translate(-32, -28);
-            animation.draw(gMower, 0, 0, 0.72f, "anim_normal", animationTicks, true);
+            gMower.drawImage(mowerImg, 0, 0, drawW, drawH, null);
             gMower.dispose();
         } else if (bodyImg != null) {
             // Fallback vẽ bằng các sprite ảnh sẵn có lật ngang sang trái

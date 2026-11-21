@@ -308,6 +308,33 @@ Theo yêu cầu tùy biến riêng: *"Dùng thì xe sẽ chạy và tiêu diệt
 - **Huy hiệu số lượng:** Hiển thị số lượng xe sở hữu `xN` hoặc nút `+MUA` khi trong kho đã hết.
 - **Lưu trữ dữ liệu:** Trừ 1 xe trong `lawnMowerBackupCount` và lưu an toàn vào `saves/wallet_save.json`.
 
+## Cập nhật sửa lỗi Xe Cắt Cỏ & Cơ chế loại trừ độc quyền công cụ (Mutual Exclusivity)
+
+### 1. Cập nhật hình ảnh xe cắt cỏ với `icon_roofcleaner`
+- **Nguyên nhân trước đó:** Tệp hoạt ảnh `LawnMower.reanim` bị thiếu định nghĩa track/clip nội bộ trong cơ chế Reanim của game dẫn đến thực thể không kết xuất được hình ảnh thân xe.
+- **Giải pháp xử lý:**
+  - Nạp trực tiếp hình ảnh chuẩn `icon_roofcleaner.png` từ thư mục tài nguyên (`assets/images/icon_roofcleaner.png`).
+  - **Lật ảnh ngang sang bên trái (`scale(-1, 1)`):** Vì xe chạy từ bên phải qua bên trái, hình ảnh được lật ngang chuẩn xác để đầu xe/lưỡi quét hướng sang trái theo đúng chiều di chuyển.
+  - Đồng bộ hiển thị `icon_roofcleaner`:
+    1. **Thực thể xe đang chạy trên sân (`ActiveLawnMower`):** Kích thước 68x52, có bóng đổ, rung cơ học (`engineBob`), vệt cỏ san phẳng, khói xả đuôi xe và tia lửa/cỏ văng đầu xe.
+    2. **Nút bấm trên thanh Header (`drawLawnMowerButton`):** Hiển thị biểu tượng `icon_roofcleaner` lật trái sắc nét ngay trên nút `[M]`.
+    3. **Thẻ vật phẩm Cửa Hàng Dave (`ShopScreen`):** Hiển thị biểu tượng xe cắt cỏ đồng bộ trong thẻ mua hàng.
+
+### 2. Khắc phục lỗi xung đột đè công cụ (Mutually Exclusive Targeting Architecture)
+- **Vấn đề:** Khi đang kích hoạt chế độ chọn hàng cho Xe Cắt Cỏ nhưng chưa click chọn hàng mà lại bấm dùng Xẻng (hoặc phím tắt `S`), cả 2 công cụ cùng hoạt động đè lên nhau (vừa hiện tia quét hàng vừa hiện xẻng theo chuột).
+- **Kiến trúc giải quyết triệt để:**
+  - Xây dựng phương thức tập trung `GameManager.cancelAllTargetingModes()` quản lý toàn bộ các công cụ/chế độ ngắm trên tay:
+    - `selectedPlant = 0` (Hủy chọn thẻ cây)
+    - `shovelSelected = false` (Cất xẻng)
+    - `mowerTargeting = false` (Hủy ngắm xe cắt cỏ)
+    - Tự động tích hợp cho các công cụ tương lai (như Phân bón siêu cấp `plantFoodTargeting`...).
+  - **Cơ chế độc quyền (Mutually Exclusive):**
+    - Khi bật Xẻng (`toggleShovel`): Tự động hủy ngắm Xe Cắt Cỏ và bỏ chọn thẻ cây.
+    - Khi bật Xe Cắt Cỏ (`activateLawnMowerItem`): Tự động cất Xẻng và bỏ chọn thẻ cây.
+    - Khi chọn thẻ cây (`uiCards`): Tự động hủy cả Xẻng và Xe Cắt Cỏ.
+    - Khi nhấp chuột phải (`handleRightClick`): Hủy toàn bộ công cụ đang cầm an toàn.
+    - Khi mở Shop hoặc Reset game: Dọn dẹp toàn bộ trạng thái công cụ.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.
