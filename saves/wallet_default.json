@@ -1,0 +1,13 @@
+{
+  "coins": 100,
+  "hasPetSnail": false,
+  "chocolateCount": 0,
+  "goldenShovelCount": 2,
+  "hasGoldenShovel": false,
+  "iceShroomBlastCount": 2,
+  "lawnMowerBackupCount": 2,
+  "plantFoodCount": 2,
+  "unlockedVasebreaker": false,
+  "unlockedIZombie": false,
+  "unlockedSurvival": false
+}

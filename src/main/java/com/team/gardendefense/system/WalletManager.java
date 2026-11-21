@@ -26,25 +26,26 @@ import java.util.logging.Logger;
  */
 public class WalletManager {
     private static final String SAVE_FILE = "wallet_save.json";
-    private static final Path SAVE_PATH = Paths.get("saves", SAVE_FILE);
     private static final Path USER_SAVE_PATH = Paths.get(
             System.getProperty("user.home"), ".garden-defense", SAVE_FILE);
+    private static final Path SAVE_PATH = Paths.get("saves", SAVE_FILE);
+    private static final Path DEFAULT_SAVE_PATH = Paths.get("saves", "wallet_default.json");
     private static final Path LEGACY_SAVE_PATH = Paths.get(SAVE_FILE);
     private static final Logger LOGGER = Logger.getLogger(WalletManager.class.getName());
     private static final WalletManager instance = new WalletManager();
 
     public static WalletManager getInstance() { return instance; }
 
-    // Dữ liệu cần lưu
+    // Dữ liệu mặc định của một người chơi mới
     public static class SaveData {
-        public int coins = 100; // Tặng sẵn 100 xu khởi đầu trải nghiệm
-        public boolean hasPetSnail = false;
-        public int chocolateCount = 0;
-        public int goldenShovelCount = 3; // Dùng theo lượt (tặng 3 lượt xẻng vàng khởi đầu)
+        public int coins = 100; // Người chơi mới có 100 xu
+        public boolean hasPetSnail = false; // Trừ sên là không có
+        public int chocolateCount = 0; // Kẹo chocolate không có
+        public int goldenShovelCount = 2; // Mỗi loại vật phẩm có 2 cái
         public boolean hasGoldenShovel = false; // Trường cũ để tương thích dữ liệu
-        public int iceShroomBlastCount = 1; // Tặng 1 bùa dùng thử
-        public int lawnMowerBackupCount = 1; // Tặng 1 xe dự phòng
-        public int plantFoodCount = 2; // Tặng 2 phân bón
+        public int iceShroomBlastCount = 2; // Mỗi loại vật phẩm có 2 cái
+        public int lawnMowerBackupCount = 2; // Mỗi loại vật phẩm có 2 cái
+        public int plantFoodCount = 2; // Mỗi loại vật phẩm có 2 cái
         public boolean unlockedVasebreaker = false;
         public boolean unlockedIZombie = false;
         public boolean unlockedSurvival = false;
@@ -135,8 +136,24 @@ public class WalletManager {
     }
 
     public synchronized void save() {
+        // 1. Thử lưu vào USER_SAVE_PATH (ngoài git repository, đảm bảo không làm bẩn repo của người chơi)
         try {
-            Files.createDirectories(SAVE_PATH.getParent());
+            if (USER_SAVE_PATH.getParent() != null) {
+                Files.createDirectories(USER_SAVE_PATH.getParent());
+            }
+            try (Writer writer = Files.newBufferedWriter(USER_SAVE_PATH, StandardCharsets.UTF_8)) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(data, writer);
+                return;
+            }
+        } catch (Exception ignored) {
+            // Môi trường hạn chế quyền user home (ví dụ sandbox), fallback lưu cục bộ
+        }
+
+        // 2. Fallback: Lưu vào SAVE_PATH (saves/wallet_save.json đã được gitignore và untrack khỏi git)
+        try {
+            if (SAVE_PATH.getParent() != null) {
+                Files.createDirectories(SAVE_PATH.getParent());
+            }
             try (Writer writer = Files.newBufferedWriter(SAVE_PATH, StandardCharsets.UTF_8)) {
                 new GsonBuilder().setPrettyPrinting().create().toJson(data, writer);
             }
@@ -146,10 +163,13 @@ public class WalletManager {
     }
 
     public synchronized void load() {
-        Path source = Files.exists(SAVE_PATH) ? SAVE_PATH
-                : Files.exists(USER_SAVE_PATH) ? USER_SAVE_PATH
-                : LEGACY_SAVE_PATH;
-        if (!Files.exists(source)) {
+        Path source = Files.exists(USER_SAVE_PATH) ? USER_SAVE_PATH
+                : Files.exists(SAVE_PATH) ? SAVE_PATH
+                : Files.exists(DEFAULT_SAVE_PATH) ? DEFAULT_SAVE_PATH
+                : Files.exists(LEGACY_SAVE_PATH) ? LEGACY_SAVE_PATH
+                : null;
+        if (source == null || !Files.exists(source)) {
+            this.data = new SaveData();
             return;
         }
 
@@ -161,12 +181,10 @@ public class WalletManager {
                 if (this.data.hasGoldenShovel && this.data.goldenShovelCount <= 0) {
                     this.data.goldenShovelCount = 10;
                 }
-                if (!source.equals(SAVE_PATH)) {
-                    save();
-                }
             }
         } catch (IOException | JsonParseException ex) {
             LOGGER.log(Level.SEVERE, "Could not load player progress from " + source, ex);
+            this.data = new SaveData();
         }
     }
 }

@@ -460,6 +460,37 @@ Theo yêu cầu mới nhất của người chơi, hệ thống đã điều ch�
   - **Định dạng số chuẩn quốc tế:** Chuỗi số được format qua `String.format(Locale.US, "%,d", coins)` tự động chèn dấu phẩy phân tách hàng nghìn (ví dụ: `$ 150,000`, `$ 1,000,000`), giúp hiển thị rõ ràng, chuyên nghiệp.
   - **Chống tràn số học (Integer Overflow Guard):** Giới hạn tối đa an toàn `Math.min(2_000_000_000L, ...)` tránh trường hợp tràn số nguyên 32-bit thành số âm.
 
+## Cơ chế cô lập tiến trình chơi và bảo toàn dữ liệu mặc định cho Người Chơi Mới
+
+Nhằm giải quyết triệt để tình trạng khi người chơi/nhà phát triển chơi thử trên máy cá nhân làm thay đổi số dư xu và số lượng vật phẩm trong file save, sau đó `git push` vô tình đè dữ liệu chơi cá nhân lên repository của nhóm:
+
+### 1. Quy định chuẩn xác dữ liệu mặc định cho Người Chơi Mới (New Player Baseline)
+Toàn bộ người chơi mới khi cài đặt hoặc clone dự án lần đầu tiên sẽ có các chỉ số mặc định:
+- **Tiền khởi đầu:** **100 Xu** (`coins = 100`).
+- **Mỗi loại vật phẩm có sẵn đúng 2 cái:**
+  - `[1] Bùa Đóng Băng:` **2 cái** (`iceShroomBlastCount = 2`).
+  - `[3] Xẻng Vàng:` **2 lượt** (`goldenShovelCount = 2`).
+  - `[4] Xe Cắt Cỏ Dự Phòng:` **2 cái** (`lawnMowerBackupCount = 2`).
+  - `Phân bón tăng trưởng (Plant Food):` **2 cái** (`plantFoodCount = 2`).
+- **Trừ Sên là KHÔNG CÓ:** `hasPetSnail = false` (phải mua trong Shop với giá $ 3,000).
+- **Kẹo Chocolate KHÔNG CÓ:** `chocolateCount = 0` (phải mua trong Shop với giá $ 200).
+
+### 2. Thiết kế kiến trúc cô lập dữ liệu tiến trình (Save Data Isolation Architecture)
+- **Tách biệt dữ liệu cá nhân ra khỏi Git Repository:**
+  - Đường dẫn ưu tiên hàng đầu của file save người chơi được chuyển ra ngoài thư mục dự án: `USER_SAVE_PATH = ~/.garden-defense/wallet_save.json` (nằm trong thư mục Home của người dùng trên hệ điều hành).
+  - Khi bất kỳ ai chơi game, tiến trình mua sắm, tích lũy xu và vật phẩm sẽ được lưu độc lập tại đây, hoàn toàn không tạo hoặc sửa file trong thư mục git.
+- **Tạo tệp mẫu chuẩn mực `saves/wallet_default.json`:**
+  - Repository được bổ sung file mẫu `saves/wallet_default.json` chứa các giá trị khởi đầu chuẩn mực (100 xu, 2 mỗi loại vật phẩm, 0 sên, 0 chocolate). File này được Git theo dõi vĩnh viễn và không bao giờ bị ghi đè khi chơi game.
+- **Untrack file save cục bộ khỏi Git (`git rm --cached`):**
+  - File `saves/wallet_save.json` được gỡ bỏ khỏi Git index và bổ sung vào `.gitignore`. Kể cả khi chạy game ở môi trường bị hạn chế quyền user-home khiến game phải fallback lưu cục bộ, Git vẫn vĩnh viễn bỏ qua file này và không bao giờ đánh dấu `modified`.
+- **Thứ tự nạp dữ liệu thông minh (`WalletManager.load()`):**
+  1. `USER_SAVE_PATH` (`~/.garden-defense/wallet_save.json`): Dữ liệu cá nhân của người chơi trên máy.
+  2. `SAVE_PATH` (`saves/wallet_save.json`): Dữ liệu cục bộ (nếu có).
+  3. `DEFAULT_SAVE_PATH` (`saves/wallet_default.json`): Bản mẫu mặc định chuẩn của dự án.
+  4. `new SaveData()`: Khởi tạo giá trị mặc định trực tiếp trong RAM.
+
+Nhờ cơ chế này, bất kỳ ai `git clone` dự án về máy đều có trải nghiệm khởi đầu chuẩn xác 100%, và dù họ có chơi hay test đến bao nhiêu xu thì khi `git push` lên GitHub cũng không bao giờ làm ảnh hưởng đến dữ liệu người chơi mới.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.
