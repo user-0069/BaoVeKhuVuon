@@ -868,7 +868,7 @@ public class GameManager {
             }
 
             // Nhãn chỉ dẫn ở cạnh phải
-            String rowTag = "🚜 PHÓNG XE CẮT CỎ HÀNG " + (hoverRow + 1) + " (3.5s) ◀";
+            String rowTag = "🚜 PHÓNG XE CẮT CỎ HÀNG " + (hoverRow + 1) + " ◀";
             gMower.setFont(new Font("Arial", Font.BOLD, 14));
             int rtw = gMower.getFontMetrics().stringWidth(rowTag);
             int rtx = lawnW - rtw - 20;
@@ -2142,7 +2142,7 @@ public class GameManager {
         // Tooltip hướng dẫn khi hover
         if (hover) {
             String tip = active ? "Xe Cắt Cỏ [Phím M]: Click 1 hàng ngang để phóng xe (Chuột phải để hủy)!"
-                                : "Xe Cắt Cỏ [Phím M]: Phóng xe càn quét toàn bộ 1 hàng ngang từ phải qua trái trong 3.5s (" + count + " còn lại)";
+                                : "Xe Cắt Cỏ [Phím M]: Phóng xe càn quét toàn bộ 1 hàng ngang từ phải qua trái (" + count + " còn lại)";
             g2.setFont(new Font("Arial", Font.BOLD, 12));
             int tipW = g2.getFontMetrics().stringWidth(tip) + 16;
             int tipX = Math.max(10, r.x + (r.width - tipW) / 2);

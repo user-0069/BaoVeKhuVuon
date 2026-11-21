@@ -36,6 +36,7 @@ public class ShopScreen {
     }
 
     private final List<ShopItem> items = new ArrayList<>();
+    public List<ShopItem> getItems() { return items; }
     private String noticeMsg = "";
     private int noticeTimer = 0;
     private Color noticeColor = Color.GREEN;
@@ -49,12 +50,9 @@ public class ShopScreen {
 
         items.add(new ShopItem("snail", "Pet Ốc Sên Stinky", "Tự động bò nhặt xu và mặt trời rơi trên sân", ShopManager.PRICE_PET_SNAIL, "🐌"));
         items.add(new ShopItem("chocolate", "Kẹo Chocolate", "Tăng 250% tốc độ bò của Pet trong 3 phút", ShopManager.PRICE_CHOCOLATE, "🍫"));
-        items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Càn Quét", "Kích hoạt phóng xe cắt cỏ càn quét toàn bộ 1 hàng ngang (3.5s)", ShopManager.PRICE_LAWN_MOWER, "🚜"));
-        items.add(new ShopItem("plantfood", "Phân Bón Siêu Cấp", "Năng lượng bộc phát kỹ năng tối thượng cho cây", ShopManager.PRICE_PLANT_FOOD, "🧪"));
+        items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Càn Quét", "Kích hoạt phóng xe cắt cỏ càn quét toàn bộ 1 hàng ngang", ShopManager.PRICE_LAWN_MOWER, "🚜"));
         items.add(new ShopItem("iceshroom", "Bùa Đóng Băng", "Đóng băng và làm chậm toàn sân đấu trong 5 giây", ShopManager.PRICE_ICE_SHROOM, "❄️"));
         items.add(new ShopItem("shovel", "Xẻng Vàng", "Đào thu hồi cây được hoàn trả 50% số Mặt trời", ShopManager.PRICE_GOLDEN_SHOVEL, "⛏️"));
-        items.add(new ShopItem("vase", "Map Đập Hũ", "Mở khóa Minigame giải đố đập hũ Vasebreaker", ShopManager.PRICE_VASEBREAKER, "🏺"));
-        items.add(new ShopItem("izombie", "Map I, Zombie", "Mở khóa Minigame hóa thân thành Zombie công thành", ShopManager.PRICE_I_ZOMBIE, "🧟"));
     }
 
     public void update() {
@@ -106,21 +104,25 @@ public class ShopScreen {
             g.drawString(noticeMsg, (sw - nw) / 2, 95);
         }
 
-        // Danh sách mặt hàng (Lưới 4 cột x 2 hàng hoặc 2 cột x 4 hàng)
-        int cols = 4;
-        int cardW = (sw - 120) / cols;
-        int cardH = 240;
-        int startX = 60;
-        int startY = 115;
+        // Danh sách 5 mặt hàng bố trí cân đối: Hàng 1 có 3 ô, Hàng 2 có 2 ô (căn giữa)
+        int cardW = 260;
+        int cardH = 245;
+        int gapX = 24;
+        int gapY = 24;
+        int startY = 120;
 
         WalletManager.SaveData data = wm.getData();
 
         for (int i = 0; i < items.size(); i++) {
             ShopItem item = items.get(i);
-            int col = i % cols;
-            int row = i / cols;
-            int cx = startX + col * (cardW + 15);
-            int cy = startY + row * (cardH + 20);
+            int row = i < 3 ? 0 : 1;
+            int col = i < 3 ? i : (i - 3);
+            int itemsInRow = row == 0 ? 3 : 2;
+            int totalRowW = itemsInRow * cardW + (itemsInRow - 1) * gapX;
+            int rowStartX = (sw - totalRowW) / 2;
+
+            int cx = rowStartX + col * (cardW + gapX);
+            int cy = startY + row * (cardH + gapY);
             item.cardRect = new Rectangle(cx, cy, cardW, cardH);
 
             boolean hover = item.cardRect.contains(gm.mouseX, gm.mouseY);
@@ -159,16 +161,10 @@ public class ShopScreen {
                 status = "Đang có: x" + data.chocolateCount;
             } else if (item.id.equals("lawnmower")) {
                 status = "Đang có: x" + data.lawnMowerBackupCount;
-            } else if (item.id.equals("plantfood")) {
-                status = "Đang có: x" + data.plantFoodCount;
             } else if (item.id.equals("iceshroom")) {
                 status = "Đang có: x" + data.iceShroomBlastCount;
             } else if (item.id.equals("shovel")) {
                 if (data.hasGoldenShovel) { status = "ĐÃ SỞ HỮU"; isOwned = true; }
-            } else if (item.id.equals("vase")) {
-                if (data.unlockedVasebreaker) { status = "ĐÃ MỞ KHÓA"; isOwned = true; }
-            } else if (item.id.equals("izombie")) {
-                if (data.unlockedIZombie) { status = "ĐÃ MỞ KHÓA"; isOwned = true; }
             }
 
             if (!status.isEmpty()) {
@@ -226,20 +222,11 @@ public class ShopScreen {
                     case "lawnmower":
                         success = sm.buyLawnMower();
                         break;
-                    case "plantfood":
-                        success = sm.buyPlantFood();
-                        break;
                     case "iceshroom":
                         success = sm.buyIceShroom();
                         break;
                     case "shovel":
                         success = sm.buyGoldenShovel();
-                        break;
-                    case "vase":
-                        success = sm.buyVasebreaker();
-                        break;
-                    case "izombie":
-                        success = sm.buyIZombie();
                         break;
                 }
 

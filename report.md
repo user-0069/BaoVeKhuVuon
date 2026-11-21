@@ -335,6 +335,23 @@ Theo yêu cầu tùy biến riêng: *"Dùng thì xe sẽ chạy và tiêu diệt
     - Khi nhấp chuột phải (`handleRightClick`): Hủy toàn bộ công cụ đang cầm an toàn.
     - Khi mở Shop hoặc Reset game: Dọn dẹp toàn bộ trạng thái công cụ.
 
+### 3. Tinh chỉnh văn bản Xe Cắt Cỏ & Tối ưu hóa Cửa Hàng (Shop Cleanup)
+- **Bỏ chữ 3.5s khi chọn hàng:**
+  - Nhãn hiển thị trên chùm tia ngắm chọn hàng ngang được đổi từ `"🚜 PHÓNG XE CẮT CỎ HÀNG X (3.5s) ◀"` thành `"🚜 PHÓNG XE CẮT CỎ HÀNG X ◀"`.
+  - Tooltip hướng dẫn phím tắt `[M]` và mô tả trong Shop cũng được làm gọn gàng, súc tích.
+- **Xóa bỏ 3 mặt hàng chưa làm trong Cửa Hàng Crazy Dave:**
+  - Loại bỏ hoàn toàn 3 mục không còn cần thiết:
+    1. *Phân Bón Siêu Cấp (`plantfood`)*
+    2. *Map Đập Hũ (`vase`)*
+    3. *Map I, Zombie (`izombie`)*
+  - Giữ lại trọn vẹn **5 mặt hàng chính thức** đã hoàn thiện 100% công năng:
+    1. **Pet Ốc Sên Stinky (`snail`):** Bò nhặt xu và mặt trời tự động.
+    2. **Kẹo Chocolate (`chocolate`):** Tăng 250% tốc độ cho ốc sên trong 3 phút (phím `C`).
+    3. **Xe Cắt Cỏ Càn Quét (`lawnmower`):** Phóng xe càn quét toàn bộ 1 hàng ngang (phím `M`).
+    4. **Bùa Đóng Băng (`iceshroom`):** Đóng băng cứng và làm chậm toàn sân đấu trong 5 giây (phím `F`).
+    5. **Xẻng Vàng (`shovel`):** Đào thu hồi cây hoàn trả 50% số Mặt trời (phím `S`).
+  - **Tái cấu trúc bố cục Cửa Hàng (Centered 2-Row Grid):** Giao diện 5 thẻ được căn giữa trang trọng và cân đối trên màn hình (Hàng 1 gồm 3 thẻ, Hàng 2 gồm 2 thẻ), thẻ to rõ ràng với đầy đủ nút bấm, trạng thái sở hữu và mức giá.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.
