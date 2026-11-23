@@ -3,6 +3,7 @@ import com.team.gardendefense.model.level.WaveData;
 import com.team.gardendefense.model.level.SpawnerData;
 import com.team.gardendefense.model.level.Waypoint;
 import com.team.gardendefense.model.entity.monster.*;
+import com.team.gardendefense.utils.Constants;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -71,8 +72,14 @@ public class WaveManager {
                 if (as.timer <= 0) {
                     // Đẻ 1 con quái
                     int zId = as.data.zombies[as.zIndex];
-                    if (zId == 1) gm.zombies.add(new Zombie(as.data.waypoints));
-                    else if (zId == 2) gm.zombies.add(new ShooterZombie(as.data.waypoints));
+                    Monster monster = null;
+                    if (zId == 1) monster = new Zombie(as.data.waypoints);
+                    else if (zId == 2) monster = new ShooterZombie(as.data.waypoints);
+                    
+                    if (monster != null) {
+                        gm.zombies.add(monster);
+                        gm.triggerZombieSpawnAlert(monster.x, monster.y, as.data.waypoints);
+                    }
                     
                     as.zIndex++; // Tiến sang con quái tiếp theo của Spawner này
                     

@@ -14,6 +14,17 @@ Write-Host "  Dang bien dich va khoi dong tro choi Bao Ve Khu Vuon..." -Foregrou
 Write-Host "  Lop khoi chay: $mainClass" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
 
+if (-not $env:JAVA_HOME) {
+    if (Test-Path "C:\Program Files\Java\jdk-26.0.2") {
+        $env:JAVA_HOME = "C:\Program Files\Java\jdk-26.0.2"
+    } elseif (Test-Path "C:\Program Files\Java\latest") {
+        $env:JAVA_HOME = "C:\Program Files\Java\latest"
+    }
+}
+if ($env:JAVA_HOME) {
+    $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+}
+
 javac --release 11 -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
 
 if ($LASTEXITCODE -eq 0) {

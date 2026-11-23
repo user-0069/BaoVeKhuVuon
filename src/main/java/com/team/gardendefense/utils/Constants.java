@@ -79,4 +79,14 @@ public class Constants {
     public static final float DROP_RATE_DIAMOND = 0.01f;
     public static final int COIN_LIFETIME = 360; // 6 giây
     public static final int COIN_FADE_START = 240; // 2 giây cuối nhấp nháy
+
+    // --- PLANT COOLDOWNS (frames, 60 FPS) ---
+    public static final int CD_SUNFLOWER = 450;    // 7.5 giây - Cây kinh tế cơ bản hồi nhanh
+    public static final int CD_PEASHOOTER = 450;   // 7.5 giây - Cây bắn đậu cơ bản hồi nhanh
+    public static final int CD_SNOWPEA = 450;      // 7.5 giây - Đậu băng làm chậm hồi nhanh
+    public static final int CD_SNIPER = 600;       // 10.0 giây - Cây bắn tỉa tầm xa sát thương lớn
+    public static final int CD_MARIGOLD = 600;     // 10.0 giây - Cúc vàng sinh tiền
+    public static final int CD_CHOMPER = 900;      // 15.0 giây - Cây ngoạm nuốt chửng zombie
+    public static final int CD_WALLNUT = 1200;     // 20.0 giây - Tường phòng thủ trâu bò (30 HP)
+    public static final int CD_CHERRYBOMB = 1800;  // 30.0 giây - Quả anh đào nổ sát thương cực lớn
 }

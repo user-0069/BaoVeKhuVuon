@@ -99,7 +99,7 @@ public class WalletManager {
         save();
 
         // Tạo hiệu ứng chữ nổi
-        String prefix = (type == CoinType.DIAMOND) ? "💎 +" : "+";
+        String prefix = "+";
         floatingTexts.add(new FloatingText(prefix + amount, uiX, uiY));
 
         // Phát âm thanh

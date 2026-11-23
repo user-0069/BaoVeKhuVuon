@@ -189,9 +189,10 @@ public class ActiveLawnMower {
         }
 
         // 5. Hiệu ứng tia lửa và lưỡi dao quay tít phía trước xe
-        g2.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
         g2.setColor(new Color(255, 235, 60));
-        g2.drawString("✨", drawX - 6, drawY + 30 + engineBob);
+        g2.fillOval(drawX - 6, drawY + 28 + engineBob, 4, 4);
+        g2.setColor(new Color(255, 160, 40));
+        g2.fillOval(drawX - 2, drawY + 32 + engineBob, 3, 3);
 
         g2.dispose();
     }

@@ -7,11 +7,11 @@ public class ShopManager {
     private static final ShopManager instance = new ShopManager();
     public static ShopManager getInstance() { return instance; }
 
-    public static final int PRICE_PET_SNAIL = 3000;
-    public static final int PRICE_CHOCOLATE = 50;
-    public static final int PRICE_LAWN_MOWER = 500;
-    public static final int PRICE_ICE_SHROOM = 350;
-    public static final int PRICE_GOLDEN_SHOVEL = 150;
+    public static final int PRICE_PET_SNAIL = 1500;
+    public static final int PRICE_CHOCOLATE = 80;
+    public static final int PRICE_LAWN_MOWER = 350;
+    public static final int PRICE_ICE_SHROOM = 200;
+    public static final int PRICE_GOLDEN_SHOVEL = 100;
 
     private ShopManager() {}
 

@@ -491,6 +491,118 @@ Toàn bộ người chơi mới khi cài đặt hoặc clone dự án lần đ�
 
 Nhờ cơ chế này, bất kỳ ai `git clone` dự án về máy đều có trải nghiệm khởi đầu chuẩn xác 100%, và dù họ có chơi hay test đến bao nhiêu xu thì khi `git push` lên GitHub cũng không bao giờ làm ảnh hưởng đến dữ liệu người chơi mới.
 
+## Cơ chế Countdown Hồi Chiêu Thực Vật & Cảnh Báo Zombie Xuất Hiện
+
+Theo yêu cầu nâng cấp trải nghiệm chiến thuật và cảnh báo tình huống chiến trường:
+
+### 1. Countdown hồi chiêu cho các cây sau khi trồng (Plant Cooldown System)
+- **Thời gian hồi chiêu hợp lý, cân bằng chiến thuật cho từng loại cây:**
+  - `Sunflower (Hoa hướng dương):` **7.5 giây** (`CD_SUNFLOWER = 450 frames`) - Cây kinh tế cơ bản, hồi nhanh để đảm bảo dòng tiền.
+  - `Peashooter (Đậu bắn cơ bản):` **7.5 giây** (`CD_PEASHOOTER = 450 frames`) - Đơn vị hỏa lực tuyến đầu, hồi nhanh.
+  - `SnowPea (Đậu băng làm chậm):` **7.5 giây** (`CD_SNOWPEA = 450 frames`) - Làm chậm và giảm tốc độ zombie, hồi nhanh.
+  - `SniperPlant (Cây bắn tỉa):` **10.0 giây** (`CD_SNIPER = 600 frames`) - Sát thương 2x tầm xa, thời gian hồi trung bình.
+  - `Marigold (Cúc vàng sinh tiền):` **10.0 giây** (`CD_MARIGOLD = 600 frames`) - Cây farm xu meta-game.
+  - `Chomper (Cây ngoạm):` **15.0 giây** (`CD_CHOMPER = 900 frames`) - Nuốt chửng 1 zombie tức thì, hồi lâu hơn.
+  - `WallNut (Khoai tây chắn đường):` **20.0 giây** (`CD_WALLNUT = 1200 frames`) - Chống chịu cực trâu (30 máu), cooldown dài để tránh lạm dụng dựng tường liên tục.
+  - `CherryBomb (Quả anh đào nổ AOE):` **30.0 giây** (`CD_CHERRYBOMB = 1800 frames`) - Vũ khí dọn sân diện rộng sát thương cực lớn, yêu cầu tính toán thời điểm sử dụng khôn ngoan.
+- **Giao diện đếm ngược trực quan, hiện đại:**
+  - **Lớp phủ quét (Cooldown Sweep):** Lớp phủ tối đen bán trong suốt (`rgba(0, 0, 0, 185)`) che phủ thẻ bài và hạ dần xuống dưới theo tỉ lệ thời gian còn lại.
+  - **Thanh quét sáng (Sweep Line):** Đường viền phát sáng ở ranh giới quét tạo cảm giác chuyển động mượt mà.
+  - **Số giây đếm lùi sắc nét:** Hiển thị trực tiếp số giây còn lại (ví dụ: `7.5s`, `6.2s`, `15s`) chính giữa thẻ bài với chữ vàng sáng viền bóng đen, người chơi lập tức nắm bắt thời điểm cây sẵn sàng.
+  - **Bảo vệ độc quyền:** Khi thẻ bài đang trong countdown (`currentCooldown > 0`), hệ thống chặn thao tác chọn cây và phát âm báo nhẹ.
+
+### 2. Cảnh báo Zombie xuất hiện (Zombie Spawn Hazard Alert)
+- **Biểu tượng tam giác chấm than ⚠️ (Hazard Warning Triangle):**
+  - Xuất hiện ngay tại ô xuất phát của Zombie khi vừa spawn trên sân.
+  - Thiết kế hình tam giác cân màu vàng rực rỡ viền đỏ cam đậm, dấu chấm than `!` nét to bo tròn nổi bật.
+  - Quầng sáng cảnh báo màu đỏ cam dưới nền kết hợp hiệu ứng nhịp đập cảnh báo (pulse animation `1.0f -> 1.12f`) thu hút sự chú ý tức thì của người chơi.
+  - Tự động kẹp tọa độ (clamp) đảm bảo biểu tượng luôn nằm trọn vẹn trong tầm nhìn, không bị Header hoặc mép bản đồ che khuất.
+- **Chuỗi mũi tên chỉ hướng kéo dài trên cả đường đi từ đầu tới cuối của Zombie (Full-Route Marching Arrows):**
+  - Tự động dựng toàn bộ lộ trình di chuyển của Zombie từ điểm xuất phát qua tất cả các waypoint trung gian đến đích cuối cùng.
+  - **Đường nét đứt phát quang động (Animated Dashed Guideline):** Nối liền các waypoint với hiệu ứng vệt sáng cam đỏ mờ và nét đứt chuyển động nhịp nhàng dọc theo hành lang di chuyển.
+  - **Chuỗi mũi tên đồ họa chuyển động liên tục:** Các mũi tên màu đỏ tươi viền vàng sáng sắc nét được bố trí trải đều trên toàn bộ tuyến đường (khoảng cách 44px mỗi mũi tên), liên tục trượt sóng động theo chiều hành quân của zombie, giúp người chơi thấy rõ toàn bộ lộ trình kẻ địch sẽ đi qua.
+  - **Vòng tròn mục tiêu cảnh báo điểm cuối:** Điểm kết thúc tuyến đường (nơi zombie tiến vào nhà) có vòng tròn nhấp nháy báo hiệu khu vực cần bảo vệ khẩn cấp.
+- **Thời gian tồn tại:**
+  - Cả tam giác cảnh báo và chuỗi mũi tên kéo dài toàn tuyến hiển thị chính xác trong **2.0 giây** (`120 frames` ở 60 FPS).
+  - Ở 0.35 giây cuối (`timer < 20 ticks`), toàn bộ hiệu ứng mờ dần (fade-out) nhẹ nhàng rồi tự động dọn dẹp khỏi bộ nhớ.
+
+## Hiệu ứng rơi tay khi còn nửa máu & Rụng đầu tan biến dần khi Zombie chết
+
+Nhằm tái hiện chân thực và sống động phong cách kinh điển của Plants vs. Zombies:
+
+### 1. Hiệu ứng rơi cánh tay khi còn 1 nửa máu (Arm Drop at Half HP)
+- **Cơ chế kích hoạt:** Khi Zombie nhận sát thương khiến lượng máu giảm xuống còn $\le 50\%$ máu tối đa (`health <= maxHp / 2`):
+  - **Đứt lìa cánh tay trên thân Zombie:** Bộ diễn hoạt [Reanim.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/view/renderer/Reanim.java) tự động ẩn toàn bộ các track cánh tay ngoài (`Zombie_outerarm_upper`, `Zombie_outerarm_lower`, `Zombie_outerarm_hand`), để lại khớp vai cụt chân thực trên người zombie.
+  - **Mảnh cánh tay văng ra ngoài ([ZombieLimb.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/monster/ZombieLimb.java)):** Sử dụng sprite hạt gốc `ZombieArm.png`, văng lên không trung theo quỹ đạo parabol vật lý có gia tốc trọng lực, xoay tròn tự nhiên, nảy nhẹ khi chạm mặt đường và nằm lại trên sân trước khi mờ dần trong 1.5 giây. Đồng bộ chính xác tỉ lệ scale `0.55f` khớp 100% với kích thước cánh tay trên mô hình Zombie gốc.
+
+### 2. Hiệu ứng rơi đầu và biến mất từ từ khi Zombie chết (Head Drop & Fade Out on Death)
+- **Rụng đầu vật lý (Head Pop & Roll):**
+  - Ngay khi Zombie hết máu (`health <= 0`), chiếc đầu rụng lìa khỏi cổ thông qua phương thức `ZombieLimb.createHead()`, sử dụng sprite hạt gốc `ZombieHead.png`.
+  - Đầu zombie văng lên theo hình vòng cung, rơi xuống đất, nảy nảy vài nhịp theo quán tính và mờ dần trong 1.5 giây.
+  - Đồng bộ chuẩn xác hệ số scale `ZOMBIE_SCALE = 0.55f` (từ kích thước gốc $64 \times 61$ px thu nhỏ về $35 \times 33$ px), vừa khít hoàn hảo với phần đầu trên thân Zombie gốc, không còn tình trạng đầu bị to bất thường khi rơi.
+- **Thân không đầu ngã quỵ và biến mất dần (Headless Body Fall & Fade Out):**
+  - Trên thân Zombie, toàn bộ các track vùng đầu và cổ (`head`, `neck`, `hair`, `tongue`, `jaw`) lập tức được ẩn đi.
+  - Thân Zombie chuyển sang phân đoạn diễn hoạt chết ngã gục xuống đất (`anim_death`).
+  - Độ mờ (*alpha*) của thân zombie giảm đều từ `1.0` về `0.0` trong 1.33 giây (80 frames), tạo hiệu ứng tan biến êm ái trên mặt đất thay vì biến mất đột ngột.
+  - Khi thân hoàn toàn biến mất (`deathAlpha <= 0`), đối tượng mới được dọn dẹp khỏi danh sách `zombies`.
+- **Bảo toàn cơ chế game & hỏa lực:**
+  - Phần thưởng ánh sáng mặt trời ($+10$ ☀️) và tỉ lệ rơi xu/kim cương được trao ngay lập tức cho người chơi ngay khi zombie bắt đầu chết.
+  - Các cây phòng thủ (Peashooter, SnowPea, Sniper, Chomper) và đạn đậu tự động bỏ qua xác zombie đang tan biến, đảm bảo hỏa lực luôn tập trung 100% vào các zombie sống phía sau.
+
+## Nâng cấp Countdown Kỹ Năng Chủ Động, Cân Bằng Giá Shop & Thay Thế Đồ Họa Nút Bấm/Icon
+
+### 1. Khắc phục nguyên nhân không chạy được code
+- **Nguyên nhân cốt lõi:**
+  1. Trong `GameManager.java`: `petSnail.boostTimer` là trường `private` trong `PetSnail.java`, dẫn đến lỗi biên dịch `error: boostTimer has private access in PetSnail`. Đã sửa thành phương thức getter công khai `petSnail.getBoostTimer()`.
+  2. Trong `GameManager.java`: Khi tham chiếu giá xẻng vàng trong chuỗi thông báo thiếu `import com.team.gardendefense.system.ShopManager;`, dẫn đến lỗi biên dịch `error: cannot find symbol variable ShopManager`. Đã bổ sung import đầy đủ.
+  3. Cải tiến `run.bat` & `run.ps1`: Tự động tìm kiếm và trỏ `JAVA_HOME` tới bộ cài đặt JDK 26 sẵn có trên máy (`C:\Program Files\Java\jdk-26.0.2`), phòng ngừa lỗi PATH hoặc stub `javapath` của Oracle bị treo trên Windows.
+- **Kết quả:** Đã biên dịch sạch 100% bằng Java 11 bytecode (`--release 11`), GameLauncher khởi chạy hoàn hảo.
+
+---
+
+### 2. Countdown hồi chiêu cho 4 kỹ năng chủ động Hotbar
+- **Cơ chế Cooldown chiến thuật:**
+  - `[1] Bùa Đóng Băng (IceShroom):` **20 giây** (`CD_ICE_SHROOM = 1200 frames`). Ngăn chặn người chơi spam liên tiếp giữ quái đóng băng vĩnh viễn trên sân.
+  - `[2] Kẹo Chocolate (Chocolate):` **180 giây / 3 phút** (`CD_CHOCOLATE = 10800 frames`). Bằng đúng thời gian buff tốc độ của Pet Ốc Sên, có cơ chế đồng bộ trực tiếp với `petSnail.getBoostTimer()`.
+  - `[3] Xẻng Vàng (Golden Shovel):` **2.5 giây** (`CD_SHOVEL = 150 frames`) giữa các lần đào cây. Chống đào nhầm liên tục và giữ nhịp game chiến thuật.
+  - `[4] Xe Cắt Cỏ Dự Phòng (Lawn Mower):` **30 giây** (`CD_LAWN_MOWER = 1800 frames`). Cân bằng vũ khí cứu nguy diện rộng 1 hàng.
+- **Hiệu ứng đồ họa đếm ngược trên các nút Hotbar:**
+  - Lớp phủ bóng tối quét từ trên xuống (`rgba(0, 0, 0, 185)`) bo góc mượt mà theo đúng tỉ lệ thời gian hồi chiêu còn lại.
+  - Mép quét phát sáng màu trắng ngà chuyển động theo nhịp đếm lùi.
+  - Hiển thị số giây còn lại sắc nét (hoặc định dạng phút:giây `MM:SS` cho kẹo) với chữ vàng sáng viền đen căn giữa nút.
+  - Chặn thao tác bấm khi đang trong thời gian hồi chiêu kèm thông báo nổi (floating text) và âm thanh buzzer cảnh báo.
+
+---
+
+### 3. Cân bằng lại giá cả vật phẩm trong Shop Meta-game
+Dựa trên chỉ số kinh tế thực tế (người chơi mới có 100 xu, mỗi màn farm được ~150 - 250 xu):
+- `Pet Ốc Sên Stinky (Vĩnh viễn):` **1,500 xu** (giảm từ 3,000 xu để người chơi có thể tích lũy mua được sau vài màn chơi).
+- `Xe Cắt Cỏ Càn Quét (Cứu nguy 1 hàng):` **350 xu** (giảm từ 500 xu).
+- `Bùa Đóng Băng (Đóng băng toàn sân 5s):` **200 xu** (giảm từ 350 xu).
+- `Kẹo Chocolate (Tăng tốc Pet 250% trong 3 phút):` **80 xu** (cân đối với lợi nhuận nhặt xu/sun do pet mang lại).
+- `Xẻng Vàng (Đào hoàn 50% sun):` **100 xu / lượt** (giảm từ 150 xu).
+
+---
+
+### 4. Thay thế Nút bấm, Icon bằng Tài nguyên có sẵn trong images (Ưu tiên 1 & Ưu tiên 2)
+- **Ưu tiên 1 (Vật phẩm Hotbar & Cửa hàng Dave):**
+  - **Kẹo Chocolate:** Thay thế hoàn toàn emoji `🍫` bằng sprite kẹo thực tế `src/main/resources/assets/images/chocolate.png` trên cả nút Hotbar `[2]` và thẻ vật phẩm trong Shop.
+  - **Bùa Đóng Băng:** Thay thế emoji `❄️` bằng hình ảnh đầu nấm băng xanh đặc trưng `src/main/resources/assets/reanim/IceShroom_head.png` trên cả nút Hotbar `[1]` và thẻ vật phẩm trong Shop.
+  - **Pet Ốc Sên Stinky:** Thay thế emoji `🐌` bằng sprite ghép thực tế của Ốc Sên `Stinky_body.png` và `Stinky_shell.png` trong Shop Dave.
+  - **Xẻng Vàng:** Thể hiện đồ họa chân thực từ `Shovel.png` trong cả Hotbar và Shop.
+  - **Xe Cắt Cỏ:** Thể hiện đồ họa chân thực từ `icon_roofcleaner.png` trong cả Hotbar và Shop.
+- **Ưu tiên 2 (Nút bấm đồ họa PvZ):**
+  - **Mũi tên cuộn thẻ cây:** Thay thế nút vuông vẽ tay `◀` và `▶` bằng 2 sprite mũi tên đá PvZ chính thức: `zombatar_prev_button.png` và `zombatar_next_button.png` (kèm trạng thái `_highlight` khi hover và `_disabled` khi kịch thanh cuộn).
+  - **Nút "QUAY LẠI":** Thay thế nút vẽ tay bằng nút đá chạm khắc phong cách PvZ `Almanac_CloseButton.png` kết hợp hiệu ứng sáng `Almanac_CloseButtonHighlight.png` tại cả màn Chọn Màn, Hướng Dẫn và Cửa Hàng Shop Dave.
+
+### 5. Khắc phục triệt để lỗi ô vuông rỗng (Tofu Glyphs `□`)
+- **Nguyên nhân:** Font mặc định `Arial` / `SansSerif` của Java Swing trên Windows không hỗ trợ các ký tự Emoji màu hoặc Emoji đặc biệt ngoài chuẩn BMP (ví dụ: `⚡`, `🛒`, `🍫`, `❄️`, `🚜`, `⛏️`, `🗺️`, `🏠`, `🔊`), dẫn đến việc hệ điều hành hiển thị các khối vuông rỗng không có ký hiệu.
+- **Giải pháp hoàn thiện:**
+  - **Tia sét tốc độ trên Pet Ốc Sên:** Thay thế emoji `⚡` bằng tia sét đồ họa vector vẽ trực tiếp bằng `Graphics2D.fillPolygon(...)` với hiệu ứng phát sáng vàng viền cam, vừa sắc nét vừa 100% không bị phụ thuộc font. Đổi chuỗi text thành `"SPEED MM:SS"`.
+  - **Nút Shop trong trận:** Đổi `"Shop 🛒"` thành `"CỬA HÀNG"` với gradient vàng đồng phong cách nút PvZ, bỏ hoàn toàn emoji `🛒`.
+  - **Thực đơn Tạm dừng (PauseDialog):** Bỏ các emoji `🛒`, `🔊`, `🗺️`, `🏠` khỏi các nút, chuyển thành text chuẩn tiếng Việt: `"CỬA HÀNG"`, `"ÂM THANH: [ BẬT ]"`, `"CHỌN MÀN KHÁC"`, `"VỀ MENU CHÍNH"`.
+  - **Toàn bộ hiệu ứng hình ảnh (VFX):** Hoa tuyết rơi, tia lửa xe cắt cỏ, chỉ hướng xe cắt cỏ `◀ ◀`, và các nhãn thông báo nổi đều được chuyển sang vẽ hình học vector mượt mà hoặc text thuần túy.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

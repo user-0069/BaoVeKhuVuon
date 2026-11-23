@@ -93,21 +93,21 @@ public class PauseDialog {
 
         // Button 3: CỬA HÀNG CRAZY DAVE (Vàng mật ong)
         btnShop.setBounds(leftColumnX, startBtnY + buttonStepY, btnW, btnH);
-        drawPvZButton(g2, btnShop, "CỬA HÀNG 🛒", gm.mouseX, gm.mouseY, new Color(160, 110, 30), new Color(190, 135, 40));
+        drawPvZButton(g2, btnShop, "CỬA HÀNG", gm.mouseX, gm.mouseY, new Color(160, 110, 30), new Color(190, 135, 40));
 
         // Button 4: ÂM THANH SFX (Toggle)
         boolean soundOn = AudioManager.getInstance().isSfxEnabled();
         btnToggleSound.setBounds(rightColumnX, startBtnY + buttonStepY, btnW, btnH);
-        String soundText = soundOn ? "ÂM THANH: [ BẬT 🔊 ]" : "ÂM THANH: [ TẮT 🔇 ]";
+        String soundText = soundOn ? "ÂM THANH: [ BẬT ]" : "ÂM THANH: [ TẮT ]";
         drawPvZButton(g2, btnToggleSound, soundText, gm.mouseX, gm.mouseY, new Color(70, 90, 120), new Color(85, 110, 145));
 
         // Button 5: CHỌN MÀN KHÁC (Xanh ngọc bích sẫm)
         btnLevelSelect.setBounds(leftColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
-        drawPvZButton(g2, btnLevelSelect, "CHỌN MÀN KHÁC 🗺️", gm.mouseX, gm.mouseY, new Color(45, 85, 75), new Color(55, 105, 90));
+        drawPvZButton(g2, btnLevelSelect, "CHỌN MÀN KHÁC", gm.mouseX, gm.mouseY, new Color(45, 85, 75), new Color(55, 105, 90));
 
         // Button 6: VỀ MENU CHÍNH (Đỏ gạch / Nâu gỗ sẫm)
         btnMainMenu.setBounds(rightColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
-        drawPvZButton(g2, btnMainMenu, "VỀ MENU CHÍNH 🏠", gm.mouseX, gm.mouseY, new Color(110, 40, 40), new Color(135, 50, 50));
+        drawPvZButton(g2, btnMainMenu, "VỀ MENU CHÍNH", gm.mouseX, gm.mouseY, new Color(110, 40, 40), new Color(135, 50, 50));
 
         g2.dispose();
     }

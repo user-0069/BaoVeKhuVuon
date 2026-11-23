@@ -161,12 +161,22 @@ public final class Reanim {
     /** Draws an 80x80 plant rig in a tile, or a 100x120 zombie rig at a waypoint. */
     public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
                      double elapsedTicks, boolean zombie) {
-        draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie);
+        draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie, false, false);
+    }
+
+    public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
+                     double elapsedTicks, boolean zombie, boolean hideArm, boolean hideHead) {
+        draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie, hideArm, hideHead);
     }
 
     /** Draws with separate action clock and background idle clock (keeps stem swaying during shoot). */
     public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
                      double actionTicks, double idleTicks, boolean zombie) {
+        draw(graphics, x, y, scale, clipName, actionTicks, idleTicks, zombie, false, false);
+    }
+
+    public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
+                     double actionTicks, double idleTicks, boolean zombie, boolean hideArm, boolean hideHead) {
         Clip clip = clips.get(clipName);
         if (clip == null) clip = clips.get("idle");
         if (clip == null) return;
@@ -174,8 +184,10 @@ public final class Reanim {
         if (length <= 0) return;
 
         double phase;
-        if ("shoot".equals(clipName) || "bite".equals(clipName) || "swallow".equals(clipName) || "explode".equals(clipName)) {
+        if ("shoot".equals(clipName) || "bite".equals(clipName) || "swallow".equals(clipName)
+                || "explode".equals(clipName) || "death".equals(clipName)) {
             int duration = durationTicks(clipName);
+            if (duration <= 0 && "death".equals(clipName)) duration = 50;
             phase = duration > 0 ? (actionTicks / (double) duration) * length : 0;
             if (phase >= length) phase = length - 0.001;
             if (phase < 0) phase = 0;
@@ -226,7 +238,12 @@ public final class Reanim {
         root.scale(scale, scale);
         try {
             for (Track track : tracks) {
-                if (zombie && !isPlainZombiePart(track.name)) continue;
+                if (zombie) {
+                    if (!isPlainZombiePart(track.name)) continue;
+                    String tName = track.name.toLowerCase(Locale.ROOT);
+                    if (hideArm && tName.contains("outerarm")) continue;
+                    if (hideHead && (tName.contains("head") || tName.contains("neck") || tName.contains("hair") || tName.contains("tongue") || tName.contains("jaw"))) continue;
+                }
                 Pose a = track.poses[first];
                 Pose b = track.poses[second];
                 double trackBlend = blend;

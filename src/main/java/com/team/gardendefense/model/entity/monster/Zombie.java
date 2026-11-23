@@ -11,7 +11,6 @@ public class Zombie extends Monster {
     private float baseSpeed = Constants.SPEED_ZOMBIE_RED;
     private float speed = Constants.SPEED_ZOMBIE_RED;
     private int attackTimer = 0;
-    private int maxHp;
 
     public Zombie(Waypoint[] wps) {
         this.waypoints = wps;
@@ -27,6 +26,20 @@ public class Zombie extends Monster {
 
     @Override
     public void update(GameManager gm) {
+        if (health <= 0) {
+            handleDeathSequence(gm);
+            return;
+        }
+
+        // Rơi cánh tay khi zombie còn 1 nửa máu
+        if (!armDropped && health <= maxHp / 2) {
+            armDropped = true;
+            lostArm = true;
+            if (gm != null) {
+                gm.spawnZombieLimb(ZombieLimb.createArm(x, y, facingRight));
+            }
+        }
+
         if (freezeTimer > 0) {
             freezeTimer--;
             if (freezeTimer <= Constants.FREEZE_DURATION) {

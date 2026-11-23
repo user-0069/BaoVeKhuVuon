@@ -168,28 +168,29 @@ public class PetSnail implements IAutoCollector {
             g2.setStroke(new java.awt.BasicStroke(1.8f));
             g2.drawOval(drawX - glowPad, drawY - glowPad, width + glowPad * 2, height + glowPad * 2);
 
-            // Tia chớp tốc độ phía sau
-            int trailX = facingRight ? drawX - 12 : drawX + width + 4;
-            g2.setFont(new java.awt.Font("Segoe UI Emoji", java.awt.Font.PLAIN, 14));
-            g2.setColor(new Color(255, 220, 50, (int) (160 + 50 * pulse)));
-            g2.drawString("⚡", trailX, drawY + 26);
+            // Tia chớp tốc độ đồ họa phía sau (Polygon tia sét sắc nét)
+            int trailX = facingRight ? drawX - 10 : drawX + width + 4;
+            int[] sparkX = {trailX + 3, trailX + 7, trailX + 5, trailX + 8, trailX + 2, trailX + 4, trailX};
+            int[] sparkY = {drawY + 16, drawY + 16, drawY + 22, drawY + 22, drawY + 29, drawY + 23, drawY + 23};
+            g2.setColor(new Color(255, 235, 60, (int) (180 + 70 * pulse)));
+            g2.fillPolygon(sparkX, sparkY, 7);
 
-            // Hiển thị thanh đếm ngược thời gian nhỏ gọn trên đầu Pet
+            // Hiển thị thanh đếm ngược thời gian nhỏ gọn trên đầu Pet (không dùng emoji để tránh lỗi font)
             int totalSec = getRemainingSeconds();
             int mins = totalSec / 60;
             int secs = totalSec % 60;
-            String timerStr = String.format("%d:%02d ⚡", mins, secs);
+            String timerStr = String.format("SPEED %d:%02d", mins, secs);
 
-            g2.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 11));
+            g2.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 10));
             int tw = g2.getFontMetrics().stringWidth(timerStr);
             int tx = drawX + (width - tw) / 2;
             int ty = drawY - 8;
 
-            g2.setColor(new Color(0, 0, 0, 180));
-            g2.fillRoundRect(tx - 5, ty - 12, tw + 10, 16, 6, 6);
+            g2.setColor(new Color(0, 0, 0, 200));
+            g2.fillRoundRect(tx - 6, ty - 12, tw + 12, 16, 6, 6);
             g2.setColor(new Color(255, 215, 0));
-            g2.drawRoundRect(tx - 5, ty - 12, tw + 10, 16, 6, 6);
-            g2.setColor(new Color(255, 240, 150));
+            g2.drawRoundRect(tx - 6, ty - 12, tw + 12, 16, 6, 6);
+            g2.setColor(new Color(255, 240, 120));
             g2.drawString(timerStr, tx, ty);
         }
 
@@ -220,7 +221,7 @@ public class PetSnail implements IAutoCollector {
             g2.setStroke(new java.awt.BasicStroke(1.5f));
             g2.drawRoundRect(drawX - 2, drawY - 2, width + 4, height + 4, 8, 8);
 
-            String tip = "🍫 Cho ăn Kẹo [Phím 2]";
+            String tip = "Cho ăn Kẹo [Phím 2]";
             g2.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 11));
             int tw = g2.getFontMetrics().stringWidth(tip);
             int bx = drawX + (width - tw) / 2;

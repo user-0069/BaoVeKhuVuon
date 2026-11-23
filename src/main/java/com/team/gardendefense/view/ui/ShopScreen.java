@@ -42,17 +42,31 @@ public class ShopScreen {
     private Color noticeColor = Color.GREEN;
     private Image coinBankImg;
     private Image mowerShopImg;
+    private Image chocolateImg;
+    private Image iceShroomImg;
+    private Image shovelImg;
+    private Image snailBodyImg;
+    private Image snailShellImg;
+    private Image btnBackImg;
+    private Image btnBackHlImg;
 
     public ShopScreen(GameManager gm) {
         this.gm = gm;
         this.coinBankImg = ImageLoader.getImage("src/main/resources/assets/images/coinbank.png");
         this.mowerShopImg = ImageLoader.getImage("src/main/resources/assets/images/icon_roofcleaner.png");
+        this.chocolateImg = ImageLoader.getImage("src/main/resources/assets/images/chocolate.png");
+        this.iceShroomImg = ImageLoader.getImage("src/main/resources/assets/reanim/IceShroom_head.png");
+        this.shovelImg = ImageLoader.getImage("src/main/resources/assets/images/Shovel.png");
+        this.snailBodyImg = ImageLoader.getImage("src/main/resources/assets/reanim/Stinky_body.png");
+        this.snailShellImg = ImageLoader.getImage("src/main/resources/assets/reanim/Stinky_shell.png");
+        this.btnBackImg = ImageLoader.getImage("src/main/resources/assets/images/Almanac_CloseButton.png");
+        this.btnBackHlImg = ImageLoader.getImage("src/main/resources/assets/images/Almanac_CloseButtonHighlight.png");
 
-        items.add(new ShopItem("snail", "Pet Ốc Sên Stinky", "Tự động bò nhặt xu và mặt trời rơi trên sân", ShopManager.PRICE_PET_SNAIL, "🐌"));
-        items.add(new ShopItem("chocolate", "Kẹo Chocolate", "Tăng 250% tốc độ bò của Pet trong 3 phút", ShopManager.PRICE_CHOCOLATE, "🍫"));
-        items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Càn Quét", "Kích hoạt phóng xe cắt cỏ càn quét toàn bộ 1 hàng ngang", ShopManager.PRICE_LAWN_MOWER, "🚜"));
-        items.add(new ShopItem("iceshroom", "Bùa Đóng Băng", "Đóng băng và làm chậm toàn sân đấu trong 5 giây", ShopManager.PRICE_ICE_SHROOM, "❄️"));
-        items.add(new ShopItem("shovel", "Xẻng Vàng", "Đào thu hồi cây được hoàn trả 50% số Mặt trời (dùng theo lượt)", ShopManager.PRICE_GOLDEN_SHOVEL, "⛏️"));
+        items.add(new ShopItem("snail", "Pet Ốc Sên Stinky", "Tự động bò nhặt xu và mặt trời rơi trên sân", ShopManager.PRICE_PET_SNAIL, "SNAIL"));
+        items.add(new ShopItem("chocolate", "Kẹo Chocolate", "Tăng 250% tốc độ bò của Pet trong 3 phút", ShopManager.PRICE_CHOCOLATE, "CHOCO"));
+        items.add(new ShopItem("lawnmower", "Xe Cắt Cỏ Càn Quét", "Kích hoạt phóng xe cắt cỏ càn quét toàn bộ 1 hàng ngang", ShopManager.PRICE_LAWN_MOWER, "MOWER"));
+        items.add(new ShopItem("iceshroom", "Bùa Đóng Băng", "Đóng băng và làm chậm toàn sân đấu trong 5 giây", ShopManager.PRICE_ICE_SHROOM, "ICE"));
+        items.add(new ShopItem("shovel", "Xẻng Vàng", "Đào thu hồi cây được hoàn trả 50% số Mặt trời (dùng theo lượt)", ShopManager.PRICE_GOLDEN_SHOVEL, "SHOVEL"));
     }
 
     public void update() {
@@ -70,13 +84,24 @@ public class ShopScreen {
         // Header
         g.setColor(new Color(255, 215, 0));
         g.setFont(new Font("Arial", Font.BOLD, 36));
-        String title = "🛒 CỬA HÀNG CRAZY DAVE";
+        String title = "CỬA HÀNG CRAZY DAVE";
         int tw = g.getFontMetrics().stringWidth(title);
         g.drawString(title, (sw - tw) / 2, 60);
 
-        // Nút quay lại
-        btnBack.setBounds(40, 30, 110, 40);
-        drawCustomButton(g, btnBack, "⬅ QUAY LẠI", gm.mouseX, gm.mouseY, new Color(139, 69, 19));
+        // Nút quay lại đồ họa PvZ
+        btnBack.setBounds(40, 28, 115, 36);
+        boolean backHover = btnBack.contains(gm.mouseX, gm.mouseY);
+        if (btnBackImg != null) {
+            Image currentBackImg = (backHover && btnBackHlImg != null) ? btnBackHlImg : btnBackImg;
+            g.drawImage(currentBackImg, btnBack.x, btnBack.y, btnBack.width, btnBack.height, null);
+            g.setFont(new Font("Arial", Font.BOLD, 13));
+            g.setColor(backHover ? Color.WHITE : new Color(220, 220, 220));
+            String bText = "QUAY LẠI";
+            int btw = g.getFontMetrics().stringWidth(bText);
+            g.drawString(bText, btnBack.x + (btnBack.width - btw) / 2, btnBack.y + (btnBack.height + 9) / 2);
+        } else {
+            drawCustomButton(g, btnBack, "⬅ QUAY LẠI", gm.mouseX, gm.mouseY, new Color(139, 69, 19));
+        }
 
         // Khung ví tiền ở góc phải (co giãn linh hoạt theo số chữ số)
         WalletManager wm = WalletManager.getInstance();
@@ -138,14 +163,35 @@ public class ShopScreen {
             g.setColor(new Color(180, 140, 90));
             g.drawRoundRect(cx, cy, cardW, cardH, 16, 16);
 
-            // Icon
-            if (item.id.equals("lawnmower") && mowerShopImg != null) {
+            // Icon đồ họa thực tế từ images thay thế emoji
+            if (item.id.equals("snail") && snailBodyImg != null && snailShellImg != null) {
+                int snailW = 50;
+                int snailH = 44;
+                int ix = cx + (cardW - snailW) / 2;
+                int iy = cy + 22;
+                g.drawImage(snailBodyImg, ix, iy, 36, 40, null);
+                g.drawImage(snailShellImg, ix + 8, iy - 2, 44, 42, null);
+            } else if (item.id.equals("chocolate") && chocolateImg != null) {
+                int iw = 40;
+                int ih = 46;
+                g.drawImage(chocolateImg, cx + (cardW - iw) / 2, cy + 20, iw, ih, null);
+            } else if (item.id.equals("lawnmower") && mowerShopImg != null) {
                 int iw = 56;
                 int ih = 43;
                 g.drawImage(mowerShopImg, cx + (cardW - iw) / 2, cy + 22, iw, ih, null);
+            } else if (item.id.equals("iceshroom") && iceShroomImg != null) {
+                int iw = 56;
+                int ih = 30;
+                g.drawImage(iceShroomImg, cx + (cardW - iw) / 2, cy + 28, iw, ih, null);
+            } else if (item.id.equals("shovel") && shovelImg != null) {
+                int iw = 46;
+                int ih = 46;
+                g.drawImage(shovelImg, cx + (cardW - iw) / 2, cy + 20, iw, ih, null);
             } else {
-                g.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 46));
-                g.drawString(item.iconEmoji, cx + (cardW - 46) / 2, cy + 60);
+                g.setColor(new Color(200, 160, 100));
+                g.setFont(new Font("Arial", Font.BOLD, 16));
+                int iw = g.getFontMetrics().stringWidth(item.iconEmoji);
+                g.drawString(item.iconEmoji, cx + (cardW - iw) / 2, cy + 45);
             }
 
             // Tên

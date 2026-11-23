@@ -288,6 +288,37 @@ public class AudioManager {
         soundPool.submit(this::generatePowerUpTone);
     }
 
+    /**
+     * Âm thanh buzzer cảnh báo khi thao tác thất bại hoặc kỹ năng đang hồi chiêu.
+     */
+    public void playBuzzerSound() {
+        if (!sfxEnabled) return;
+        soundPool.submit(this::generateBuzzerTone);
+    }
+
+    private void generateBuzzerTone() {
+        try {
+            float sampleRate = 44100f;
+            int durationMs = 140;
+            int totalSamples = (int) (sampleRate * (durationMs / 1000f));
+            byte[] buffer = new byte[totalSamples];
+            for (int i = 0; i < totalSamples; i++) {
+                double time = i / (double) sampleRate;
+                double wave = Math.sin(2.0 * Math.PI * 180.0 * time) > 0 ? 0.7 : -0.7;
+                double decay = 1.0 - (i / (double) totalSamples);
+                buffer[i] = (byte) (wave * decay * 85.0);
+            }
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+            try (SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+                line.open(format);
+                line.start();
+                line.write(buffer, 0, buffer.length);
+                line.drain();
+            }
+        } catch (Exception ignored) {}
+    }
+
     private void generatePowerUpTone() {
         try {
             float sampleRate = 44100f;

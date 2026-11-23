@@ -12,6 +12,16 @@ echo   Dang bien dich va khoi dong tro choi Bao Ve Khu Vuon...
 echo   Lop khoi chay: %MAIN_CLASS%
 echo ========================================================
 
+rem Tu dong tim kiem JDK neu chua co trong PATH
+if not defined JAVA_HOME (
+    if exist "C:\Program Files\Java\jdk-26.0.2" (
+        set "JAVA_HOME=C:\Program Files\Java\jdk-26.0.2"
+    ) else if exist "C:\Program Files\Java\latest" (
+        set "JAVA_HOME=C:\Program Files\Java\latest"
+    )
+)
+if defined JAVA_HOME set "PATH=%JAVA_HOME%\bin;%PATH%"
+
 rem Bien dich ma nguon
 javac --release 11 -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
 
