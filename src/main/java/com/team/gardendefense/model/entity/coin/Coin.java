@@ -47,6 +47,7 @@ public class Coin {
     // Kích thước hiển thị cơ bản
     private int baseSize = 36;
     private Image sprite;
+    private static Image glowImg;
 
     public Coin(float startX, float startY, CoinType type) {
         this.x = startX;
@@ -58,11 +59,18 @@ public class Coin {
         this.vx = (random.nextFloat() * 4.0f) - 2.0f; // Văng sang trái/phải ngẫu nhiên
         this.vy = -7.0f - random.nextFloat() * 2.5f;   // Bắn vọt lên trên
 
-        if (type == CoinType.DIAMOND) {
+        if (type == CoinType.SILVER) {
+            baseSize = 36;
+        } else if (type == CoinType.GOLD) {
+            baseSize = 40;
+        } else if (type == CoinType.DIAMOND) {
             baseSize = 44; // Kim cương to hơn một chút
         }
 
         this.sprite = ImageLoader.getImage(type.getImagePath());
+        if (glowImg == null) {
+            glowImg = ImageLoader.getImage("src/main/resources/assets/images/CoinGlow.png");
+        }
     }
 
     public void update(GameManager gm) {
@@ -166,8 +174,29 @@ public class Coin {
             g2.fillOval((int) x, (int) (groundY + baseSize - shadowH / 2), shadowW, shadowH);
         }
 
+        // Vẽ ánh sáng lấp lánh nhẹ nhàng khi nằm trên sân
+        if (state == State.IDLE && glowImg != null) {
+            float pulse = (float) Math.sin((lifeTimer + x) * 0.08f) * 0.5f + 0.5f;
+            Composite oldComp = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.22f + 0.18f * pulse));
+            int glowSize = drawSize + 14;
+            g2.drawImage(glowImg, drawX - 7, drawY - 7, glowSize, glowSize, null);
+            g2.setComposite(oldComp);
+        }
+
         if (sprite != null) {
-            g2.drawImage(sprite, drawX, drawY, drawSize, drawSize, null);
+            int imgW = sprite.getWidth(null);
+            int imgH = sprite.getHeight(null);
+            if (imgW > 0 && imgH > 0) {
+                float aspect = (float) imgH / imgW;
+                int drawW = drawSize;
+                int drawH = (int) (drawSize * aspect);
+                int offX = (int) (x + (baseSize - drawW) / 2.0f);
+                int offY = (int) (y + (baseSize - drawH) / 2.0f);
+                g2.drawImage(sprite, offX, offY, drawW, drawH, null);
+            } else {
+                g2.drawImage(sprite, drawX, drawY, drawSize, drawSize, null);
+            }
         } else {
             // Fallback vẽ hình tròn màu vàng/bạc nếu chưa load được ảnh
             if (type == CoinType.SILVER) g2.setColor(new Color(192, 192, 192));

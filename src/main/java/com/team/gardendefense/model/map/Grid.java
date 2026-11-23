@@ -9,6 +9,7 @@ public class Grid {
     public int[][] map;
     private int levelId;
     private Image backgroundImage;
+    private Image foregroundImage;
 
     public Grid(int[][] mapData) { this(mapData, 0); }
 
@@ -21,15 +22,27 @@ public class Grid {
     private void loadBackground() {
         if (levelId == 1) {
             backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap1.png");
+            foregroundImage = null;
         } else if (levelId == 2) {
             backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap2.png");
+            foregroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap2_overlay.png");
         } else if (levelId == 3) {
             backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap3.png");
+            foregroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap3_overlay.png");
         } else if (levelId == 4) {
             backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap4.png");
+            foregroundImage = null;
         } else {
             backgroundImage = null;
+            foregroundImage = null;
         }
+    }
+
+    public void drawForeground(Graphics2D g) {
+        if (map == null || foregroundImage == null) return;
+        int totalW = map[0].length * Constants.TILE_SIZE;
+        int totalH = map.length * Constants.TILE_SIZE;
+        g.drawImage(foregroundImage, 0, 0, totalW, totalH, null);
     }
 
     public void draw(Graphics2D g) {

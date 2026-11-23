@@ -964,6 +964,11 @@ public class GameManager {
         for(ZombieLimb limb : zombieLimbs) limb.draw(g);
         for(Projectile p : projectiles) p.draw(g);
 
+        // Lớp che tiền cảnh (cây cối trên bản đồ ở màn 2 & 3 che zombie khi mới xuất hiện, tạo hiệu ứng đi từ phía sau cây ra)
+        if (grid != null) {
+            grid.drawForeground(g);
+        }
+
         // Vẽ Pet Ốc sên Stinky nếu đã mở khóa
         if (WalletManager.getInstance().getData().hasPetSnail) {
             if (petSnail == null) {

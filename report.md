@@ -603,6 +603,55 @@ Dựa trên chỉ số kinh tế thực tế (người chơi mới có 100 xu, m
   - **Thực đơn Tạm dừng (PauseDialog):** Bỏ các emoji `🛒`, `🔊`, `🗺️`, `🏠` khỏi các nút, chuyển thành text chuẩn tiếng Việt: `"CỬA HÀNG"`, `"ÂM THANH: [ BẬT ]"`, `"CHỌN MÀN KHÁC"`, `"VỀ MENU CHÍNH"`.
   - **Toàn bộ hiệu ứng hình ảnh (VFX):** Hoa tuyết rơi, tia lửa xe cắt cỏ, chỉ hướng xe cắt cỏ `◀ ◀`, và các nhãn thông báo nổi đều được chuyển sang vẽ hình học vector mượt mà hoặc text thuần túy.
 
+### 6. Xử lý lỗi Zombie đi đè lên cây ở Màn 2 và Màn 3 (Hiệu ứng đi từ sau cây ra)
+- **Hiện tượng lỗi ban đầu:**
+  - Ở Màn 2 (Wave 1 tại hàng 12) và Màn 3 (Wave 1 & 2 tại hàng 9), tại khu vực mép trái nơi Zombie mới xuất hiện có cây cối lớn thuộc ảnh nền (`bgmap2.png`, `bgmap3.png`). Do toàn bộ ảnh nền được vẽ trước rồi mới vẽ Zombie, nên Zombie khi mới bước ra bị vẽ đè lên trên tán cây và thân cây, gây cảm giác phi lý.
+  - Sau đó, khi tạo lớp che ban đầu, vùng che phủ bao gồm cả hàng ô cỏ ở phía trên đường đi (Hàng 11 ở Màn 2 và Hàng 8 ở Màn 3). Vì Zombie có chiều cao vượt qua 1 ô gạch, đầu của Zombie khi đi trên đường bị che khuất bất hợp lý bởi ô cỏ phía trên.
+- **Giải pháp xử lý tinh chỉnh triệt để:**
+  - **Tách lớp tiền cảnh (Foreground Overlay) chuẩn xác:**
+    - Cắt tỉa chính xác phần thân cây và lá cây của Hàng 12 (Màn 2) và Hàng 9 (Màn 3).
+    - **Loại bỏ 100% ô cỏ phía trên:** Bắt đầu tọa độ Y tiền cảnh chính xác tại mép trên của làn đường di chuyển (`y >= 11.95 * tileH` ở Màn 2 và `y >= 8.95 * tileH` ở Màn 3). Vùng ô cỏ phía trên hoàn toàn trong suốt (`Alpha = 0`).
+    - Giới hạn phạm vi X chặt chẽ trong phạm vi thân cây (`x < 1.35 * tileW` ở Màn 2 và `x < 1.05 * tileW` ở Màn 3), không lấn sang các ô cỏ/đường bên cạnh.
+  - **Cơ chế phân lớp đồ họa trong [Grid.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/map/Grid.java):** Bổ sung phương thức `drawForeground(Graphics2D g)`.
+  - **Thứ tự render chuẩn xác trong [GameManager.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/controller/GameManager.java):**
+    1. Vẽ `Grid.draw(g)` (Ảnh nền sân vườn).
+    2. Vẽ Thực vật (`plants`), Zombie (`zombies`), mảnh vụn tay/đầu rơi (`zombieLimbs`), đạn bay (`projectiles`).
+    3. Vẽ `Grid.drawForeground(g)` (Chỉ che phần thân cây tại tọa độ xuất hiện của Zombie, KHÔNG che đầu Zombie bởi ô cỏ phía trên).
+    4. Vẽ các lớp tương tác nổi: Xe cắt cỏ (`activeMowers`), Cảnh báo Zombie xuất hiện (`spawnAlerts`), Pet Ốc sên, Ví tiền và Thanh công cụ Hotbar.
+  - **Kết quả trực quan:** Khi Zombie mới xuất hiện, phần thân của Zombie nằm sau thân cây. Đầu của Zombie hoàn toàn tự nhiên nhô lên trên nền cỏ phía trên mà không bị cắt cụt hay che mất. Khi Zombie bước qua khỏi gốc cây, toàn bộ cơ thể Zombie lộ diện hoàn chỉnh ra ngoài lối đi.
+
+### 7. Khắc phục hình ảnh Xu Bạc và Xu Vàng rơi khi Zombie chết
+- **Nguyên nhân lỗi:**
+  - Trong [CoinType.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/coin/CoinType.java), đường dẫn ảnh trước đây trỏ tới `coin_silver2.png` và `coin_gold2.png`. Đây thực chất là các lát cắt mỏng chỉ rộng 4 pixel (`4x41 px`) dùng trong chuỗi xoay 3D của hoạt ảnh Reanim. Khi được vẽ thành đồng xu kích thước `36x36 px`, hình ảnh bị kéo dãn méo mó, nhìn giống một vệt mỏng biến dạng thay vì đồng xu tròn.
+- **Giải pháp hoàn thiện:**
+  - **Bổ sung tài nguyên chuẩn vào thư mục `images`:**
+    - `src/main/resources/assets/images/coin_silver.png` (`43x40 px`): Đồng xu bạc tròn đầy đủ với biểu tượng đô la chính gốc PvZ.
+    - `src/main/resources/assets/images/coin_gold.png` (`45x45 px`): Đồng xu vàng tròn đầy đủ với biểu tượng đô la chính gốc PvZ.
+    - `src/main/resources/assets/images/diamond.png` (`68x52 px`): Viên kim cương xanh lấp lánh chính gốc PvZ.
+    - `src/main/resources/assets/images/CoinGlow.png`: Hào quang tỏa sáng của đồng xu.
+  - **Cập nhật [Coin.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/coin/Coin.java):**
+    - Tự động duy trì tỉ lệ khung hình chuẩn (`aspect ratio`) khi vẽ đồng xu, tránh méo góc.
+    - Thêm hiệu ứng hào quang (`CoinGlow`) phát sáng nhấp nháy nhẹ nhàng trên nền cỏ/đất khi đồng xu đang nằm chờ nhặt.
+
+### 8. Ẩn biểu tượng hình thoi (Watermark Gemini) ở góc dưới phải các bản đồ và bảng Pause
+- **Nguyên nhân & Bối cảnh:**
+  - Các hình ảnh nền bản đồ (`bgmap1.png`, `bgmap2.png`, `bgmap3.png`) và bảng gỗ tạm dừng (`gamepausedboard.png`) được sinh bằng mô hình AI Gemini/Imagen. Mặc định ở góc dưới cùng bên phải (`x ~ 2150..2350, y ~ 1550..1720`) đều có dập watermark hình ngôi sao/hình thoi 4 cánh `✦` màu trắng ngà của Gemini.
+  - Riêng ở `bgmap4.png`, watermark này đã được che đi một cách khéo léo bằng hình ảnh một chú sinh vật màu xanh lá (cute green creature) với viền hoạt họa đậm phong cách PvZ.
+- **Giải pháp xử lý:**
+  - **Trích xuất & làm sạch Sprite sinh vật xanh:**
+    - Trích xuất chính xác vùng nhân vật từ `bgmap4.png`, tách nền ngoại cảnh (đất đá, hàng rào) bằng thuật toán phân tích kết nối và biên độ tương phản để giữ trọn vẹn viền outline đen hoạt họa, đôi mắt long lanh và thân hình màu xanh.
+    - Xuất thành tài nguyên sprite trong suốt chuẩn: `src/main/resources/assets/images/watermark_cover_creature.png` (`95x88 px`).
+  - **Áp dụng che Watermark đồng bộ:**
+    - Dán sinh vật xanh (kèm hiệu ứng đổ bóng mềm bên dưới để hài hòa với mặt cỏ/gỗ) đè chính xác lên tọa độ watermark hình thoi của:
+      - `bgmap1.png` (Màn 1): Tọa độ `(x: 2150, y: 1545)`, kích thước `185x172 px`.
+      - `bgmap2.png` (Màn 2): Tọa độ `(x: 2170, y: 1590)`, kích thước `185x172 px`.
+      - `bgmap3.png` (Màn 3): Tọa độ `(x: 2170, y: 1550)`, kích thước `185x172 px`.
+      - `gamepausedboard.png` (Bảng Pause): Tọa độ `(x: 1740, y: 2030)`, kích thước `130x120 px`.
+    - Đồng bộ ngay lập tức vào `target/classes/assets/images/` để game hiển thị chuẩn xác khi khởi chạy.
+  - **Bảo toàn 100% trật tự trước/sau (Z-order) ở Màn 2 và Màn 3:**
+    - Khu vực cây cối che Zombie khi mới xuất hiện nằm ở mép TRÁI của bản đồ (`x < 250 px`), được xử lý độc lập qua lớp tiền cảnh `bgmap2_overlay.png` và `bgmap3_overlay.png` gọi bởi `Grid.drawForeground(g)`.
+    - Vị trí watermark và chú sinh vật xanh nằm ở góc DƯỚI BÊN PHẢI (`x > 2150 px`, `y > 1550 px`), hoàn toàn cách biệt và không can thiệp vào các cây tiền cảnh cũng như đường đi của Zombie. Zombie vẫn đi từ sau thân cây ra một cách hoàn hảo mà không bị che mất đầu bởi cỏ.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.
