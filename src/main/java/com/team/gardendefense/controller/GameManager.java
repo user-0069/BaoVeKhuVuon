@@ -299,25 +299,35 @@ public class GameManager {
         availableLevels.clear();
         Set<Integer> foundIds = new TreeSet<>();
 
-        File dir = new File("src/main/resources/data");
-        if (!dir.exists()) {
-            dir = new File("target/classes/data");
-        }
-        if (dir.exists() && dir.isDirectory()) {
-            File[] files = dir.listFiles((d, name) -> name.matches("level_\\d+\\.json"));
-            if (files != null) {
-                for (File f : files) {
-                    try {
-                        String num = f.getName().replaceAll("[^0-9]", "");
-                        foundIds.add(Integer.parseInt(num));
-                    } catch (Exception ignored) {}
+        String[] candidateDirs = {
+            "src/main/resources/data",
+            "BaoVeKhuVuon/src/main/resources/data",
+            "target/classes/data",
+            "BaoVeKhuVuon/target/classes/data",
+            "../src/main/resources/data",
+            "../BaoVeKhuVuon/src/main/resources/data"
+        };
+        for (String cDir : candidateDirs) {
+            File dir = new File(cDir);
+            if (dir.exists() && dir.isDirectory()) {
+                File[] files = dir.listFiles((d, name) -> name.matches("level_\\d+\\.json"));
+                if (files != null) {
+                    for (File f : files) {
+                        try {
+                            String num = f.getName().replaceAll("[^0-9]", "");
+                            foundIds.add(Integer.parseInt(num));
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
         }
 
-        // Đảm bảo tối thiểu kiểm tra level 1 và 2
-        foundIds.add(1);
-        foundIds.add(2);
+        // Tự động kiểm tra thêm qua Classpath cho các level từ 1 đến 50
+        for (int i = 1; i <= 50; i++) {
+            if (getClass().getResource("/data/level_" + i + ".json") != null) {
+                foundIds.add(i);
+            }
+        }
 
         for (int id : foundIds) {
             LevelData data = loadLevelDataOnly(id);
@@ -342,14 +352,40 @@ public class GameManager {
         if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
     }
 
+    private InputStream getLevelStream(String path) {
+        InputStream is = getClass().getResourceAsStream(path);
+        if (is != null) return is;
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl != null) {
+            is = cl.getResourceAsStream(path.startsWith("/") ? path.substring(1) : path);
+            if (is != null) return is;
+        }
+
+        String cleanPath = path.startsWith("/") ? path : ("/" + path);
+        String[] candidatePaths = {
+            "src/main/resources" + cleanPath,
+            "BaoVeKhuVuon/src/main/resources" + cleanPath,
+            "target/classes" + cleanPath,
+            "BaoVeKhuVuon/target/classes" + cleanPath,
+            ".." + cleanPath,
+            "../BaoVeKhuVuon/src/main/resources" + cleanPath
+        };
+        for (String cp : candidatePaths) {
+            File f = new File(cp);
+            if (f.exists()) {
+                try {
+                    return new FileInputStream(f);
+                } catch (Exception ignored) {}
+            }
+        }
+        return null;
+    }
+
     private LevelData loadLevelDataOnly(int id) {
         String path = "/data/level_" + id + ".json";
         try {
-            InputStream is = getClass().getResourceAsStream(path);
-            if (is == null) {
-                File f = new File("src/main/resources" + path);
-                if (f.exists()) is = new FileInputStream(f);
-            }
+            InputStream is = getLevelStream(path);
             if (is == null) return null;
             try (InputStream input = is;
                  InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
@@ -371,8 +407,12 @@ public class GameManager {
         for (LevelPreview lp : availableLevels) {
             if (lp.id == id) return true;
         }
-        return getClass().getResource("/data/level_" + id + ".json") != null 
-            || new File("src/main/resources/data/level_" + id + ".json").exists();
+        InputStream is = getLevelStream("/data/level_" + id + ".json");
+        if (is != null) {
+            try { is.close(); } catch (Exception ignored) {}
+            return true;
+        }
+        return false;
     }
 
     public void startLevel(int id) {
@@ -381,11 +421,7 @@ public class GameManager {
 
     public boolean loadLevel(String path) {
         try {
-            InputStream is = getClass().getResourceAsStream(path);
-            if (is == null) {
-                File f = new File("src/main/resources" + path);
-                if (f.exists()) is = new FileInputStream(f);
-            }
+            InputStream is = getLevelStream(path);
             if (is == null) return false;
             try (InputStream input = is;
                  InputStreamReader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {

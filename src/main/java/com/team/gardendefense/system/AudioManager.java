@@ -474,6 +474,12 @@ public class AudioManager {
     private boolean playAudioFile(String path) {
         try {
             File soundFile = new File(path);
+            if (!soundFile.exists()) {
+                soundFile = new File("BaoVeKhuVuon/" + path);
+            }
+            if (!soundFile.exists()) {
+                soundFile = new File("../" + path);
+            }
             if (!soundFile.exists()) return false;
             AudioInputStream stream = AudioSystem.getAudioInputStream(soundFile);
             Clip clip = AudioSystem.getClip();

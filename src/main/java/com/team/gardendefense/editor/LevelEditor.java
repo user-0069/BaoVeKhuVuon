@@ -843,7 +843,7 @@ public class LevelEditor extends JFrame {
         }
 
         // Mở hộp thoại lưu file
-        JFileChooser chooser = new JFileChooser(new File("src/main/resources/data"));
+        JFileChooser chooser = new JFileChooser(getDefaultDataDir());
         chooser.setSelectedFile(new File("level_" + data.id + ".json"));
         int res = chooser.showSaveDialog(this);
         if (res == JFileChooser.APPROVE_OPTION) {
@@ -860,8 +860,21 @@ public class LevelEditor extends JFrame {
         }
     }
 
+    private static File getDefaultDataDir() {
+        String[] candidates = {
+            "src/main/resources/data",
+            "BaoVeKhuVuon/src/main/resources/data",
+            "target/classes/data"
+        };
+        for (String c : candidates) {
+            File f = new File(c);
+            if (f.exists() && f.isDirectory()) return f;
+        }
+        return new File("src/main/resources/data");
+    }
+
     private void loadLevelFromFile() {
-        JFileChooser chooser = new JFileChooser(new File("src/main/resources/data"));
+        JFileChooser chooser = new JFileChooser(getDefaultDataDir());
         int res = chooser.showOpenDialog(this);
         if (res == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();

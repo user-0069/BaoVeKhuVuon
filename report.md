@@ -675,7 +675,29 @@ Dựa trên chỉ số kinh tế thực tế (người chơi mới có 100 xu, m
   4. **Cập nhật script [run.bat](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/run.bat) & [run.ps1](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/run.ps1):**
      - Bổ sung `src/main/resources` vào classpath: `java -cp "target/classes;src/main/resources;lib\gson-2.10.1.jar"`. Giúp chạy mượt mà ngay sau khi clone mà không yêu cầu build Maven trước.
 
-## Cách xem thay đổi
+### 11. Khắc phục lỗi khi mở dự án từ thư mục cha chứa .github (Chỉ hiện Màn 1, 2 & Lỗi đường dẫn)
+- **Bối cảnh & Hiện tượng:**
+  - Cấu trúc thư mục khi clone repository về máy:
+    ```
+    BaoVeKhuVuon/               <-- Thư mục gốc khi clone
+    ├── .github/                <-- Cấu hình GitHub Actions / Workflows
+    └── BaoVeKhuVuon/           <-- Thư mục chứa mã nguồn Java và tài nguyên trò chơi
+    ```
+  - Khi người dùng mở thư mục cha ngoài cùng trong VS Code / IDE hoặc chạy ứng dụng từ thư mục cha này, thư mục làm việc hiện hành (`user.dir`) trỏ về thư mục cha thay vì thư mục con `BaoVeKhuVuon`.
+  - Hậu quả:
+    1. **Chỉ hiện Màn 1 và 2, mất sạch các màn 3, 4, 5, 6, 7, 8, 10, 11:**
+       - Trong hàm `scanAvailableLevels()` trước đây chỉ tìm thư mục `new File("src/main/resources/data")`. Khi ở thư mục cha, đường dẫn này không tồn tại, khiến hàm quét tệp không tìm được tệp nào. Sau đó, code rơi vào nhánh fallback hardcode chỉ nạp ID `1` và `2`.
+    2. **Lỗi cây và zombie không hiện hình (Reanim):**
+       - Cơ chế quét thư mục hoạt ảnh Reanim trước đây phụ thuộc vào đường dẫn tĩnh `src/main/resources/assets/reanim/`, khiến toàn bộ ảnh bộ phận trả về `null`.
+- **Giải pháp hoàn thiện:**
+  1. **Cơ chế nạp đa tầng linh hoạt (Multi-path Resolution) cho Dữ liệu Màn chơi:**
+     - Trong [GameManager.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/controller/GameManager.java): Thêm danh sách ứng viên quét tự động:
+       `"src/main/resources/data"`, `"BaoVeKhuVuon/src/main/resources/data"`, `"target/classes/data"`, `"BaoVeKhuVuon/target/classes/data"`, `"../src/main/resources/data"`.
+     - Bổ sung cơ chế quét Classpath tự động (`getResource("/data/level_" + i + ".json")`) từ màn 1 đến 50. Nhờ đó, dù ứng dụng được chạy từ bất kỳ thư mục nào hoặc đóng gói vào file JAR, toàn bộ các màn chơi có sẵn đều được phát hiện chính xác 100%.
+     - Chuẩn hóa hàm nạp luồng `getLevelStream(path)` quét qua cả Classpath và các đường dẫn ứng viên.
+  2. **Đồng bộ hóa [LevelEditor.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/editor/LevelEditor.java) và [AudioManager.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/system/AudioManager.java):**
+     - Trình chỉnh sửa màn chơi tự động mở đúng thư mục dữ liệu `getDefaultDataDir()`.
+     - Trình phát âm thanh tự động nhận diện cả đường dẫn tương đối và đường dẫn tiền tố `BaoVeKhuVuon/`.
 
 ### 10. Bổ sung thanh cuộn thông minh cho màn hình Chọn Level (Level Select Scrollbar)
 - **Bối cảnh & Vấn đề:**
@@ -699,6 +721,30 @@ Dựa trên chỉ số kinh tế thực tế (người chơi mới có 100 xu, m
   4. **Đồng bộ hóa Hitbox & Vị trí nút:**
      - Tọa độ thẻ bài và nút "VÀO CHƠI" tự động tịnh tiến theo vị trí cuộn `levelScrollOffset`.
      - Hitbox kiểm tra nhấp chuột được giới hạn chặt chẽ bên trong vùng Viewport (`levelSelectViewY <= mY <= levelSelectViewY + levelSelectViewH`), ngăn ngừa việc bấm nhầm vào các thẻ bài đang bị khuất.
+
+### 11. Khắc phục lỗi khi mở dự án từ thư mục cha chứa .github (Chỉ hiện Màn 1, 2 & Lỗi đường dẫn)
+- **Bối cảnh & Hiện tượng:**
+  - Cấu trúc thư mục khi clone repository về máy:
+    ```
+    BaoVeKhuVuon/               <-- Thư mục gốc khi clone
+    ├── .github/                <-- Cấu hình GitHub Actions / Workflows
+    └── BaoVeKhuVuon/           <-- Thư mục chứa mã nguồn Java và tài nguyên trò chơi
+    ```
+  - Khi người dùng mở thư mục cha ngoài cùng trong VS Code / IDE hoặc chạy ứng dụng từ thư mục cha này, thư mục làm việc hiện hành (`user.dir`) trỏ về thư mục cha thay vì thư mục con `BaoVeKhuVuon`.
+  - Hậu quả:
+    1. **Chỉ hiện Màn 1 và 2, mất sạch các màn 3, 4, 5, 6, 7, 8, 10, 11:**
+       - Trong hàm `scanAvailableLevels()` trước đây chỉ tìm thư mục `new File("src/main/resources/data")`. Khi ở thư mục cha, đường dẫn này không tồn tại, khiến hàm quét tệp không tìm được tệp nào. Sau đó, code rơi vào nhánh fallback hardcode chỉ nạp ID `1` và `2`.
+    2. **Lỗi cây và zombie không hiện hình (Reanim):**
+       - Cơ chế quét thư mục hoạt ảnh Reanim trước đây phụ thuộc vào đường dẫn tĩnh `src/main/resources/assets/reanim/`, khiến toàn bộ ảnh bộ phận trả về `null`.
+- **Giải pháp hoàn thiện:**
+  1. **Cơ chế nạp đa tầng linh hoạt (Multi-path Resolution) cho Dữ liệu Màn chơi:**
+     - Trong [GameManager.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/controller/GameManager.java): Thêm danh sách ứng viên quét tự động:
+       `"src/main/resources/data"`, `"BaoVeKhuVuon/src/main/resources/data"`, `"target/classes/data"`, `"BaoVeKhuVuon/target/classes/data"`, `"../src/main/resources/data"`.
+     - Bổ sung cơ chế quét Classpath tự động (`getResource("/data/level_" + i + ".json")`) từ màn 1 đến 50. Nhờ đó, dù ứng dụng được chạy từ bất kỳ thư mục nào hoặc đóng gói vào file JAR, toàn bộ các màn chơi có sẵn đều được phát hiện chính xác 100%.
+     - Chuẩn hóa hàm nạp luồng `getLevelStream(path)` quét qua cả Classpath và các đường dẫn ứng viên.
+  2. **Đồng bộ hóa [LevelEditor.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/editor/LevelEditor.java) và [AudioManager.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/system/AudioManager.java):**
+     - Trình chỉnh sửa màn chơi tự động mở đúng thư mục dữ liệu `getDefaultDataDir()`.
+     - Trình phát âm thanh tự động nhận diện cả đường dẫn tương đối và đường dẫn tiền tố `BaoVeKhuVuon/`.
 
 ## Cách xem thay đổi
 
