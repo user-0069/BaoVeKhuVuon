@@ -33,6 +33,7 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
             gm.handleRightClick(gm.mouseX, gm.mouseY);
             return;
         }
+        gm.handleMousePressed(gm.mouseX, gm.mouseY);
         gm.handleClick(gm.mouseX, gm.mouseY);
     }
 
@@ -44,6 +45,13 @@ public class InputHandler extends MouseAdapter implements KeyListener, MouseWhee
     @Override
     public void mouseDragged(MouseEvent e) {
         updateMousePosition(e);
+        gm.handleMouseDragged(gm.mouseX, gm.mouseY);
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        updateMousePosition(e);
+        gm.handleMouseReleased(gm.mouseX, gm.mouseY);
     }
 
     @Override

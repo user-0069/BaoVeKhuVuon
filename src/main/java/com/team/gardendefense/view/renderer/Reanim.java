@@ -6,8 +6,11 @@ import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.geom.AffineTransform;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,7 +30,6 @@ import org.xml.sax.InputSource;
 /** Renders the part-by-part animation data already shipped with the game. */
 public final class Reanim {
     private static final Logger LOGGER = Logger.getLogger(Reanim.class.getName());
-    private static final String ROOT = "src/main/resources/assets/reanim/";
     private static final Map<String, Reanim> CACHE = new HashMap<>();
     private static final Map<String, Image> PART_IMAGES = new HashMap<>();
     private static Map<String, String> imageNames;
@@ -37,16 +39,58 @@ public final class Reanim {
     private final int fps;
     private final int frameCount;
 
+    public static String resolveRoot() {
+        String[] candidates = {
+            "src/main/resources/assets/reanim/",
+            "BaoVeKhuVuon/src/main/resources/assets/reanim/",
+            "../src/main/resources/assets/reanim/",
+            "target/classes/assets/reanim/",
+            "BaoVeKhuVuon/target/classes/assets/reanim/",
+            "../target/classes/assets/reanim/"
+        };
+        for (String c : candidates) {
+            File dir = new File(c);
+            if (dir.exists() && dir.isDirectory()) {
+                return c.endsWith("/") ? c : c + "/";
+            }
+        }
+        return "src/main/resources/assets/reanim/";
+    }
+
     private Reanim(String fileName) throws Exception {
-        String xml;
-        File source = new File(ROOT + fileName);
+        String xml = null;
+        String root = resolveRoot();
+        File source = new File(root + fileName);
         if (source.isFile()) {
             xml = Files.readString(source.toPath(), StandardCharsets.UTF_8);
         } else {
-            try (InputStream stream = Reanim.class.getResourceAsStream("/assets/reanim/" + fileName)) {
-                if (stream == null) throw new IllegalArgumentException("Missing animation: " + fileName);
-                xml = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            InputStream stream = Reanim.class.getResourceAsStream("/assets/reanim/" + fileName);
+            if (stream == null && Thread.currentThread().getContextClassLoader() != null) {
+                stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("assets/reanim/" + fileName);
             }
+            if (stream != null) {
+                try (InputStream s = stream) {
+                    xml = new String(s.readAllBytes(), StandardCharsets.UTF_8);
+                }
+            } else {
+                String[] candidates = {
+                    "src/main/resources/assets/reanim/" + fileName,
+                    "BaoVeKhuVuon/src/main/resources/assets/reanim/" + fileName,
+                    "../src/main/resources/assets/reanim/" + fileName,
+                    "target/classes/assets/reanim/" + fileName
+                };
+                for (String c : candidates) {
+                    File cf = new File(c);
+                    if (cf.isFile()) {
+                        xml = Files.readString(cf.toPath(), StandardCharsets.UTF_8);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (xml == null) {
+            throw new IllegalArgumentException("Missing animation: " + fileName);
         }
 
         // PopCap's .reanim files are XML fragments without a document root.
@@ -55,10 +99,10 @@ public final class Reanim {
         factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
         factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        Element root = factory.newDocumentBuilder().parse(
+        Element rootNode = factory.newDocumentBuilder().parse(
                 new InputSource(new StringReader("<reanim>" + xml + "</reanim>"))).getDocumentElement();
-        fps = Math.max(1, Math.round(Float.parseFloat(root.getElementsByTagName("fps").item(0).getTextContent())));
-        NodeList trackNodes = root.getElementsByTagName("track");
+        fps = Math.max(1, Math.round(Float.parseFloat(rootNode.getElementsByTagName("fps").item(0).getTextContent())));
+        NodeList trackNodes = rootNode.getElementsByTagName("track");
         int count = 0;
         for (int i = 0; i < trackNodes.getLength(); i++) {
             Element trackElement = (Element) trackNodes.item(i);
@@ -118,10 +162,11 @@ public final class Reanim {
             int start = 0;
             boolean foundStart = false;
             for (int frame = 0; frame < frameCount; frame++) {
-                if (track.poses[frame].visible && !foundStart) {
+                boolean active = track.poses[frame].visible;
+                if (active && !foundStart) {
                     start = frame;
                     foundStart = true;
-                } else if (foundStart && !track.poses[frame].visible) {
+                } else if (!active && foundStart) {
                     clips.put(alias, new Clip(start, frame));
                     return;
                 }
@@ -131,57 +176,55 @@ public final class Reanim {
         }
     }
 
-    public int durationTicks(String clipName) {
-        Clip clip = clips.get(clipName);
-        if (clip == null) return 0;
-        if ("shoot".equals(clipName)) {
-            // Snappy shoot animation duration in game ticks (at 60 FPS, ~0.40s)
-            // Leaves plenty of time (~36 ticks) for idle sway before the next shot.
-            return 24;
-        }
-        if ("bite".equals(clipName)) {
-            return 25;
-        }
-        if ("swallow".equals(clipName)) {
-            return 20;
-        }
-        if ("explode".equals(clipName)) {
-            return 23;
-        }
-        return Math.max(1, (int) Math.ceil((clip.end - clip.start) * Constants.FPS / (double) fps));
-    }
-
     private Track findTrack(String name) {
-        for (Track track : tracks) {
-            if (track.name.equals(name)) return track;
+        for (Track t : tracks) {
+            if (t.name.equals(name)) return t;
         }
         return null;
     }
 
-    /** Draws an 80x80 plant rig in a tile, or a 100x120 zombie rig at a waypoint. */
-    public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
-                     double elapsedTicks, boolean zombie) {
-        draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie, false, false);
+    public int durationTicks(String clipName) {
+        Clip clip = clips.get(clipName);
+        if (clip == null) return 0;
+        int frames = clip.end - clip.start;
+        return (int) Math.round(frames * (double) Constants.FPS / fps);
     }
 
-    public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
-                     double elapsedTicks, boolean zombie, boolean hideArm, boolean hideHead) {
-        draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie, hideArm, hideHead);
+    public double durationSeconds(String clipName) {
+        Clip clip = clips.get(clipName);
+        if (clip == null) return 0.0;
+        int frames = clip.end - clip.start;
+        return frames / (double) fps;
+    }
+
+    public boolean hasClip(String clipName) {
+        return clips.containsKey(clipName);
+    }
+
+    /** Draws an 80x80 plant rig in a tile, or a 100x120 zombie rig at a waypoint. */
+    public boolean draw(Graphics2D graphics, float x, float y, float scale, String clipName,
+                        double elapsedTicks, boolean zombie) {
+        return draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie, false, false);
+    }
+
+    public boolean draw(Graphics2D graphics, float x, float y, float scale, String clipName,
+                        double elapsedTicks, boolean zombie, boolean hideArm, boolean hideHead) {
+        return draw(graphics, x, y, scale, clipName, elapsedTicks, elapsedTicks, zombie, hideArm, hideHead);
     }
 
     /** Draws with separate action clock and background idle clock (keeps stem swaying during shoot). */
-    public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
-                     double actionTicks, double idleTicks, boolean zombie) {
-        draw(graphics, x, y, scale, clipName, actionTicks, idleTicks, zombie, false, false);
+    public boolean draw(Graphics2D graphics, float x, float y, float scale, String clipName,
+                        double actionTicks, double idleTicks, boolean zombie) {
+        return draw(graphics, x, y, scale, clipName, actionTicks, idleTicks, zombie, false, false);
     }
 
-    public void draw(Graphics2D graphics, float x, float y, float scale, String clipName,
-                     double actionTicks, double idleTicks, boolean zombie, boolean hideArm, boolean hideHead) {
+    public boolean draw(Graphics2D graphics, float x, float y, float scale, String clipName,
+                        double actionTicks, double idleTicks, boolean zombie, boolean hideArm, boolean hideHead) {
         Clip clip = clips.get(clipName);
         if (clip == null) clip = clips.get("idle");
-        if (clip == null) return;
+        if (clip == null) return false;
         int length = clip.end - clip.start;
-        if (length <= 0) return;
+        if (length <= 0) return false;
 
         double phase;
         if ("shoot".equals(clipName) || "bite".equals(clipName) || "swallow".equals(clipName)
@@ -233,6 +276,7 @@ public final class Reanim {
             blendWeight = Math.max(0.0, Math.min(inF, outF));
         }
 
+        int partsDrawn = 0;
         Graphics2D root = (Graphics2D) graphics.create();
         root.translate(x, y);
         root.scale(scale, scale);
@@ -328,6 +372,7 @@ public final class Reanim {
                     float alpha = (float) Math.max(0, Math.min(1, lerp(a.alpha, b.alpha, trackBlend)));
                     part.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
                     part.drawImage(image, 0, 0, null);
+                    partsDrawn++;
                 } finally {
                     part.dispose();
                 }
@@ -335,6 +380,7 @@ public final class Reanim {
         } finally {
             root.dispose();
         }
+        return partsDrawn > 0;
     }
 
     private static boolean isPlainZombiePart(String name) {
@@ -357,20 +403,91 @@ public final class Reanim {
         return a + diff * fraction;
     }
 
-    private static synchronized Image partImage(String key) {
-        if (PART_IMAGES.containsKey(key)) return PART_IMAGES.get(key);
-        if (imageNames == null) {
-            imageNames = new HashMap<>();
-            File[] files = new File(ROOT).listFiles((folder, name) -> name.toLowerCase(Locale.ROOT).endsWith(".png"));
-            if (files != null) {
-                for (File file : files) {
-                    String name = file.getName();
-                    imageNames.put(normalize(name.substring(0, name.length() - 4)), name);
+    private static synchronized void ensureImageNames() {
+        if (imageNames != null && !imageNames.isEmpty()) return;
+        imageNames = new HashMap<>();
+
+        // 1. Thử nạp từ file_list.txt trong tài nguyên classpath
+        try (InputStream stream = Reanim.class.getResourceAsStream("/assets/reanim/file_list.txt")) {
+            if (stream != null) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.isEmpty()) continue;
+                        String base = line.toLowerCase(Locale.ROOT).endsWith(".png") ? line.substring(0, line.length() - 4) : line;
+                        imageNames.put(normalize(base), line);
+                    }
                 }
+                if (!imageNames.isEmpty()) return;
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Thử nạp từ file_list.txt trên hệ thống tệp
+        String[] listCandidates = {
+            "src/main/resources/assets/reanim/file_list.txt",
+            "BaoVeKhuVuon/src/main/resources/assets/reanim/file_list.txt",
+            "../src/main/resources/assets/reanim/file_list.txt",
+            "target/classes/assets/reanim/file_list.txt"
+        };
+        for (String lc : listCandidates) {
+            File f = new File(lc);
+            if (f.isFile()) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(f), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.isEmpty()) continue;
+                        String base = line.toLowerCase(Locale.ROOT).endsWith(".png") ? line.substring(0, line.length() - 4) : line;
+                        imageNames.put(normalize(base), line);
+                    }
+                } catch (Exception ignored) {}
+                if (!imageNames.isEmpty()) return;
             }
         }
-        String name = imageNames.get(normalize(key.replace("IMAGE_REANIM_", "")));
-        Image image = name == null ? null : ImageLoader.getImage(ROOT + name);
+
+        // 3. Fallback quét thư mục thực tế
+        String root = resolveRoot();
+        File[] files = new File(root).listFiles((folder, name) -> name.toLowerCase(Locale.ROOT).endsWith(".png"));
+        if (files != null) {
+            for (File file : files) {
+                String name = file.getName();
+                imageNames.put(normalize(name.substring(0, name.length() - 4)), name);
+            }
+        }
+    }
+
+    private static synchronized Image partImage(String key) {
+        if (PART_IMAGES.containsKey(key)) return PART_IMAGES.get(key);
+        ensureImageNames();
+
+        String clean = key.replace("IMAGE_REANIM_", "");
+        String norm = normalize(clean);
+        String fileName = imageNames.get(norm);
+
+        Image image = null;
+        if (fileName != null) {
+            // Nạp thông qua ImageLoader (hỗ trợ cả classpath /assets/reanim/ và đường dẫn tệp)
+            image = ImageLoader.getImage("/assets/reanim/" + fileName);
+            if (image == null) {
+                image = ImageLoader.getImage(resolveRoot() + fileName);
+            }
+        }
+
+        // Dự phòng: nạp trực tiếp theo tên gốc hoặc chữ thường
+        if (image == null) {
+            String[] guesses = {
+                clean + ".png",
+                clean.toLowerCase(Locale.ROOT) + ".png"
+            };
+            for (String g : guesses) {
+                image = ImageLoader.getImage("/assets/reanim/" + g);
+                if (image != null) break;
+                image = ImageLoader.getImage(resolveRoot() + g);
+                if (image != null) break;
+            }
+        }
+
         PART_IMAGES.put(key, image);
         return image;
     }

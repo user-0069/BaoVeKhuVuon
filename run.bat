@@ -35,7 +35,7 @@ if %errorlevel% neq 0 (
 )
 
 rem Chay game
-java -cp "target/classes;lib\gson-2.10.1.jar" %MAIN_CLASS%
+java -cp "target/classes;src/main/resources;lib\gson-2.10.1.jar" %MAIN_CLASS%
 
 if %errorlevel% neq 0 (
     echo.

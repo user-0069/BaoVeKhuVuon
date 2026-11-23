@@ -652,6 +652,54 @@ Dựa trên chỉ số kinh tế thực tế (người chơi mới có 100 xu, m
     - Khu vực cây cối che Zombie khi mới xuất hiện nằm ở mép TRÁI của bản đồ (`x < 250 px`), được xử lý độc lập qua lớp tiền cảnh `bgmap2_overlay.png` và `bgmap3_overlay.png` gọi bởi `Grid.drawForeground(g)`.
     - Vị trí watermark và chú sinh vật xanh nằm ở góc DƯỚI BÊN PHẢI (`x > 2150 px`, `y > 1550 px`), hoàn toàn cách biệt và không can thiệp vào các cây tiền cảnh cũng như đường đi của Zombie. Zombie vẫn đi từ sau thân cây ra một cách hoàn hảo mà không bị che mất đầu bởi cỏ.
 
+### 9. Khắc phục triệt để lỗi Cây và Zombie tàng hình / không hiện hình khi clone sang máy khác
+- **Nguyên nhân gốc rễ (Root Cause):**
+  1. **Đường dẫn thư mục tĩnh & phụ thuộc thư mục làm việc (Working Directory):**
+     - Trong [Reanim.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/view/renderer/Reanim.java), biến `ROOT = "src/main/resources/assets/reanim/"` được hardcode theo đường dẫn tương đối.
+     - Hàm `partImage()` quét danh sách ảnh ghép bằng lệnh `new File(ROOT).listFiles(...)`. Khi người dùng clone dự án về máy khác và chạy từ IDE (IntelliJ IDEA, Eclipse, VS Code), hoặc chạy từ thư mục khác (như thư mục cha, thư mục `target`, hoặc gói JAR), lệnh `new File(ROOT).listFiles(...)` trả về `null`.
+     - Do `files == null`, bảng ánh xạ `imageNames` rỗng hoàn toàn, khiến tất cả các mảnh bộ phận (đầu, thân, tay, chân, lá) của Cây và Zombie đều trả về `null`.
+  2. **Thiếu cơ chế Fallback vẽ hình tĩnh:**
+     - Trong [Plant.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/plant/Plant.java) và [Monster.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/monster/Monster.java), khi `animation != null` (do tệp `.reanim` vẫn nạp được qua `getResourceAsStream`), đối tượng sẽ gọi `animation.draw(...)`. Tuy nhiên `animation.draw(...)` trước đây trả về `void` và không vẽ được mảnh nào do `partImage == null`. Sau đó hàm kết thúc luôn bằng `return;` mà không bao giờ fallback xuống lệnh vẽ `image` gốc (`Peashooter_full.png`, `Zombie_full.png`), dẫn đến việc Cây và Zombie hoàn toàn tàng hình trên sân.
+  3. **Classpath trong script khởi chạy:**
+     - Lệnh `java -cp` trong `run.bat` và `run.ps1` trước đây chỉ trỏ vào `"target/classes;lib\gson-2.10.1.jar"`. Khi mới clone về, `javac` chỉ biên dịch mã nguồn `.java` sang `.class` mà không tự sao chép tài nguyên từ `src/main/resources/` vào `target/classes/`.
+- **Giải pháp hoàn thiện:**
+  1. **Danh mục tài nguyên chuẩn hóa (`file_list.txt`):**
+     - Tạo tệp chỉ mục [file_list.txt](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/resources/assets/reanim/file_list.txt) lưu trữ đầy đủ 1798 tệp PNG của hệ thống hoạt ảnh Reanim. Tệp này được theo dõi bởi Git và đóng gói trực tiếp vào classpath.
+     - `Reanim.java` nạp `file_list.txt` qua `getResourceAsStream("/assets/reanim/file_list.txt")`, hoạt động hoàn hảo trên mọi môi trường (IDE, dòng lệnh, JAR, bất kể thư mục làm việc hay hệ điều hành Windows/Linux/macOS).
+  2. **Cơ chế nạp đa tầng linh hoạt (Multi-path Resolution):**
+     - Trong [Reanim.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/view/renderer/Reanim.java): Tự động dò tìm thư mục gốc khả thi (`src/main/resources/...`, `BaoVeKhuVuon/...`, `../...`, `target/classes/...`).
+     - Trong [ImageLoader.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/utils/ImageLoader.java): Bổ sung hỗ trợ đọc đồng thời qua tệp tin, ClassLoader và Thread Context ClassLoader.
+  3. **Cơ chế an toàn Fallback chắc chắn:**
+     - Phương thức `Reanim.draw(...)` được nâng cấp trả về `boolean` (báo hiệu có vẽ thành công ít nhất 1 bộ phận hay không).
+     - [Plant.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/plant/Plant.java) và [Monster.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/model/entity/monster/Monster.java): Nếu hoạt ảnh Reanim không vẽ được mảnh nào, đối tượng sẽ tự động vẽ ảnh tĩnh nguyên bản (`image`). Đảm bảo 100% Cây và Zombie luôn luôn hiển thị đầy đủ hình ảnh trong mọi tình huống.
+  4. **Cập nhật script [run.bat](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/run.bat) & [run.ps1](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/run.ps1):**
+     - Bổ sung `src/main/resources` vào classpath: `java -cp "target/classes;src/main/resources;lib\gson-2.10.1.jar"`. Giúp chạy mượt mà ngay sau khi clone mà không yêu cầu build Maven trước.
+
+## Cách xem thay đổi
+
+### 10. Bổ sung thanh cuộn thông minh cho màn hình Chọn Level (Level Select Scrollbar)
+- **Bối cảnh & Vấn đề:**
+  - Số lượng màn chơi ngày càng tăng (hiện đã có 8 màn chơi: Màn 1, 2, 3, 4, 5, 6, 10, 11).
+  - Với bố cục lưới 2 cột, 8 màn chơi chiếm 4 hàng thẻ với tổng chiều cao ~935 px. Trong khi đó, chiều cao hiển thị của cửa sổ chỉ khoảng 500-600 px khiến các màn chơi từ màn 5 trở đi bị trôi khuất xuống phía dưới màn hình và người chơi không thể nhìn thấy hay bấm vào chơi.
+- **Giải pháp thiết kế & Triển khai:**
+  1. **Khu vực hiển thị có giới hạn (Viewport Clipping):**
+     - Thiết lập khung nhìn thẻ bài cố định từ `levelSelectViewY = 120` đến ngay phía trên nút "QUAY LẠI".
+     - Dùng kỹ thuật cắt xén `gCards.clipRect(0, levelSelectViewY, sw, levelSelectViewH)` để danh sách thẻ bài chỉ hiển thị gọn gàng trong vùng nhìn, không bao giờ bị tràn đè lên tiêu đề phía trên hoặc nút "QUAY LẠI" ở chân trang.
+     - Thanh chân trang (footer) có dải nền bóng mờ che phía dưới, giúp nút "QUAY LẠI" luôn nổi bật và cố định tại chỗ.
+  2. **Thanh cuộn phong cách Sân Vườn (Stylized Scrollbar):**
+     - Rãnh trượt (Track) bán trong suốt bo tròn đặt ở sát mép phải màn hình (`sw - 28`).
+     - Cục trượt (Thumb) màu xanh lục bóng bẩy, bo góc mềm mại, tự động co dãn chiều cao theo tỉ lệ nội dung màn chơi (`thumbH = (viewH / contentH) * trackH`).
+     - Bổ sung các vạch khấc ma sát tinh tế giữa thân thanh cuộn tạo cảm giác tay nắm trực quan.
+     - Hiệu ứng đổi màu (Hover effect) sang xanh lá tươi sáng khi di chuột qua.
+     - Thanh cuộn tự động ẩn khi toàn bộ màn chơi vừa vặn trên 1 trang (`maxLevelScroll <= 0`) và tự động xuất hiện khi số lượng màn chơi vượt quá màn hình.
+  3. **Hỗ trợ thao tác tương tác đa dạng:**
+     - **Lăn chuột (Mouse Wheel):** Cuộn danh sách mượt mà với bước cuộn 48 px/nấc lăn chuột.
+     - **Kéo thả chuột (Drag Thumb):** Nhấp giữ chuột vào cục trượt và kéo lên/xuống để cuộn nhanh theo vị trí chuột.
+     - **Nhấp rãnh trượt (Page Jump):** Bấm trực tiếp vào rãnh trượt phía trên/dưới cục trượt để nhảy nhanh lên/xuống một trang (`viewH - 40 px`).
+  4. **Đồng bộ hóa Hitbox & Vị trí nút:**
+     - Tọa độ thẻ bài và nút "VÀO CHƠI" tự động tịnh tiến theo vị trí cuộn `levelScrollOffset`.
+     - Hitbox kiểm tra nhấp chuột được giới hạn chặt chẽ bên trong vùng Viewport (`levelSelectViewY <= mY <= levelSelectViewY + levelSelectViewH`), ngăn ngừa việc bấm nhầm vào các thẻ bài đang bị khuất.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

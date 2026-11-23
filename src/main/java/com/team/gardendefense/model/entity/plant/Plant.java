@@ -70,10 +70,10 @@ public abstract class Plant {
                 float plantScale = 0.85f;
                 int plantDrawX = x - 2;
                 int plantDrawY = y - 8;
-                animation.draw(g2, plantDrawX, plantDrawY, plantScale,
+                boolean rendered = animation.draw(g2, plantDrawX, plantDrawY, plantScale,
                         animationClip(), animationTime(), animationTicks, false);
                 g2.dispose();
-                return;
+                if (rendered) return;
             }
 
             // Plants without a rig still breathe and lean gently from their roots.

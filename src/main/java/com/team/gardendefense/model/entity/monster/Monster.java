@@ -51,6 +51,7 @@ public abstract class Monster {
     }
     
     public void draw(Graphics2D g) {
+        boolean rendered = false;
         if (animation != null) {
             Graphics2D g2 = (Graphics2D) g.create();
             if (facingRight) {
@@ -63,9 +64,10 @@ public abstract class Monster {
             // Scale and offset adjusted so the zombie stays strictly on the dirt road without overflowing into grass,
             // aligned on the exact same ground baseline (Y = 57) as plants.
             String clip = dying ? "death" : (attackTarget == null ? "walk" : "eat");
-            animation.draw(g2, x + 10, y - 11, 0.55f, clip, animationTicks, true, lostArm, lostHead);
+            rendered = animation.draw(g2, x + 10, y - 11, 0.55f, clip, animationTicks, true, lostArm, lostHead);
             g2.dispose();
-        } else if (image != null) {
+        }
+        if (!rendered && image != null) {
             Graphics2D g2 = (Graphics2D) g.create();
             if (deathAlpha < 1.0f) {
                 g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, Math.max(0f, Math.min(1f, deathAlpha))));

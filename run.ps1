@@ -28,7 +28,7 @@ if ($env:JAVA_HOME) {
 javac --release 11 -encoding UTF-8 -sourcepath src/main/java -cp "lib\gson-2.10.1.jar" -d target/classes src/main/java/com/team/gardendefense/main/GameLauncher.java src/main/java/com/team/gardendefense/editor/LevelEditor.java
 
 if ($LASTEXITCODE -eq 0) {
-    java -cp "target/classes;lib\gson-2.10.1.jar" $mainClass
+    java -cp "target/classes;src/main/resources;lib\gson-2.10.1.jar" $mainClass
 } else {
     Write-Host "[LOI] Bien dich khong thanh cong! Vui long kiem tra JDK." -ForegroundColor Red
 }

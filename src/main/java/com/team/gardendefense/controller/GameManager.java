@@ -116,6 +116,17 @@ public class GameManager {
         public Rectangle btnPlayRect;
     }
     public List<LevelPreview> availableLevels = new ArrayList<>();
+    // Trạng thái cuộn cho mục chọn Level
+    public int levelScrollOffset = 0;
+    public int maxLevelScroll = 0;
+    public boolean isDraggingLevelScrollbar = false;
+    private int dragStartY = 0;
+    private int dragStartOffset = 0;
+    private Rectangle levelScrollTrackRect = new Rectangle();
+    private Rectangle levelScrollThumbRect = new Rectangle();
+    private int levelSelectViewY = 120;
+    private int levelSelectViewH = 400;
+    private int levelSelectScrollTrackH = 390;
 
     // Menu động chứa thẻ bài thực vật
     public class PlantCard {
@@ -321,6 +332,14 @@ public class GameManager {
                 availableLevels.add(lp);
             }
         }
+    }
+
+    public void openLevelSelect() {
+        scanAvailableLevels();
+        levelScrollOffset = 0;
+        isDraggingLevelScrollbar = false;
+        state = GameState.LEVEL_SELECT;
+        if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
     }
 
     private LevelData loadLevelDataOnly(int id) {
@@ -733,71 +752,85 @@ public class GameManager {
         int subW = g.getFontMetrics().stringWidth(sub);
         g.drawString(sub, (sw - subW) / 2, 98);
 
+        // Kích thước viewport cho danh sách cuộn
+        levelSelectViewY = 120;
+        levelSelectViewH = Math.max(100, sh - 205); // Chừa 120px phía trên và 85px phía dưới cho thanh điều hướng
+
         // Danh sách thẻ màn chơi
         int cardW = 380;
         int cardH = 210;
         int gapX = 35;
         int gapY = 25;
-        int startY = 135;
 
         int count = availableLevels.size();
         int cols = (count <= 1) ? 1 : 2;
         int totalW = cols * cardW + (cols - 1) * gapX;
         int startX = (sw - totalW) / 2;
 
+        int totalRows = (count + cols - 1) / cols;
+        int contentH = totalRows * cardH + (totalRows > 1 ? (totalRows - 1) * gapY : 0) + 20;
+        maxLevelScroll = Math.max(0, contentH - levelSelectViewH);
+        levelScrollOffset = Math.max(0, Math.min(maxLevelScroll, levelScrollOffset));
+
+        // Vẽ danh sách thẻ bài với Clipping
+        Graphics2D gCards = (Graphics2D) g.create();
+        gCards.clipRect(0, levelSelectViewY, sw, levelSelectViewH);
+
         for (int i = 0; i < count; i++) {
             LevelPreview lp = availableLevels.get(i);
             int colIdx = i % cols;
             int rowIdx = i / cols;
             int cx = startX + colIdx * (cardW + gapX);
-            int cy = startY + rowIdx * (cardH + gapY);
+            int cy = levelSelectViewY + 10 + rowIdx * (cardH + gapY) - levelScrollOffset;
 
             lp.cardRect = new Rectangle(cx, cy, cardW, cardH);
-            boolean hover = lp.cardRect.contains(mouseX, mouseY);
+            boolean inView = (cy + cardH >= levelSelectViewY && cy <= levelSelectViewY + levelSelectViewH);
+            boolean hover = inView && (mouseY >= levelSelectViewY && mouseY <= levelSelectViewY + levelSelectViewH)
+                    && lp.cardRect.contains(mouseX, mouseY);
 
             // Nền thẻ bài
-            g.setColor(hover ? new Color(42, 60, 48) : new Color(34, 46, 38));
-            g.fillRoundRect(cx, cy, cardW, cardH, 16, 16);
+            gCards.setColor(hover ? new Color(42, 60, 48) : new Color(34, 46, 38));
+            gCards.fillRoundRect(cx, cy, cardW, cardH, 16, 16);
 
             // Viền thẻ bài
-            g.setColor(hover ? new Color(100, 220, 120) : new Color(60, 100, 70));
-            g.setStroke(new BasicStroke(hover ? 2.5f : 1.5f));
-            g.drawRoundRect(cx, cy, cardW, cardH, 16, 16);
-            g.setStroke(new BasicStroke(1.0f));
+            gCards.setColor(hover ? new Color(100, 220, 120) : new Color(60, 100, 70));
+            gCards.setStroke(new BasicStroke(hover ? 2.5f : 1.5f));
+            gCards.drawRoundRect(cx, cy, cardW, cardH, 16, 16);
+            gCards.setStroke(new BasicStroke(1.0f));
 
             // Badge Màn chơi (ví dụ: MÀN 1, MÀN 2)
-            g.setColor(new Color(46, 139, 87));
-            g.fillRoundRect(cx + 18, cy + 16, 85, 26, 8, 8);
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 13));
-            g.drawString("MÀN " + lp.id, cx + 32, cy + 34);
+            gCards.setColor(new Color(46, 139, 87));
+            gCards.fillRoundRect(cx + 18, cy + 16, 85, 26, 8, 8);
+            gCards.setColor(Color.WHITE);
+            gCards.setFont(new Font("Arial", Font.BOLD, 13));
+            gCards.drawString("MÀN " + lp.id, cx + 32, cy + 34);
 
             // Tên màn chơi
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 19));
+            gCards.setColor(Color.WHITE);
+            gCards.setFont(new Font("Arial", Font.BOLD, 19));
             String name = lp.name;
             if (name.length() > 22) name = name.substring(0, 20) + "...";
-            g.drawString(name, cx + 115, cy + 36);
+            gCards.drawString(name, cx + 115, cy + 36);
 
             // Đường gạch ngang phân cách nhẹ
-            g.setColor(new Color(60, 80, 70));
-            g.drawLine(cx + 18, cy + 52, cx + cardW - 18, cy + 52);
+            gCards.setColor(new Color(60, 80, 70));
+            gCards.drawLine(cx + 18, cy + 52, cx + cardW - 18, cy + 52);
 
             // Thông số chi tiết
-            g.setFont(new Font("Arial", Font.PLAIN, 15));
-            g.setColor(new Color(230, 230, 230));
+            gCards.setFont(new Font("Arial", Font.PLAIN, 15));
+            gCards.setColor(new Color(230, 230, 230));
 
             // Sun
-            g.setColor(new Color(255, 215, 0));
-            g.fillOval(cx + 22, cy + 68, 14, 14);
-            g.setColor(new Color(230, 230, 230));
-            g.drawString("Sun khởi đầu: " + lp.initialSun, cx + 45, cy + 81);
+            gCards.setColor(new Color(255, 215, 0));
+            gCards.fillOval(cx + 22, cy + 68, 14, 14);
+            gCards.setColor(new Color(230, 230, 230));
+            gCards.drawString("Sun khởi đầu: " + lp.initialSun, cx + 45, cy + 81);
 
             // Waves
-            g.drawString("Đợt quái: " + lp.waveCount + " Waves", cx + 22, cy + 106);
+            gCards.drawString("Đợt quái: " + lp.waveCount + " Waves", cx + 22, cy + 106);
 
             // Map Size
-            g.drawString("Kích thước: " + lp.cols + " cột x " + lp.rows + " hàng", cx + 22, cy + 131);
+            gCards.drawString("Kích thước: " + lp.cols + " cột x " + lp.rows + " hàng", cx + 22, cy + 131);
 
             // Nút bấm "VÀO CHƠI"
             int btnW = 200;
@@ -806,19 +839,70 @@ public class GameManager {
             int by = cy + cardH - btnH - 16;
             lp.btnPlayRect = new Rectangle(bx, by, btnW, btnH);
 
-            boolean btnHover = lp.btnPlayRect.contains(mouseX, mouseY);
-            g.setColor(btnHover ? new Color(70, 190, 90) : new Color(46, 139, 87));
-            g.fillRoundRect(bx, by, btnW, btnH, 10, 10);
-            g.setColor(Color.WHITE);
-            g.drawRoundRect(bx, by, btnW, btnH, 10, 10);
-            g.setFont(new Font("Arial", Font.BOLD, 15));
+            boolean btnHover = inView && (mouseY >= levelSelectViewY && mouseY <= levelSelectViewY + levelSelectViewH)
+                    && lp.btnPlayRect.contains(mouseX, mouseY);
+            gCards.setColor(btnHover ? new Color(70, 190, 90) : new Color(46, 139, 87));
+            gCards.fillRoundRect(bx, by, btnW, btnH, 10, 10);
+            gCards.setColor(Color.WHITE);
+            gCards.drawRoundRect(bx, by, btnW, btnH, 10, 10);
+            gCards.setFont(new Font("Arial", Font.BOLD, 15));
             String playText = "VÀO CHƠI";
-            int ptw = g.getFontMetrics().stringWidth(playText);
-            g.drawString(playText, bx + (btnW - ptw) / 2, by + 24);
+            int ptw = gCards.getFontMetrics().stringWidth(playText);
+            gCards.drawString(playText, bx + (btnW - ptw) / 2, by + 24);
+        }
+        gCards.dispose();
+
+        // Vẽ thanh cuộn nếu danh sách màn chơi dài vượt quá khung nhìn
+        if (maxLevelScroll > 0) {
+            int scrollTrackX = startX + totalW + 20;
+            if (scrollTrackX + 16 > sw - 10) scrollTrackX = sw - 22;
+            int scrollTrackY = levelSelectViewY + 4;
+            int scrollTrackW = 12;
+            levelSelectScrollTrackH = levelSelectViewH - 8;
+
+            // Rãnh cuộn (Track)
+            g.setColor(new Color(15, 25, 20, 210));
+            g.fillRoundRect(scrollTrackX, scrollTrackY, scrollTrackW, levelSelectScrollTrackH, 8, 8);
+            g.setColor(new Color(45, 80, 55));
+            g.drawRoundRect(scrollTrackX, scrollTrackY, scrollTrackW, levelSelectScrollTrackH, 8, 8);
+
+            // Cục trượt (Thumb)
+            int thumbH = Math.max(45, (int) ((float) levelSelectViewH / contentH * levelSelectScrollTrackH));
+            int scrollableRange = levelSelectScrollTrackH - thumbH;
+            int thumbY = scrollTrackY + (int) ((float) levelScrollOffset / maxLevelScroll * scrollableRange);
+
+            levelScrollTrackRect.setBounds(scrollTrackX - 4, scrollTrackY, scrollTrackW + 8, levelSelectScrollTrackH);
+            levelScrollThumbRect.setBounds(scrollTrackX - 2, thumbY, scrollTrackW + 4, thumbH);
+
+            boolean thumbHover = levelScrollThumbRect.contains(mouseX, mouseY) || isDraggingLevelScrollbar;
+            g.setColor(thumbHover ? new Color(65, 175, 100) : new Color(46, 130, 80));
+            g.fillRoundRect(scrollTrackX + 1, thumbY, scrollTrackW - 2, thumbH, 8, 8);
+            g.setColor(thumbHover ? new Color(130, 235, 160) : new Color(75, 165, 110));
+            g.drawRoundRect(scrollTrackX + 1, thumbY, scrollTrackW - 2, thumbH, 8, 8);
+
+            // Các khấc gờ ma sát ở giữa cục trượt
+            int midY = thumbY + thumbH / 2;
+            g.setColor(new Color(25, 60, 40));
+            g.drawLine(scrollTrackX + 3, midY - 4, scrollTrackX + scrollTrackW - 4, midY - 4);
+            g.drawLine(scrollTrackX + 3, midY, scrollTrackX + scrollTrackW - 4, midY);
+            g.drawLine(scrollTrackX + 3, midY + 4, scrollTrackX + scrollTrackW - 4, midY + 4);
+            g.setColor(new Color(90, 190, 130, 180));
+            g.drawLine(scrollTrackX + 3, midY - 3, scrollTrackX + scrollTrackW - 4, midY - 3);
+            g.drawLine(scrollTrackX + 3, midY + 1, scrollTrackX + scrollTrackW - 4, midY + 1);
+            g.drawLine(scrollTrackX + 3, midY + 5, scrollTrackX + scrollTrackW - 4, midY + 5);
+        } else {
+            levelScrollTrackRect.setBounds(0, 0, 0, 0);
+            levelScrollThumbRect.setBounds(0, 0, 0, 0);
         }
 
+        // Băng đáy (Footer) che mờ bên dưới giúp nút Quay Lại nổi bật và các thẻ bài cuộn ẩn dưới chân trang
+        g.setColor(new Color(24, 34, 28));
+        g.fillRect(0, sh - 85, sw, 85);
+        g.setColor(new Color(40, 60, 48));
+        g.drawLine(0, sh - 85, sw, sh - 85);
+
         // Nút quay lại Menu
-        btnBack.setBounds((sw - 180) / 2, sh - 90, 180, 46);
+        btnBack.setBounds((sw - 180) / 2, sh - 68, 180, 46);
         drawBackButton(g, btnBack, mouseX, mouseY);
     }
 
@@ -1650,8 +1734,7 @@ public class GameManager {
                 if (currentLevel != null) resetGame();
             }
             else if (btnLevelSelect.contains(mX, mY)) {
-                scanAvailableLevels();
-                state = GameState.LEVEL_SELECT;
+                openLevelSelect();
             }
             else if (btnShop.contains(mX, mY)) {
                 openShop();
@@ -1673,11 +1756,27 @@ public class GameManager {
                 state = GameState.MENU;
                 return;
             }
-            for (LevelPreview lp : availableLevels) {
-                if ((lp.btnPlayRect != null && lp.btnPlayRect.contains(mX, mY)) ||
-                    (lp.cardRect != null && lp.cardRect.contains(mX, mY))) {
-                    startLevel(lp.id);
+
+            // Click trên thanh cuộn (page up / page down khi click vào rãnh ngoài thumb)
+            if (maxLevelScroll > 0 && levelScrollTrackRect != null && levelScrollTrackRect.contains(mX, mY)) {
+                if (levelScrollThumbRect != null && !levelScrollThumbRect.contains(mX, mY)) {
+                    if (mY < levelScrollThumbRect.y) {
+                        levelScrollOffset = Math.max(0, levelScrollOffset - 180);
+                    } else {
+                        levelScrollOffset = Math.min(maxLevelScroll, levelScrollOffset + 180);
+                    }
                     return;
+                }
+            }
+
+            // Chỉ cho phép click vào màn chơi nếu con trỏ nằm trong khung viewport
+            if (mY >= levelSelectViewY && mY <= levelSelectViewY + levelSelectViewH) {
+                for (LevelPreview lp : availableLevels) {
+                    if ((lp.btnPlayRect != null && lp.btnPlayRect.contains(mX, mY)) ||
+                        (lp.cardRect != null && lp.cardRect.contains(mX, mY))) {
+                        startLevel(lp.id);
+                        return;
+                    }
                 }
             }
             return;
@@ -1687,9 +1786,7 @@ public class GameManager {
         } else if (state == GameState.GAMEOVER) {
             if (btnRestart.contains(mX, mY)) resetGame();
             else if (btnLevelSelectGW.contains(mX, mY)) {
-                scanAvailableLevels();
-                state = GameState.LEVEL_SELECT;
-                if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
+                openLevelSelect();
             }
             else if (btnExitGO.contains(mX, mY)) {
                 state = GameState.MENU;
@@ -1703,9 +1800,7 @@ public class GameManager {
             }
             else if (btnRestart.contains(mX, mY)) resetGame();
             else if (btnLevelSelectGW.contains(mX, mY)) {
-                scanAvailableLevels();
-                state = GameState.LEVEL_SELECT;
-                if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
+                openLevelSelect();
             }
             else if (btnExitGO.contains(mX, mY)) {
                 state = GameState.MENU;
@@ -1864,7 +1959,34 @@ public class GameManager {
             if (mY <= 85) {
                 cardScrollOffset = Math.max(0, Math.min(maxCardScroll, cardScrollOffset + rotation * 32));
             }
+        } else if (state == GameState.LEVEL_SELECT && maxLevelScroll > 0) {
+            levelScrollOffset = Math.max(0, Math.min(maxLevelScroll, levelScrollOffset + rotation * 48));
         }
+    }
+
+    public void handleMousePressed(int mX, int mY) {
+        if (state == GameState.LEVEL_SELECT && maxLevelScroll > 0) {
+            if (levelScrollThumbRect != null && levelScrollThumbRect.contains(mX, mY)) {
+                isDraggingLevelScrollbar = true;
+                dragStartY = mY;
+                dragStartOffset = levelScrollOffset;
+            }
+        }
+    }
+
+    public void handleMouseDragged(int mX, int mY) {
+        if (state == GameState.LEVEL_SELECT && isDraggingLevelScrollbar && maxLevelScroll > 0) {
+            int deltaY = mY - dragStartY;
+            int trackScrollableH = levelSelectScrollTrackH - levelScrollThumbRect.height;
+            if (trackScrollableH > 0) {
+                int newOffset = dragStartOffset + (int) ((float) deltaY / trackScrollableH * maxLevelScroll);
+                levelScrollOffset = Math.max(0, Math.min(maxLevelScroll, newOffset));
+            }
+        }
+    }
+
+    public void handleMouseReleased(int mX, int mY) {
+        isDraggingLevelScrollbar = false;
     }
 
     public void activateIceShroom() {

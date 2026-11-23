@@ -216,9 +216,7 @@ public class PauseDialog {
         // 5. Chọn màn khác
         if (btnLevelSelect.contains(mX, mY)) {
             AudioManager.getInstance().playBuySound();
-            gm.scanAvailableLevels();
-            gm.state = GameManager.GameState.LEVEL_SELECT;
-            if (gm.getPanel() != null) gm.getPanel().resizeForLevel(Constants.COLS, Constants.ROWS);
+            gm.openLevelSelect();
             return;
         }
 
