@@ -11,7 +11,7 @@ import javax.imageio.ImageIO;
 public class ImageLoader {
     private static final Map<String, Image> imageCache = new HashMap<>();
 
-    public static Image getImage(String path) {
+    public static synchronized Image getImage(String path) {
         if (path == null || path.isEmpty()) return null;
         if (imageCache.containsKey(path)) {
             return imageCache.get(path);

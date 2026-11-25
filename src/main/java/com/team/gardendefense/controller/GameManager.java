@@ -44,6 +44,9 @@ import java.awt.FontMetrics;
 
 public class GameManager {
     private static final Logger LOGGER = Logger.getLogger(GameManager.class.getName());
+    private static final int COIN_BANK_RIGHT_MARGIN = 410;
+    private static final int COIN_BANK_ICON_CENTER_X = 19;
+    private static final int COIN_BANK_ICON_CENTER_Y = 34;
 
     public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER, GAMEWON, SHOP }
     public GameState state = GameState.MENU;
@@ -471,6 +474,14 @@ public class GameManager {
             return Math.max(Constants.SCREEN_HEIGHT, getMapHeight());
         }
         return Constants.SCREEN_HEIGHT;
+    }
+
+    public float getCoinBankTargetX() {
+        return getScreenWidth() - COIN_BANK_RIGHT_MARGIN + COIN_BANK_ICON_CENTER_X;
+    }
+
+    public float getCoinBankTargetY() {
+        return COIN_BANK_ICON_CENTER_Y;
     }
 
     public void resetGame() {

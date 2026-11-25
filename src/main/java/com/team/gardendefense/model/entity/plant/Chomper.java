@@ -68,7 +68,7 @@ public class Chomper extends Plant {
 
         // Idle state: search for closest active zombie in 3x3 range
         for (Monster zombie : gm.zombies) {
-            if (Math.abs(zombie.x - this.x) <= Constants.TILE_SIZE * 1.5 && Math.abs(zombie.y - this.y) <= Constants.TILE_SIZE * 1.5) {
+            if (Math.abs(zombie.x - this.x) <= Constants.TILE_SIZE * Constants.RANGE_CHOMPER && Math.abs(zombie.y - this.y) <= Constants.TILE_SIZE * Constants.RANGE_CHOMPER) {
                 if (zombie.health > 0) {
                     biteTarget = zombie;
                     state = 1;
