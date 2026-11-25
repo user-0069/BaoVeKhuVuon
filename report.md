@@ -746,6 +746,23 @@ Dựa trên chỉ số kinh tế thực tế (người chơi mới có 100 xu, m
      - Trình chỉnh sửa màn chơi tự động mở đúng thư mục dữ liệu `getDefaultDataDir()`.
      - Trình phát âm thanh tự động nhận diện cả đường dẫn tương đối và đường dẫn tiền tố `BaoVeKhuVuon/`.
 
+### 12. Tích hợp và hòa nhập các cải tiến đồ họa tối ưu từ nhánh tri2 sang idk
+- **Bối cảnh:**
+  - Nhánh `tri2` vừa được cập nhật commit mới `c593b64` bổ sung các tài nguyên đồ họa giao diện chuẩn Plants vs. Zombies.
+- **Các phần tối ưu đã được chọn lọc và tích hợp:**
+  1. **Nút bấm Menu chính bằng hình ảnh thanh gỗ PvZ (`mainmenubar.png`):**
+     - Thay thế các nút hình chữ nhật phẳng bằng 6 thanh gỗ kết cấu PvZ cổ điển cho: `CHƠI NGAY`, `CHỌN LEVEL`, `CỬA HÀNG 🛒`, `HƯỚNG DẪN`, `LEVEL EDITOR`, `THOÁT`.
+     - Kèm thuật toán tách nền `removeMenuBarBackground` và hiệu ứng hover sáng bóng khi rê chuột qua.
+  2. **Bảng Thua cuộc Game Over chuẩn đồ họa bia mộ (`loseboard.png` & `losebars.png`):**
+     - Nâng cấp màn hình Game Over hiển thị bia mộ thật của PvZ kèm 3 thanh nút đá tương ứng: `CHƠI LẠI TỪ ĐẦU`, `CHỌN MÀN KHÁC`, `VỀ MENU CHÍNH`.
+     - Vẫn duy trì fallback an toàn dạng vẽ vector nếu hình ảnh chưa nạp được.
+  3. **Bảng Chiến thắng Victory chuẩn đồ họa khung gỗ (`victoryboard.png` & `victorychoicebars.png`):**
+     - Nâng cấp màn hình Chiến thắng hiển thị bia gỗ chúc mừng cùng các thanh lựa chọn: `MÀN TIẾP THEO`, `CHƠI LẠI MÀN NÀY`, `CHỌN MÀN KHÁC`, `VỀ MENU CHÍNH`.
+  4. **Thuật toán khử viền răng cưa và unmatting cạnh (`removeImageMatte`):**
+     - Tích hợp vào [PauseDialog.java](file:///c:/btl%20oop/New%20folder/BaoVeKhuVuon/BaoVeKhuVuon/src/main/java/com/team/gardendefense/view/ui/PauseDialog.java) giúp làm sạch viền xám xung quanh bảng tạm dừng và các thanh nút ChoiceBar.
+  5. **Bảo tồn toàn bộ ưu thế hiện có của nhánh `idk`:**
+     - Giữ nguyên các bản sửa lỗi nạp tài nguyên Reanim đa tầng, thanh cuộn chọn level, các màn chơi mới 5-11, và overlay cây che zombie tiền cảnh map 2 & 3.
+
 ## Cách xem thay đổi
 
 Mở PowerShell tại thư mục dự án và chạy `.\run.bat` (hoặc `.\run.ps1`), sau đó vào màn chơi để trải nghiệm. Hệ thống tự động biên dịch với cờ tương thích `--release 11`.

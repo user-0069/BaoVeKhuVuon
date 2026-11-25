@@ -93,66 +93,118 @@ public class PauseDialog {
 
         // Button 3: CỬA HÀNG CRAZY DAVE (Vàng mật ong)
         btnShop.setBounds(leftColumnX, startBtnY + buttonStepY, btnW, btnH);
-        drawPvZButton(g2, btnShop, "CỬA HÀNG", gm.mouseX, gm.mouseY, new Color(160, 110, 30), new Color(190, 135, 40));
+        drawPvZButton(g2, btnShop, "CỬA HÀNG 🛒", gm.mouseX, gm.mouseY, new Color(160, 110, 30), new Color(190, 135, 40));
 
         // Button 4: ÂM THANH SFX (Toggle)
         boolean soundOn = AudioManager.getInstance().isSfxEnabled();
         btnToggleSound.setBounds(rightColumnX, startBtnY + buttonStepY, btnW, btnH);
-        String soundText = soundOn ? "ÂM THANH: [ BẬT ]" : "ÂM THANH: [ TẮT ]";
+        String soundText = soundOn ? "ÂM THANH: [ BẬT 🔊 ]" : "ÂM THANH: [ TẮT 🔇 ]";
         drawPvZButton(g2, btnToggleSound, soundText, gm.mouseX, gm.mouseY, new Color(70, 90, 120), new Color(85, 110, 145));
 
         // Button 5: CHỌN MÀN KHÁC (Xanh ngọc bích sẫm)
         btnLevelSelect.setBounds(leftColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
-        drawPvZButton(g2, btnLevelSelect, "CHỌN MÀN KHÁC", gm.mouseX, gm.mouseY, new Color(45, 85, 75), new Color(55, 105, 90));
+        drawPvZButton(g2, btnLevelSelect, "CHỌN MÀN KHÁC 🗺️", gm.mouseX, gm.mouseY, new Color(45, 85, 75), new Color(55, 105, 90));
 
         // Button 6: VỀ MENU CHÍNH (Đỏ gạch / Nâu gỗ sẫm)
         btnMainMenu.setBounds(rightColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
-        drawPvZButton(g2, btnMainMenu, "VỀ MENU CHÍNH", gm.mouseX, gm.mouseY, new Color(110, 40, 40), new Color(135, 50, 50));
+        drawPvZButton(g2, btnMainMenu, "VỀ MENU CHÍNH 🏠", gm.mouseX, gm.mouseY, new Color(110, 40, 40), new Color(135, 50, 50));
 
         g2.dispose();
     }
 
     private Image loadBoardImage() {
         Image source = ImageLoader.getImage("src/main/resources/assets/images/gamepausedboard.png");
-        if (!(source instanceof java.awt.image.BufferedImage)) return source;
-
-        java.awt.image.BufferedImage original = (java.awt.image.BufferedImage) source;
-        java.awt.image.BufferedImage transparent = new java.awt.image.BufferedImage(
-                original.getWidth(), original.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < original.getHeight(); y++) {
-            for (int x = 0; x < original.getWidth(); x++) {
-                int pixel = original.getRGB(x, y);
-                int red = (pixel >> 16) & 0xff;
-                int green = (pixel >> 8) & 0xff;
-                int blue = pixel & 0xff;
-                int max = Math.max(red, Math.max(green, blue));
-                int min = Math.min(red, Math.min(green, blue));
-                if (min >= 185 && max <= 225 && max - min <= 15) {
-                    pixel = 0;
-                }
-                transparent.setRGB(x, y, pixel);
-            }
-        }
-        return transparent;
+        return removeImageMatte(source, new Color(204, 205, 210), 18, 54, false, true);
     }
 
     private Image loadChoiceBarImage() {
         Image source = ImageLoader.getImage("src/main/resources/assets/images/choicebar.png");
+        return removeImageMatte(source, new Color(203, 203, 208), 18, 54, true, false);
+    }
+
+    private Image removeImageMatte(
+            Image source, Color matte, int innerTolerance, int edgeTolerance,
+            boolean cropToContent, boolean removeBoardWatermark) {
         if (!(source instanceof java.awt.image.BufferedImage)) return source;
 
         java.awt.image.BufferedImage original = (java.awt.image.BufferedImage) source;
-        int minX = original.getWidth();
-        int minY = original.getHeight();
-        int maxX = -1;
-        int maxY = -1;
-        for (int y = 0; y < original.getHeight(); y++) {
-            for (int x = 0; x < original.getWidth(); x++) {
-                int pixel = original.getRGB(x, y);
+        int width = original.getWidth();
+        int height = original.getHeight();
+        java.awt.image.BufferedImage cleaned = new java.awt.image.BufferedImage(
+                width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D copyGraphics = cleaned.createGraphics();
+        copyGraphics.drawImage(original, 0, 0, null);
+        copyGraphics.dispose();
+
+        int[] queue = new int[width * height];
+        int queueEnd = 0;
+        for (int x = 0; x < width; x++) {
+            queueEnd = enqueueMattePixel(cleaned, x, matte, edgeTolerance, queue, queueEnd);
+            queueEnd = enqueueMattePixel(
+                    cleaned, (height - 1) * width + x, matte, edgeTolerance, queue, queueEnd);
+        }
+        for (int y = 1; y < height - 1; y++) {
+            queueEnd = enqueueMattePixel(cleaned, y * width, matte, edgeTolerance, queue, queueEnd);
+            queueEnd = enqueueMattePixel(
+                    cleaned, y * width + width - 1, matte, edgeTolerance, queue, queueEnd);
+        }
+        for (int i = 0; i < queueEnd; i++) {
+            int pixelIndex = queue[i];
+            int x = pixelIndex % width;
+            int y = pixelIndex / width;
+            if (x > 0) queueEnd = enqueueMattePixel(cleaned, pixelIndex - 1, matte, edgeTolerance, queue, queueEnd);
+            if (x + 1 < width) queueEnd = enqueueMattePixel(cleaned, pixelIndex + 1, matte, edgeTolerance, queue, queueEnd);
+            if (y > 0) queueEnd = enqueueMattePixel(cleaned, pixelIndex - width, matte, edgeTolerance, queue, queueEnd);
+            if (y + 1 < height) queueEnd = enqueueMattePixel(cleaned, pixelIndex + width, matte, edgeTolerance, queue, queueEnd);
+        }
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int pixel = cleaned.getRGB(x, y);
+                int alpha = (pixel >>> 24);
+                if (alpha == 0) continue;
+
                 int red = (pixel >> 16) & 0xff;
                 int green = (pixel >> 8) & 0xff;
                 int blue = pixel & 0xff;
-                if (isChoiceBarBackground(red, green, blue)) continue;
+                if (alpha == 1) {
+                    float distance = (Math.abs(red - matte.getRed())
+                            + Math.abs(green - matte.getGreen())
+                            + Math.abs(blue - matte.getBlue())) / 3f;
+                    float newAlpha = Math.max(0f, Math.min(1f, (distance - innerTolerance)
+                            / Math.max(1, edgeTolerance - innerTolerance)));
+                    if (newAlpha <= 0.04f) {
+                        cleaned.setRGB(x, y, 0);
+                    } else {
+                        int finalAlpha = Math.round(newAlpha * 255);
+                        int finalRed = unmatteChannel(red, matte.getRed(), newAlpha);
+                        int finalGreen = unmatteChannel(green, matte.getGreen(), newAlpha);
+                        int finalBlue = unmatteChannel(blue, matte.getBlue(), newAlpha);
+                        cleaned.setRGB(x, y, (finalAlpha << 24) | (finalRed << 16) | (finalGreen << 8) | finalBlue);
+                    }
+                    continue;
+                }
 
+                if (isNearMatte(red, green, blue, matte, innerTolerance)) {
+                    cleaned.setRGB(x, y, 0);
+                }
+            }
+        }
+
+        if (removeBoardWatermark) {
+            removeCornerWatermark(cleaned, 91, 92);
+        } else if (cropToContent) {
+            removeCornerWatermark(cleaned, 85, 85);
+        }
+        if (!cropToContent) return cleaned;
+
+        int minX = width;
+        int minY = height;
+        int maxX = -1;
+        int maxY = -1;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if ((cleaned.getRGB(x, y) >>> 24) == 0) continue;
                 minX = Math.min(minX, x);
                 minY = Math.min(minY, y);
                 maxX = Math.max(maxX, x);
@@ -160,26 +212,53 @@ public class PauseDialog {
             }
         }
         if (maxX < minX || maxY < minY) return null;
+        return cleaned.getSubimage(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    }
 
-        java.awt.image.BufferedImage cropped = new java.awt.image.BufferedImage(
-                maxX - minX + 1, maxY - minY + 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-        for (int y = minY; y <= maxY; y++) {
-            for (int x = minX; x <= maxX; x++) {
-                int pixel = original.getRGB(x, y);
+    private int enqueueMattePixel(
+            java.awt.image.BufferedImage image, int pixelIndex, Color matte,
+            int edgeTolerance, int[] queue, int queueEnd) {
+        int x = pixelIndex % image.getWidth();
+        int y = pixelIndex / image.getWidth();
+        int pixel = image.getRGB(x, y);
+        if ((pixel >>> 24) != 255) return queueEnd;
+
+        int red = (pixel >> 16) & 0xff;
+        int green = (pixel >> 8) & 0xff;
+        int blue = pixel & 0xff;
+        if (!isNearMatte(red, green, blue, matte, edgeTolerance)) return queueEnd;
+
+        image.setRGB(x, y, (1 << 24) | (red << 16) | (green << 8) | blue);
+        queue[queueEnd] = pixelIndex;
+        return queueEnd + 1;
+    }
+
+    private int unmatteChannel(int value, int matteValue, float alpha) {
+        return Math.max(0, Math.min(255, Math.round((value - matteValue * (1f - alpha)) / alpha)));
+    }
+
+    private boolean isNearMatte(int red, int green, int blue, Color matte, int tolerance) {
+        return Math.abs(red - matte.getRed()) <= tolerance
+                && Math.abs(green - matte.getGreen()) <= tolerance
+                && Math.abs(blue - matte.getBlue()) <= tolerance;
+    }
+
+    private void removeCornerWatermark(java.awt.image.BufferedImage image, int startXPercent, int startYPercent) {
+        int startX = image.getWidth() * startXPercent / 100;
+        int startY = image.getHeight() * startYPercent / 100;
+        for (int y = startY; y < image.getHeight(); y++) {
+            for (int x = startX; x < image.getWidth(); x++) {
+                int pixel = image.getRGB(x, y);
                 int red = (pixel >> 16) & 0xff;
                 int green = (pixel >> 8) & 0xff;
                 int blue = pixel & 0xff;
-                if (isChoiceBarBackground(red, green, blue)) pixel = 0;
-                cropped.setRGB(x - minX, y - minY, pixel);
+                int min = Math.min(red, Math.min(green, blue));
+                int max = Math.max(red, Math.max(green, blue));
+                if ((pixel >>> 24) > 0 && min >= 210 && max - min <= 30) {
+                    image.setRGB(x, y, 0);
+                }
             }
         }
-        return cropped;
-    }
-
-    private boolean isChoiceBarBackground(int red, int green, int blue) {
-        int min = Math.min(red, Math.min(green, blue));
-        int max = Math.max(red, Math.max(green, blue));
-        return min >= 185 && max - min <= 20;
     }
 
     public void handleClick(int mX, int mY) {
