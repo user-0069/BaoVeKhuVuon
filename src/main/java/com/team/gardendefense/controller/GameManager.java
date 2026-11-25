@@ -760,7 +760,7 @@ public class GameManager {
 
         drawMainMenuChoice(g, btnPlay, 0, "CHƠI NGAY", mouseX, mouseY, new Color(110, 80, 50));
         drawMainMenuChoice(g, btnLevelSelect, 1, "CHỌN LEVEL", mouseX, mouseY, new Color(46, 139, 87));
-        drawMainMenuChoice(g, btnShop, 2, "CỬA HÀNG 🛒", mouseX, mouseY, new Color(180, 100, 30));
+        drawMainMenuChoice(g, btnShop, 2, "CỬA HÀNG", mouseX, mouseY, new Color(180, 100, 30));
         drawMainMenuChoice(g, btnInstr, 3, "HƯỚNG DẪN", mouseX, mouseY, new Color(110, 80, 50));
         drawMainMenuChoice(g, btnEditor, 4, "LEVEL EDITOR", mouseX, mouseY, new Color(110, 80, 50));
         drawMainMenuChoice(g, btnExit, 5, "THOÁT", mouseX, mouseY, new Color(110, 80, 50));

@@ -100,7 +100,7 @@ public class ShopScreen {
             int btw = g.getFontMetrics().stringWidth(bText);
             g.drawString(bText, btnBack.x + (btnBack.width - btw) / 2, btnBack.y + (btnBack.height + 9) / 2);
         } else {
-            drawCustomButton(g, btnBack, "⬅ QUAY LẠI", gm.mouseX, gm.mouseY, new Color(139, 69, 19));
+            drawCustomButton(g, btnBack, "QUAY LẠI", gm.mouseX, gm.mouseY, new Color(139, 69, 19));
         }
 
         // Khung ví tiền ở góc phải (co giãn linh hoạt theo số chữ số)
