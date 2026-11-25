@@ -59,7 +59,12 @@ public class GameManager {
     public Image coinBankImg;
     private Image mainMenuBackgroundImg;
     private Image mainMenuTitleImg;
+    private Image[] mainMenuBarImages;
     private Image sunIconImg;
+    private Image victoryBoardImg;
+    private Image[] victoryChoiceBars;
+    private Image gameOverBoardImg;
+    private Image[] gameOverChoiceBars;
     
     public int sun = 50; 
     private int passiveSunTimer = 0;
@@ -200,7 +205,13 @@ public class GameManager {
         mowerIconImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/icon_roofcleaner.png");
         mainMenuBackgroundImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/mainbg.png");
         mainMenuTitleImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/titlegame.png");
+        mainMenuBarImages = loadMainMenuBarImages();
         sunIconImg = loadSunIconImage();
+        victoryBoardImg = com.team.gardendefense.utils.ImageLoader.getImage("src/main/resources/assets/images/victoryboard.png");
+        victoryChoiceBars = loadVictoryChoiceBars();
+        gameOverBoardImg = com.team.gardendefense.utils.ImageLoader.getImage(
+                "src/main/resources/assets/images/loseboard.png");
+        gameOverChoiceBars = loadGameOverChoiceBars();
         scanAvailableLevels();
         loadLevel("/data/level_1.json");
     }
@@ -585,12 +596,12 @@ public class GameManager {
         btnEditor.x = bx;
         btnExit.x = bx;
 
-        drawButton(g, btnPlay, "CHƠI NGAY", mouseX, mouseY);
-        drawButton(g, btnLevelSelect, "CHỌN LEVEL", mouseX, mouseY, new Color(46, 139, 87));
-        drawButton(g, btnShop, "CỬA HÀNG 🛒", mouseX, mouseY, new Color(180, 100, 30));
-        drawButton(g, btnInstr, "HƯỚNG DẪN", mouseX, mouseY);
-        drawButton(g, btnEditor, "LEVEL EDITOR", mouseX, mouseY);
-        drawButton(g, btnExit, "THOÁT", mouseX, mouseY);
+        drawMainMenuChoice(g, btnPlay, 0, "CHƠI NGAY", mouseX, mouseY, new Color(110, 80, 50));
+        drawMainMenuChoice(g, btnLevelSelect, 1, "CHỌN LEVEL", mouseX, mouseY, new Color(46, 139, 87));
+        drawMainMenuChoice(g, btnShop, 2, "CỬA HÀNG 🛒", mouseX, mouseY, new Color(180, 100, 30));
+        drawMainMenuChoice(g, btnInstr, 3, "HƯỚNG DẪN", mouseX, mouseY, new Color(110, 80, 50));
+        drawMainMenuChoice(g, btnEditor, 4, "LEVEL EDITOR", mouseX, mouseY, new Color(110, 80, 50));
+        drawMainMenuChoice(g, btnExit, 5, "THOÁT", mouseX, mouseY, new Color(110, 80, 50));
 
         // Hiển thị khung số dư xu nhỏ ở góc phải menu chính (co giãn linh hoạt theo số chữ số)
         int coins = WalletManager.getInstance().getCoins();
@@ -1132,69 +1143,84 @@ public class GameManager {
         int sh = getScreenHeight();
         g.setColor(new Color(0, 0, 0, 195)); g.fillRect(0, 0, sw, sh);
 
-        int dw = 480;
-        int dh = 400;
+        int dw = Math.min((int) (sw * 0.68), (int) (sh * 0.96));
+        int dh = (int) (dw * 1792.0 / 2400.0);
+        dh = Math.min(dh, (int) (sh * 0.80));
+        dw = (int) (dh * 2400.0 / 1792.0);
         int dx = (sw - dw) / 2;
-        int dy = (sh - dh) / 2 - 20;
+        int dy = (sh - dh) / 2;
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Nền bia đá Game Over
-        GradientPaint stoneGrad = new GradientPaint(dx, dy, new Color(45, 30, 25), dx, dy + dh, new Color(25, 15, 12));
-        g2.setPaint(stoneGrad);
-        g2.fillRoundRect(dx, dy, dw, dh, 24, 24);
-        g2.setStroke(new BasicStroke(3f));
-        g2.setColor(new Color(160, 60, 50));
-        g2.drawRoundRect(dx + 2, dy + 2, dw - 4, dh - 4, 22, 22);
-
-        // Tiêu đề Game Over - Tự động co dãn chữ để tuyệt đối không tràn khung
-        String title = "THE ZOMBIES ATE";
-        String title2 = "YOUR BRAINS!";
-        float fontSize = 34f;
-        Font titleFont = new Font("Serif", Font.BOLD, (int) fontSize);
-        while (fontSize > 18f && (g2.getFontMetrics(titleFont).stringWidth(title) > dw - 60 ||
-                                  g2.getFontMetrics(titleFont).stringWidth(title2) > dw - 60)) {
-            fontSize -= 2f;
-            titleFont = new Font("Serif", Font.BOLD, (int) fontSize);
+        if (gameOverBoardImg != null) {
+            g2.drawImage(gameOverBoardImg, dx, dy, dw, dh, null);
+        } else {
+            GradientPaint stoneGrad = new GradientPaint(dx, dy, new Color(45, 30, 25),
+                    dx, dy + dh, new Color(25, 15, 12));
+            g2.setPaint(stoneGrad);
+            g2.fillRoundRect(dx, dy, dw, dh, 24, 24);
+            g2.setStroke(new BasicStroke(3f));
+            g2.setColor(new Color(160, 60, 50));
+            g2.drawRoundRect(dx + 2, dy + 2, dw - 4, dh - 4, 22, 22);
+            g2.setFont(new Font("Serif", Font.BOLD, 32));
+            g2.setColor(new Color(255, 60, 50));
+            String title = "THE ZOMBIES ATE YOUR BRAINS!";
+            int titleWidth = g2.getFontMetrics().stringWidth(title);
+            g2.drawString(title, (sw - titleWidth) / 2, dy + 60);
         }
-        g2.setFont(titleFont);
 
-        int tw1 = g2.getFontMetrics().stringWidth(title);
-        g2.setColor(Color.BLACK);
-        g2.drawString(title, (sw - tw1) / 2 + 2, dy + 55);
-        g2.setColor(new Color(255, 60, 50));
-        g2.drawString(title, (sw - tw1) / 2, dy + 53);
-
-        int tw2 = g2.getFontMetrics().stringWidth(title2);
-        g2.setColor(Color.BLACK);
-        g2.drawString(title2, (sw - tw2) / 2 + 2, dy + 95);
-        g2.setColor(new Color(255, 80, 70));
-        g2.drawString(title2, (sw - tw2) / 2, dy + 93);
-
-        // Phụ đề thông báo thua tiếng Việt, canh giữa chuẩn xác
-        g2.setFont(new Font("Arial", Font.BOLD, 14));
-        g2.setColor(new Color(240, 180, 180));
-        String sub = "ZOMBIE ĐÃ XÂM CHIẾM KHU VƯỜN!";
-        int subW = g2.getFontMetrics().stringWidth(sub);
-        g2.drawString(sub, (sw - subW) / 2, dy + 130);
-
-        int bw = 260, bh = 44;
+        int bw = Math.min((int) (dw * 0.34), 500);
+        int bh = gameOverChoiceBars.length > 0 && gameOverChoiceBars[0] != null
+                ? Math.max(1, bw * gameOverChoiceBars[0].getHeight(null)
+                        / gameOverChoiceBars[0].getWidth(null))
+                : 44;
         int bx = (sw - bw) / 2;
-        int by = dy + 155;
+        int buttonGap = Math.max(4, bh / 12);
+        int by = dy + (int) (dh * 0.40);
 
         btnRestart.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnRestart, "CHƠI LẠI TỪ ĐẦU 🔄", mouseX, mouseY, new Color(180, 70, 30));
-        by += 58;
+        drawGameOverChoiceBar(g2, btnRestart, 0, "CHƠI LẠI TỪ ĐẦU");
+        by += bh + buttonGap;
 
         btnLevelSelectGW.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnLevelSelectGW, "CHỌN MÀN KHÁC 🗺️", mouseX, mouseY, new Color(45, 95, 75));
-        by += 58;
+        drawGameOverChoiceBar(g2, btnLevelSelectGW, 1, "CHỌN MÀN KHÁC");
+        by += bh + buttonGap;
 
         btnExitGO.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnExitGO, "VỀ MENU CHÍNH 🏠", mouseX, mouseY, new Color(110, 45, 45));
+        drawGameOverChoiceBar(g2, btnExitGO, 2, "VỀ MENU CHÍNH");
 
         g2.dispose();
+    }
+
+    private Image[] loadGameOverChoiceBars() {
+        Image source = com.team.gardendefense.utils.ImageLoader.getImage(
+                "src/main/resources/assets/images/losebars.png");
+        if (!(source instanceof java.awt.image.BufferedImage)) return new Image[0];
+
+        java.awt.image.BufferedImage sheet = (java.awt.image.BufferedImage) source;
+        int barHeight = sheet.getHeight() / 3;
+        Image[] bars = new Image[3];
+        for (int i = 0; i < bars.length; i++) {
+            int y = i * barHeight;
+            int height = i == bars.length - 1 ? sheet.getHeight() - y : barHeight;
+            bars[i] = sheet.getSubimage(0, y, sheet.getWidth(), height);
+        }
+        return bars;
+    }
+
+    private void drawGameOverChoiceBar(Graphics2D g, Rectangle bounds, int index, String fallbackText) {
+        if (index < gameOverChoiceBars.length && gameOverChoiceBars[index] != null) {
+            g.drawImage(gameOverChoiceBars[index], bounds.x, bounds.y,
+                    bounds.width, bounds.height, null);
+            if (bounds.contains(mouseX, mouseY)) {
+                g.setColor(new Color(255, 255, 255, 38));
+                g.fillRoundRect(bounds.x + 5, bounds.y + 4,
+                        bounds.width - 10, bounds.height - 8, 10, 10);
+            }
+        } else {
+            drawButton(g, bounds, fallbackText, mouseX, mouseY);
+        }
     }
 
     private void drawGameWon(Graphics2D g) {
@@ -1202,60 +1228,203 @@ public class GameManager {
         int sh = getScreenHeight();
         g.setColor(new Color(0, 0, 0, 190)); g.fillRect(0, 0, sw, sh);
 
-        int dw = 440;
-        int dh = 420;
+        int dw = Math.min((int) (sw * 0.88), (int) (sh * 1.25));
+        int dh = (int) (dw * 1792.0 / 2400.0);
+        dh = Math.min(dh, (int) (sh * 0.82));
+        dw = (int) (dh * 2400.0 / 1792.0);
         int dx = (sw - dw) / 2;
-        int dy = (sh - dh) / 2 - 30;
+        int dy = (sh - dh) / 2 - 12;
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Nền bia đá Victory
-        GradientPaint stoneGrad = new GradientPaint(dx, dy, new Color(30, 48, 32), dx, dy + dh, new Color(15, 28, 18));
-        g2.setPaint(stoneGrad);
-        g2.fillRoundRect(dx, dy, dw, dh, 24, 24);
-        g2.setStroke(new BasicStroke(3f));
-        g2.setColor(new Color(215, 175, 70));
-        g2.drawRoundRect(dx + 2, dy + 2, dw - 4, dh - 4, 22, 22);
+        if (victoryBoardImg != null) {
+            g2.drawImage(victoryBoardImg, dx, dy, dw, dh, null);
+        } else {
+            GradientPaint fallback = new GradientPaint(dx, dy, new Color(30, 48, 32),
+                    dx, dy + dh, new Color(15, 28, 18));
+            g2.setPaint(fallback);
+            g2.fillRoundRect(dx, dy, dw, dh, 24, 24);
+        }
 
-        // Tiêu đề Victory
-        g2.setFont(new Font("Serif", Font.BOLD, 48));
-        String title = "VICTORY!";
-        int tw = g2.getFontMetrics().stringWidth(title);
-        g2.setColor(Color.BLACK);
-        g2.drawString(title, (sw - tw) / 2 + 2, dy + 58);
-        g2.setColor(new Color(255, 225, 50));
-        g2.drawString(title, (sw - tw) / 2, dy + 56);
-
-        g2.setFont(new Font("Arial", Font.BOLD, 15));
-        g2.setColor(new Color(210, 245, 210));
-        String sub = "Chúc mừng! Bạn đã bảo vệ an toàn khu vườn!";
-        int subW = g2.getFontMetrics().stringWidth(sub);
-        g2.drawString(sub, (sw - subW) / 2, dy + 92);
-
-        int bw = 280, bh = 46;
+        int bw = Math.max(220, Math.min((int) (dw * 0.44), 300));
+        int bh = Math.max(42, Math.min((int) (dh * 0.082), 50));
         int bx = (sw - bw) / 2;
-        int by = dy + 120;
+        int buttonGap = Math.max(8, (int) (bh * 0.18));
+        int boardBottomInset = (int) (dh * 0.14);
+        int firstButtonY = dy + (int) (dh * 0.48);
+        int lowestButtonBottom = firstButtonY + (bh + buttonGap) * 3 + bh;
+        int by = lowestButtonBottom > dy + dh - boardBottomInset
+                ? dy + dh - boardBottomInset - ((bh + buttonGap) * 3 + bh)
+                : firstButtonY;
+        by -= 16;
 
         boolean hasNext = hasLevel(currentLevelId + 1);
         if (hasNext) {
             btnNextLevel.setBounds(bx, by, bw, bh);
-            drawButton(g2, btnNextLevel, "MÀN TIẾP THEO ▶", mouseX, mouseY, new Color(46, 139, 87));
-            by += 58;
+            drawVictoryChoiceBar(g2, btnNextLevel, 0);
+            by += bh + buttonGap;
         }
 
         btnRestart.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnRestart, "CHƠI LẠI MÀN NÀY", mouseX, mouseY, new Color(180, 90, 30));
-        by += 58;
+        drawVictoryChoiceBar(g2, btnRestart, 1);
+        by += bh + buttonGap;
 
         btnLevelSelectGW.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnLevelSelectGW, "CHỌN MÀN KHÁC 🗺️", mouseX, mouseY, new Color(45, 95, 75));
-        by += 58;
+        drawVictoryChoiceBar(g2, btnLevelSelectGW, 2);
+        by += bh + buttonGap;
 
         btnExitGO.setBounds(bx, by, bw, bh);
-        drawButton(g2, btnExitGO, "VỀ MENU CHÍNH 🏠", mouseX, mouseY, new Color(110, 45, 45));
+        drawVictoryChoiceBar(g2, btnExitGO, 3);
 
         g2.dispose();
+    }
+
+    private Image[] loadMainMenuBarImages() {
+        Image source = com.team.gardendefense.utils.ImageLoader.getImage(
+                "src/main/resources/assets/images/mainmenubar.png");
+        if (!(source instanceof java.awt.image.BufferedImage)) return new Image[0];
+
+        java.awt.image.BufferedImage sheet = (java.awt.image.BufferedImage) source;
+        int[][] bounds = {
+                {640, 65, 1080, 265},
+                {640, 344, 1080, 265},
+                {610, 615, 1110, 270},
+                {610, 900, 1090, 265},
+                {580, 1163, 1140, 278},
+                {566, 1455, 1128, 265}
+        };
+        Image[] bars = new Image[bounds.length];
+        for (int i = 0; i < bounds.length; i++) {
+            int x = bounds[i][0];
+            int y = bounds[i][1];
+            int width = Math.min(bounds[i][2], sheet.getWidth() - x);
+            int height = Math.min(bounds[i][3], sheet.getHeight() - y);
+            bars[i] = removeMenuBarBackground(sheet.getSubimage(x, y, width, height));
+        }
+        return bars;
+    }
+
+    private Image removeMenuBarBackground(java.awt.image.BufferedImage source) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        java.awt.image.BufferedImage cleaned = new java.awt.image.BufferedImage(
+                width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = cleaned.createGraphics();
+        graphics.drawImage(source, 0, 0, null);
+        graphics.dispose();
+
+        int[] queue = new int[width * height];
+        int queueEnd = 0;
+        for (int x = 0; x < width; x++) {
+            queueEnd = enqueueMenuBarBackground(cleaned, x, queue, queueEnd);
+            queueEnd = enqueueMenuBarBackground(cleaned, (height - 1) * width + x, queue, queueEnd);
+        }
+        for (int y = 1; y < height - 1; y++) {
+            queueEnd = enqueueMenuBarBackground(cleaned, y * width, queue, queueEnd);
+            queueEnd = enqueueMenuBarBackground(cleaned, y * width + width - 1, queue, queueEnd);
+        }
+        for (int i = 0; i < queueEnd; i++) {
+            int pixelIndex = queue[i];
+            int x = pixelIndex % width;
+            int y = pixelIndex / width;
+            if (x > 0) queueEnd = enqueueMenuBarBackground(cleaned, pixelIndex - 1, queue, queueEnd);
+            if (x + 1 < width) queueEnd = enqueueMenuBarBackground(cleaned, pixelIndex + 1, queue, queueEnd);
+            if (y > 0) queueEnd = enqueueMenuBarBackground(cleaned, pixelIndex - width, queue, queueEnd);
+            if (y + 1 < height) queueEnd = enqueueMenuBarBackground(cleaned, pixelIndex + width, queue, queueEnd);
+        }
+
+        int minX = width;
+        int minY = height;
+        int maxX = -1;
+        int maxY = -1;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if ((cleaned.getRGB(x, y) >>> 24) == 0) continue;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+        }
+        if (maxX < minX || maxY < minY) return cleaned;
+        return cleaned.getSubimage(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    }
+
+    private int enqueueMenuBarBackground(
+            java.awt.image.BufferedImage image, int pixelIndex, int[] queue, int queueEnd) {
+        int x = pixelIndex % image.getWidth();
+        int y = pixelIndex / image.getWidth();
+        int pixel = image.getRGB(x, y);
+        if ((pixel >>> 24) == 0) return queueEnd;
+
+        int red = (pixel >> 16) & 0xff;
+        int green = (pixel >> 8) & 0xff;
+        int blue = pixel & 0xff;
+        int min = Math.min(red, Math.min(green, blue));
+        int max = Math.max(red, Math.max(green, blue));
+        if (min < 170 || max - min > 24 || Math.abs(red - 210) > 40
+                || Math.abs(green - 210) > 40 || Math.abs(blue - 210) > 40) {
+            return queueEnd;
+        }
+
+        image.setRGB(x, y, 0);
+        queue[queueEnd] = pixelIndex;
+        return queueEnd + 1;
+    }
+
+    private void drawMainMenuChoice(
+            Graphics2D g, Rectangle bounds, int imageIndex, String fallbackText,
+            int mX, int mY, Color fallbackColor) {
+        if (imageIndex >= mainMenuBarImages.length || mainMenuBarImages[imageIndex] == null) {
+            drawButton(g, bounds, fallbackText, mX, mY, fallbackColor);
+            return;
+        }
+
+        g.drawImage(mainMenuBarImages[imageIndex], bounds.x, bounds.y, bounds.width, bounds.height, null);
+        if (bounds.contains(mX, mY)) {
+            g.setColor(new Color(255, 255, 255, 35));
+            g.fillRoundRect(bounds.x + 5, bounds.y + 3, bounds.width - 10, bounds.height - 6, 12, 12);
+        }
+    }
+
+    private Image[] loadVictoryChoiceBars() {
+        Image source = com.team.gardendefense.utils.ImageLoader.getImage(
+                "src/main/resources/assets/images/victorychoicebars.png");
+        if (!(source instanceof java.awt.image.BufferedImage)) return new Image[0];
+
+        java.awt.image.BufferedImage sheet = (java.awt.image.BufferedImage) source;
+        int barX = (int) (sheet.getWidth() * 0.075);
+        int barWidth = (int) (sheet.getWidth() * 0.850);
+        int barHeight = (int) (sheet.getHeight() * 0.210);
+        int[] barYs = {
+                (int) (sheet.getHeight() * 0.035),
+                (int) (sheet.getHeight() * 0.278),
+                (int) (sheet.getHeight() * 0.518),
+                (int) (sheet.getHeight() * 0.758)
+        };
+
+        Image[] bars = new Image[4];
+        for (int i = 0; i < bars.length; i++) {
+            int height = Math.min(barHeight, sheet.getHeight() - barYs[i]);
+            bars[i] = sheet.getSubimage(barX, barYs[i], barWidth, height);
+        }
+        return bars;
+    }
+
+    private void drawVictoryChoiceBar(Graphics2D g, Rectangle bounds, int index) {
+        if (victoryChoiceBars != null && index >= 0 && index < victoryChoiceBars.length
+                && victoryChoiceBars[index] != null) {
+            g.drawImage(victoryChoiceBars[index], bounds.x, bounds.y,
+                    bounds.width, bounds.height, null);
+            if (bounds.contains(mouseX, mouseY)) {
+                g.setColor(new Color(255, 255, 255, 38));
+                g.fillRoundRect(bounds.x + 5, bounds.y + 4,
+                        bounds.width - 10, bounds.height - 8, 10, 10);
+            }
+        } else {
+            drawButton(g, bounds, "THAO TÁC", mouseX, mouseY);
+        }
     }
 
     private void drawButton(Graphics2D g, Rectangle r, String text, int mX, int mY) {
