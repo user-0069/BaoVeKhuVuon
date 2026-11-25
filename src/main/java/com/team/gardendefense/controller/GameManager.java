@@ -44,6 +44,8 @@ import java.awt.FontMetrics;
 
 public class GameManager {
     private static final Logger LOGGER = Logger.getLogger(GameManager.class.getName());
+    private int coinBankTargetX = -1;
+    private int coinBankTargetY = 28;
 
     public enum GameState { MENU, LEVEL_SELECT, INSTRUCTIONS, PLAYING, PAUSED, GAMEOVER, GAMEWON, SHOP }
     public GameState state = GameState.MENU;
@@ -481,6 +483,14 @@ public class GameManager {
             return Math.max(Constants.SCREEN_HEIGHT, getMapHeight());
         }
         return Constants.SCREEN_HEIGHT;
+    }
+
+    public float getCoinBankTargetX() {
+        return coinBankTargetX >= 0 ? coinBankTargetX : (getScreenWidth() - 218);
+    }
+
+    public float getCoinBankTargetY() {
+        return coinBankTargetY;
     }
 
     public void resetGame() {
@@ -1192,6 +1202,8 @@ public class GameManager {
         int bankW = Math.max(125, textW + 42);
         int bankX = menuX - bankW - 12;
         int bankY = 12;
+        coinBankTargetX = bankX + 17;
+        coinBankTargetY = bankY + 16;
 
         g.setColor(new Color(0, 0, 0, 180));
         g.fillRoundRect(bankX, bankY, bankW, 32, 10, 10);

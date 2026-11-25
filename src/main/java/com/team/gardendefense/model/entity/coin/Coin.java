@@ -2,7 +2,6 @@ package com.team.gardendefense.model.entity.coin;
 
 import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.system.WalletManager;
-import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.utils.ImageLoader;
 
 import java.awt.AlphaComposite;
@@ -106,8 +105,8 @@ public class Coin {
             }
         } else if (state == State.COLLECTING) {
             // Tọa độ mục tiêu là icon ví tiền ở góc phải trên
-            targetUIX = gm.getScreenWidth() - 100;
-            targetUIY = 40;
+            targetUIX = gm.getCoinBankTargetX();
+            targetUIY = gm.getCoinBankTargetY();
 
             // Bay mượt mà theo Lerp (nội suy phi tuyến)
             float dx = targetUIX - x;
@@ -163,8 +162,17 @@ public class Coin {
         }
 
         int drawSize = Math.max(8, (int) (baseSize * scale));
-        int drawX = (int) (x + (baseSize - drawSize) / 2.0f);
-        int drawY = (int) (y + (baseSize - drawSize) / 2.0f);
+        int spriteWidth = drawSize;
+        int spriteHeight = drawSize;
+        if (sprite != null && sprite.getWidth(null) > 0 && sprite.getHeight(null) > 0) {
+            double fitScale = Math.min(
+                    (double) drawSize / sprite.getWidth(null),
+                    (double) drawSize / sprite.getHeight(null));
+            spriteWidth = Math.max(1, (int) Math.round(sprite.getWidth(null) * fitScale));
+            spriteHeight = Math.max(1, (int) Math.round(sprite.getHeight(null) * fitScale));
+        }
+        int drawX = (int) (x + (baseSize - spriteWidth) / 2.0f);
+        int drawY = (int) (y + (baseSize - spriteHeight) / 2.0f);
 
         // Vẽ bóng đổ dưới đất
         if (state == State.IDLE || state == State.SPAWNING) {
@@ -185,18 +193,7 @@ public class Coin {
         }
 
         if (sprite != null) {
-            int imgW = sprite.getWidth(null);
-            int imgH = sprite.getHeight(null);
-            if (imgW > 0 && imgH > 0) {
-                float aspect = (float) imgH / imgW;
-                int drawW = drawSize;
-                int drawH = (int) (drawSize * aspect);
-                int offX = (int) (x + (baseSize - drawW) / 2.0f);
-                int offY = (int) (y + (baseSize - drawH) / 2.0f);
-                g2.drawImage(sprite, offX, offY, drawW, drawH, null);
-            } else {
-                g2.drawImage(sprite, drawX, drawY, drawSize, drawSize, null);
-            }
+            g2.drawImage(sprite, drawX, drawY, spriteWidth, spriteHeight, null);
         } else {
             // Fallback vẽ hình tròn màu vàng/bạc nếu chưa load được ảnh
             if (type == CoinType.SILVER) g2.setColor(new Color(192, 192, 192));

@@ -7,9 +7,9 @@ package com.team.gardendefense.model.entity.coin;
  * - DIAMOND: Kim cương ($1000, tỉ lệ rơi 1%)
  */
 public enum CoinType {
-    SILVER(10, "Xu Bạc", "src/main/resources/assets/images/coin_silver.png"),
-    GOLD(50, "Xu Vàng", "src/main/resources/assets/images/coin_gold.png"),
-    DIAMOND(1000, "Kim Cương", "src/main/resources/assets/images/diamond.png");
+    SILVER(10, "Xu Bạc", "src/main/resources/assets/reanim/coin_silver_dollar.png"),
+    GOLD(50, "Xu Vàng", "src/main/resources/assets/reanim/coin_gold_dollar.png"),
+    DIAMOND(1000, "Kim Cương", "src/main/resources/assets/reanim/Diamond.png");
 
     private final int value;
     private final String displayName;

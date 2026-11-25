@@ -2,7 +2,6 @@ package com.team.gardendefense.model.entity.pet;
 
 import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.model.entity.coin.Coin;
-import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.utils.ImageLoader;
 
 import java.awt.Color;
@@ -29,18 +28,16 @@ public class PetSnail implements IAutoCollector {
     private Coin targetCoin = null;
 
     // Kích thước vẽ
-    private int width = 50;
-    private int height = 40;
+    private int width = 72;
+    private int height = 51;
 
-    private Image shellImg;
-    private Image bodyImg;
+    private Image snailImg;
 
     public PetSnail(float startX, float startY) {
         this.x = startX;
         this.y = startY;
         this.currentSpeed = baseSpeed;
-        this.shellImg = ImageLoader.getImage("src/main/resources/assets/reanim/Stinky_shell.png");
-        this.bodyImg = ImageLoader.getImage("src/main/resources/assets/reanim/Stinky_body.png");
+        this.snailImg = ImageLoader.getImage("src/main/resources/assets/reanim/Stinky_turn1.png");
     }
 
     public void update(GameManager gm) {
@@ -199,13 +196,11 @@ public class PetSnail implements IAutoCollector {
         g2.fillOval(drawX + 5, drawY + height - 10, width - 10, 12);
 
         // Vẽ thân & vỏ ốc sên
-        if (bodyImg != null && shellImg != null) {
+        if (snailImg != null) {
             if (facingRight) {
-                g2.drawImage(bodyImg, drawX + width, drawY, -width, height, null);
-                g2.drawImage(shellImg, drawX + width, drawY, -width, height, null);
+                g2.drawImage(snailImg, drawX + width, drawY, -width, height, null);
             } else {
-                g2.drawImage(bodyImg, drawX, drawY, width, height, null);
-                g2.drawImage(shellImg, drawX, drawY, width, height, null);
+                g2.drawImage(snailImg, drawX, drawY, width, height, null);
             }
         } else {
             // Fallback vẽ hoạt họa ốc sên

@@ -15,10 +15,18 @@ public class CherryBomb extends Plant {
 
     public CherryBomb(int col, int row, GameManager gameManager) {
         super(col, row);
+        // Health đặt cao để không bị zombie giết trước khi nổ.
+        // takeDamage() bị override nên con số này chỉ là placeholder.
         this.health = Constants.HP_CHERRYBOMB;
         this.maxHealth = Constants.HP_CHERRYBOMB;
         this.image = ImageLoader.getImage("src/main/resources/assets/images/CherryBomb.png");
         setAnimation("CherryBomb.reanim");
+    }
+
+    /** CherryBomb bất tử — không nhận damage từ zombie. */
+    @Override
+    public void takeDamage(int amount) {
+        // Cố tình bỏ qua: CherryBomb luôn nổ theo timer, không thể bị giết trước
     }
 
     @Override
@@ -40,8 +48,8 @@ public class CherryBomb extends Plant {
         hasExploded = true;
         // Kill all zombies in 3x3 area
         for (Monster zombie : gm.zombies) {
-            if (Math.abs(zombie.x - this.x) <= Constants.TILE_SIZE * 1.5 && Math.abs(zombie.y - this.y) <= Constants.TILE_SIZE * 1.5) {
-                zombie.takeDamage(1800);
+            if (Math.abs(zombie.x - this.x) <= Constants.TILE_SIZE * Constants.RANGE_CHERRYBOMB && Math.abs(zombie.y - this.y) <= Constants.TILE_SIZE * Constants.RANGE_CHERRYBOMB) {
+                zombie.takeDamage(Constants.DMG_CHERRYBOMB);
             }
         }
     }
