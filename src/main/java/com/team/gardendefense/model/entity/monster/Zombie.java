@@ -6,6 +6,7 @@ import java.awt.Rectangle;
 import com.team.gardendefense.utils.Constants;
 import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.model.level.Waypoint;
+import com.team.gardendefense.system.AudioManager;
 
 public class Zombie extends Monster {
     private float baseSpeed = Constants.SPEED_ZOMBIE_RED;
@@ -64,6 +65,7 @@ public class Zombie extends Monster {
                 attackTimer++;
                 if (attackTimer >= Constants.RATE_ZOMBIE_RED_ATK) { 
                     attackTarget.takeDamage(Constants.DMG_ZOMBIE_RED); 
+                    AudioManager.getInstance().playZombieChompSound();
                     attackTimer = 0; 
                 }
                 return;
