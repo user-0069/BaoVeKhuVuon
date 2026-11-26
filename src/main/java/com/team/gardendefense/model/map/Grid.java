@@ -32,6 +32,18 @@ public class Grid {
         } else if (levelId == 4) {
             backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap4.png");
             foregroundImage = null;
+        } else if (levelId == 5) {
+            backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap5.png");
+            foregroundImage = null;
+        } else if (levelId == 6) {
+            backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap6.png");
+            foregroundImage = null;
+        } else if (levelId == 7) {
+            backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap7.png");
+            foregroundImage = null;
+        } else if (levelId == 8) {
+            backgroundImage = ImageLoader.getImage("src/main/resources/assets/images/bgmap8.png");
+            foregroundImage = null;
         } else {
             backgroundImage = null;
             foregroundImage = null;
@@ -52,7 +64,10 @@ public class Grid {
 
         // Vẽ ảnh background nếu có, nếu không fallback màu xanh lá
         if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, totalW, totalH, null);
+            int verticalOffset = levelId == 5 || levelId == 6 ? 16
+                    : levelId == 7 ? 12
+                    : levelId == 8 ? 8 : 0;
+            g.drawImage(backgroundImage, 0, verticalOffset, totalW, totalH + verticalOffset, null);
             return;
         }
 
