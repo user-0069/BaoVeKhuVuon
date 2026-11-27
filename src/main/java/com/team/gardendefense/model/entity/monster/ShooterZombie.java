@@ -8,6 +8,7 @@ import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.model.entity.plant.Plant;
 import com.team.gardendefense.model.entity.projectile.ZombieBone;
 import com.team.gardendefense.model.level.Waypoint;
+import com.team.gardendefense.system.AudioManager;
 
 public class ShooterZombie extends Monster {
     private float baseSpeed = Constants.SPEED_ZOMBIE_SHOOTER;
@@ -68,6 +69,7 @@ public class ShooterZombie extends Monster {
                 shootTimer++;
                 if (shootTimer >= Constants.RATE_ZOMBIE_SHOOTER) {
                     attackTarget.takeDamage(Constants.DMG_ZOMBIE_SHOOTER);
+                    AudioManager.getInstance().playZombieChompSound();
                     shootTimer = 0;
                 }
                 return; // Dừng lại không đi tiếp, không bắn xa
@@ -88,6 +90,7 @@ public class ShooterZombie extends Monster {
                     x + 32, y + 32, closestPlant.x + 32, closestPlant.y + 32, 
                     Constants.DMG_ZOMBIE_SHOOTER, Constants.SPEED_BONE
                 ));
+                AudioManager.getInstance().playZombieThrowSound();
                 shootTimer = 0;
             }
         }

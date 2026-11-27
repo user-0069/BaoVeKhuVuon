@@ -2,6 +2,7 @@ package com.team.gardendefense.model.entity.plant;
 
 import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.model.entity.monster.Monster;
+import com.team.gardendefense.system.AudioManager;
 import com.team.gardendefense.utils.ImageLoader;
 import com.team.gardendefense.utils.Constants;
 import java.awt.Graphics2D;
@@ -35,6 +36,7 @@ public class Chomper extends Plant {
             if (biteTimer == 13) {
                 if (biteTarget != null && biteTarget.health > 0) {
                     biteTarget.takeDamage(1800);
+                    AudioManager.getInstance().playChomperBiteSound();
                     state = 2; // Transition to chewing
                     chewTimer = MAX_CHEW_TIME;
                 }

@@ -75,7 +75,7 @@ Chuẩn phong cách bia đá và biển gỗ nổi tiếng của Plants vs. Zomb
   1. **TIẾP TỤC (RESUME):** Trở lại trận đấu ngay lập tức.
   2. **CHƠI LẠI TỪ ĐẦU (RESTART):** Khởi động lại màn chơi hiện tại.
   3. **CỬA HÀNG CRAZY DAVE 🛒:** Mở nhanh giao diện Shop để mua vật phẩm hỗ trợ.
-  4. **ÂM THANH [ BẬT 🔊 / TẮT 🔇 ]:** Bật/Tắt âm thanh hiệu ứng (SFX).
+  4. **ÂM LƯỢNG (0% – 100%):** Thanh trượt điều chỉnh âm lượng mượt mà (kéo/nhấp chuột, cuộn chuột hoặc bấm biểu tượng loa để tắt nhanh; tự động lưu cấu hình).
   5. **CHỌN MÀN KHÁC 🗺️:** Trở ra danh sách chọn Level.
   6. **VỀ MENU CHÍNH 🏠:** Quay lại màn hình chính của trò chơi.
 - **Màn hình Kết Thúc Trận:** Giao diện **GAME OVER ("THE ZOMBIES ATE YOUR BRAINS!")** và **VICTORY** được đồng bộ hóa với bia đá khắc chữ cổ điển PvZ.
@@ -98,6 +98,15 @@ Chuẩn phong cách bia đá và biển gỗ nổi tiếng của Plants vs. Zomb
 - **Thây ma (Zombies):**
   - **ID 1:** Red Zombie (5 HP): Quái thường đi theo đường, cắn cây ngáng đường.
   - **ID 2:** Shooter Zombie (3 HP): Mini-Boss ném xương từ xa, tỉ lệ rớt xu vàng/kim cương cao hơn.
+
+### Âm thanh chiến đấu (Combat SFX)
+- `AudioManager` hỗ trợ nạp và cache file `.wav`/`.au` vào RAM (chuyển từ bộ `.ogg` gốc) để phát tức thì không trễ:
+  - **CherryBomb nổ:** Phát `cherrybomb.wav` khi kích nổ.
+  - **Đạn Plant trúng Zombie:** Phát ngẫu nhiên `splat.wav` / `splat2.wav` / `splat3.wav` (kèm `snow_pea_sparkles.wav` nếu là đạn băng `SnowPea`), có giới hạn tần suất (throttle) tránh vỡ tiếng khi nhiều đạn trúng cùng lúc.
+  - **ShooterZombie ném đá:** Phát ngẫu nhiên `throw.wav` / `throw2.wav` khi ném và `bonk.wav` khi đá trúng cây.
+  - **Chomper ăn thịt Zombie:** Phát `bigchomp.wav` đúng nhịp cắn nuốt chửng mục tiêu.
+  - **Zombie gặm cây:** Phát ngẫu nhiên `chomp.wav` / `chomp2.wav` / `chompsoft.wav` khi Zombie cắn gây sát thương lên cây.
+  - **Nhạc Thắng / Thua (`VICTORY` / `GAME OVER`):** Phát `winmusic.wav` khi thắng màn chơi và `losemusic.wav` khi thua, tự động dừng khi người chơi bấm chơi lại, chuyển màn hoặc quay về Menu.
 
 ### Hoạt ảnh nhân vật
 - Cây Peashooter, SnowPea, Sunflower, WallNut, Chomper và Marigold dùng các lớp hình và khung chuyển động trong `assets/reanim/*.reanim` để nhấp nhô, chớp mắt, bắn hoặc cắn. Sunflower vẫn dùng hoạt ảnh riêng khi tạo Sun.
@@ -139,7 +148,7 @@ BaoVeKhuVuon/
         │       │   ├── level/           # POJO dữ liệu JSON (Level, Wave, Spawner, Waypoint)
         │       │   └── map/             # Bản đồ (Grid, Tile)
         │       ├── system/              # Các hệ thống nghiệp vụ toàn cục
-        │       │   ├── AudioManager.java# Tổng hợp âm thanh ting pitch combo & phát audio
+        │       │   ├── AudioManager.java# Quản lý phát & cache SFX (.wav/.au), tổng hợp âm thanh
         │       │   ├── LootTable.java   # Thuật toán Weighted Random Drop Rate
         │       │   ├── ShopManager.java # Logic mua sắm vật phẩm, mở khóa minigame
         │       │   └── WalletManager.java # Quản lý tài sản, Save/Load JSON, hiệu ứng số bay
@@ -160,7 +169,7 @@ BaoVeKhuVuon/
             ├── assets/                  # Nơi chứa tài nguyên đa phương tiện (Media gốc PvZ 1)
             │   ├── images/              # Hình ảnh (Sprites, Background, coinbank.png, cards)
             │   ├── reanim/              # Bộ phận hình và dữ liệu hoạt ảnh cây, zombie
-            │   └── sounds/              # Âm thanh (coin.ogg, diamond.au, moneyfalls.ogg)
+            │   └── sounds/              # Âm thanh (.ogg gốc & .wav/.au: cherrybomb, splat, throw, bonk, chomp, bigchomp, winmusic, losemusic, diamond)
             └── data/                    # Nơi chứa dữ liệu Levels
                 ├── LEVEL_DESIGN_GUIDE.md
                 ├── level_1.json

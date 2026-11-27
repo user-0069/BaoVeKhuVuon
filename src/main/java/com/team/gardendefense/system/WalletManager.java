@@ -49,6 +49,7 @@ public class WalletManager {
         public boolean unlockedVasebreaker = false;
         public boolean unlockedIZombie = false;
         public boolean unlockedSurvival = false;
+        public Integer sfxVolumePercent = null;
     }
 
     private SaveData data = new SaveData();

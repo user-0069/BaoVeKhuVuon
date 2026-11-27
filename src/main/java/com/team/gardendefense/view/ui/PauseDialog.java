@@ -24,7 +24,13 @@ public class PauseDialog {
     public Rectangle btnShop = new Rectangle();
     public Rectangle btnLevelSelect = new Rectangle();
     public Rectangle btnMainMenu = new Rectangle();
-    public Rectangle btnToggleSound = new Rectangle();
+
+    // Thanh điều chỉnh âm lượng
+    public Rectangle volumeControlRect = new Rectangle();
+    public Rectangle volumeMuteRect = new Rectangle();
+    public Rectangle volumeTrackRect = new Rectangle();
+    public Rectangle volumeHitRect = new Rectangle();
+    public boolean isDraggingVolume = false;
 
     private Image boardBgImg;
     private Image choiceBarImg;
@@ -95,11 +101,9 @@ public class PauseDialog {
         btnShop.setBounds(leftColumnX, startBtnY + buttonStepY, btnW, btnH);
         drawPvZButton(g2, btnShop, "CỬA HÀNG", gm.mouseX, gm.mouseY, new Color(160, 110, 30), new Color(190, 135, 40));
 
-        // Button 4: ÂM THANH SFX (Toggle)
-        boolean soundOn = AudioManager.getInstance().isSfxEnabled();
-        btnToggleSound.setBounds(rightColumnX, startBtnY + buttonStepY, btnW, btnH);
-        String soundText = soundOn ? "ÂM THANH: [ BẬT ]" : "ÂM THANH: [ TẮT ]";
-        drawPvZButton(g2, btnToggleSound, soundText, gm.mouseX, gm.mouseY, new Color(70, 90, 120), new Color(85, 110, 145));
+        // Button 4: THANH ĐIỀU CHỈNH ÂM LƯỢNG (Volume Slider)
+        volumeControlRect.setBounds(rightColumnX, startBtnY + buttonStepY, btnW, btnH);
+        drawVolumeSlider(g2, volumeControlRect, gm.mouseX, gm.mouseY);
 
         // Button 5: CHỌN MÀN KHÁC (Xanh ngọc bích sẫm)
         btnLevelSelect.setBounds(leftColumnX, startBtnY + buttonStepY * 2, btnW, btnH);
@@ -283,15 +287,6 @@ public class PauseDialog {
             return;
         }
 
-        // 4. Bật / Tắt âm thanh
-        if (btnToggleSound.contains(mX, mY)) {
-            AudioManager.getInstance().toggleSfx();
-            if (AudioManager.getInstance().isSfxEnabled()) {
-                AudioManager.getInstance().playCoinSound();
-            }
-            return;
-        }
-
         // 5. Chọn màn khác
         if (btnLevelSelect.contains(mX, mY)) {
             AudioManager.getInstance().playBuySound();
@@ -306,6 +301,159 @@ public class PauseDialog {
             if (gm.getPanel() != null) gm.getPanel().resizeForLevel(Constants.COLS, Constants.ROWS);
             return;
         }
+    }
+
+    public void handleMousePressed(int mX, int mY) {
+        if (volumeMuteRect.contains(mX, mY)) {
+            AudioManager.getInstance().toggleSfx();
+            if (AudioManager.getInstance().isSfxEnabled()) {
+                AudioManager.getInstance().playCoinSound();
+            }
+            return;
+        }
+        if (volumeHitRect.contains(mX, mY)) {
+            isDraggingVolume = true;
+            updateVolumeFromMouseX(mX);
+        }
+    }
+
+    public void handleMouseDragged(int mX, int mY) {
+        if (isDraggingVolume) {
+            updateVolumeFromMouseX(mX);
+        }
+    }
+
+    public void handleMouseReleased() {
+        if (isDraggingVolume) {
+            isDraggingVolume = false;
+            AudioManager.getInstance().saveVolume();
+            if (AudioManager.getInstance().isSfxEnabled()) {
+                AudioManager.getInstance().playCoinSound();
+            }
+        }
+    }
+
+    public void handleMouseWheel(int rotation, int mX, int mY) {
+        if (volumeControlRect.contains(mX, mY)) {
+            int next = Math.max(0, Math.min(100, AudioManager.getInstance().getVolumePercent() - rotation * 5));
+            AudioManager.getInstance().setVolumePercent(next, true);
+        }
+    }
+
+    private void updateVolumeFromMouseX(int mX) {
+        if (volumeTrackRect.width <= 0) return;
+        float ratio = (float) (mX - volumeTrackRect.x) / volumeTrackRect.width;
+        ratio = Math.max(0.0f, Math.min(1.0f, ratio));
+        AudioManager.getInstance().setVolume(ratio);
+    }
+
+    private void drawVolumeSlider(Graphics2D g, Rectangle r, int mX, int mY) {
+        boolean hover = r.contains(mX, mY) || isDraggingVolume;
+        AudioManager audio = AudioManager.getInstance();
+        int percent = audio.getVolumePercent();
+        float ratio = audio.getVolume();
+
+        if (choiceBarImg != null) {
+            g.drawImage(choiceBarImg, r.x, r.y, r.width, r.height, null);
+            if (hover) {
+                g.setColor(new Color(255, 255, 255, 25));
+                g.fillRoundRect(r.x + 3, r.y + 3, r.width - 6, r.height - 6, 12, 12);
+            }
+        } else {
+            g.setColor(new Color(0, 0, 0, 90));
+            g.fillRoundRect(r.x + 2, r.y + 3, r.width, r.height, 14, 14);
+            GradientPaint btnGrad = new GradientPaint(r.x, r.y, new Color(75, 95, 125), r.x, r.y + r.height, new Color(50, 65, 90));
+            g.setPaint(btnGrad);
+            g.fillRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+            g.setStroke(new BasicStroke(hover ? 2.2f : 1.5f));
+            g.setColor(hover ? new Color(255, 235, 120) : new Color(240, 205, 120));
+            g.drawRoundRect(r.x, r.y, r.width, r.height, 12, 12);
+        }
+
+        // Dòng chữ hiển thị phần trăm âm lượng ở phần trên
+        String label = percent == 0 ? "ÂM LƯỢNG: TẮT" : ("ÂM LƯỢNG: " + percent + "%");
+        int fontSize = Math.max(9, Math.min(12, r.height / 4));
+        g.setFont(new Font("Arial", Font.BOLD, fontSize));
+        FontMetrics fm = g.getFontMetrics();
+        int labelW = fm.stringWidth(label);
+        int labelX = r.x + (r.width - labelW) / 2;
+        int labelY = r.y + Math.max(fontSize + 3, r.height * 38 / 100);
+        g.setColor(new Color(15, 15, 15, 190));
+        g.drawString(label, labelX + 1, labelY + 1);
+        g.setColor(percent == 0 ? new Color(255, 150, 140) : new Color(255, 240, 190));
+        g.drawString(label, labelX, labelY);
+
+        // Bố cục phần dưới: nút Loa tắt/mở bên trái + thanh kéo bên phải
+        int padX = Math.max(10, r.width / 14);
+        int controlY = r.y + r.height * 54 / 100;
+        int controlH = Math.max(14, r.height * 30 / 100);
+        int muteW = Math.max(18, controlH + 2);
+        volumeMuteRect.setBounds(r.x + padX, controlY, muteW, controlH);
+
+        boolean muteHover = volumeMuteRect.contains(mX, mY);
+        g.setColor(muteHover ? new Color(255, 255, 255, 55) : new Color(0, 0, 0, 90));
+        g.fillRoundRect(volumeMuteRect.x, volumeMuteRect.y, volumeMuteRect.width, volumeMuteRect.height, 6, 6);
+        g.setColor(percent == 0 ? new Color(235, 95, 85) : new Color(240, 205, 120));
+        g.setStroke(new BasicStroke(1.2f));
+        g.drawRoundRect(volumeMuteRect.x, volumeMuteRect.y, volumeMuteRect.width, volumeMuteRect.height, 6, 6);
+
+        // Vẽ biểu tượng loa vector
+        int sx = volumeMuteRect.x + 4;
+        int sy = volumeMuteRect.y + volumeMuteRect.height / 2;
+        g.setColor(percent == 0 ? new Color(255, 130, 120) : Color.WHITE);
+        g.fillRect(sx, sy - 2, 3, 5);
+        int[] coneX = {sx + 3, sx + 7, sx + 7, sx + 3};
+        int[] coneY = {sy - 2, sy - 5, sy + 5, sy + 2};
+        g.fillPolygon(coneX, coneY, 4);
+        if (percent == 0) {
+            g.setColor(new Color(255, 90, 80));
+            g.setStroke(new BasicStroke(1.8f));
+            g.drawLine(sx + 9, sy - 3, sx + 13, sy + 3);
+            g.drawLine(sx + 13, sy - 3, sx + 9, sy + 3);
+        } else {
+            g.setColor(new Color(140, 235, 140));
+            g.setStroke(new BasicStroke(1.4f));
+            g.drawArc(sx + 7, sy - 3, 4, 6, -60, 120);
+            if (percent > 50) {
+                g.drawArc(sx + 8, sy - 5, 6, 10, -60, 120);
+            }
+        }
+
+        // Rãnh thanh kéo (Track)
+        int trackX = volumeMuteRect.x + volumeMuteRect.width + 8;
+        int trackW = Math.max(30, (r.x + r.width - padX) - trackX);
+        int trackH = Math.max(6, controlH / 2);
+        int trackY = controlY + (controlH - trackH) / 2;
+        volumeTrackRect.setBounds(trackX, trackY, trackW, trackH);
+        volumeHitRect.setBounds(trackX - 6, controlY - 2, trackW + 12, controlH + 4);
+
+        g.setColor(new Color(22, 18, 15, 220));
+        g.fillRoundRect(trackX, trackY, trackW, trackH, trackH, trackH);
+
+        int fillW = Math.round(trackW * ratio);
+        if (fillW > 0) {
+            GradientPaint fillGrad = new GradientPaint(trackX, trackY, new Color(110, 215, 95),
+                    trackX + trackW, trackY, new Color(255, 205, 60));
+            g.setPaint(fillGrad);
+            g.fillRoundRect(trackX, trackY, fillW, trackH, trackH, trackH);
+        }
+
+        g.setColor(new Color(180, 150, 95));
+        g.setStroke(new BasicStroke(1.0f));
+        g.drawRoundRect(trackX, trackY, trackW, trackH, trackH, trackH);
+
+        // Núm kéo (Knob)
+        int knobSize = Math.max(12, trackH + 6);
+        int knobX = trackX + fillW - knobSize / 2;
+        int knobY = trackY + (trackH - knobSize) / 2;
+        boolean knobHover = isDraggingVolume || volumeHitRect.contains(mX, mY);
+        g.setColor(new Color(0, 0, 0, 140));
+        g.fillOval(knobX + 1, knobY + 1, knobSize, knobSize);
+        g.setColor(knobHover ? new Color(255, 235, 110) : new Color(235, 190, 75));
+        g.fillOval(knobX, knobY, knobSize, knobSize);
+        g.setColor(Color.WHITE);
+        g.setStroke(new BasicStroke(1.3f));
+        g.drawOval(knobX, knobY, knobSize, knobSize);
     }
 
     /**

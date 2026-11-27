@@ -2,6 +2,7 @@ package com.team.gardendefense.model.entity.plant;
 
 import com.team.gardendefense.controller.GameManager;
 import com.team.gardendefense.model.entity.monster.Monster;
+import com.team.gardendefense.system.AudioManager;
 import com.team.gardendefense.utils.ImageLoader;
 import com.team.gardendefense.utils.Constants;
 import java.awt.Graphics2D;
@@ -46,6 +47,7 @@ public class CherryBomb extends Plant {
 
     private void explode(GameManager gm) {
         hasExploded = true;
+        AudioManager.getInstance().playCherryBombSound();
         // Kill all zombies in 3x3 area
         for (Monster zombie : gm.zombies) {
             if (Math.abs(zombie.x - this.x) <= Constants.TILE_SIZE * Constants.RANGE_CHERRYBOMB && Math.abs(zombie.y - this.y) <= Constants.TILE_SIZE * Constants.RANGE_CHERRYBOMB) {

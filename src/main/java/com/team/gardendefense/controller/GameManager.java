@@ -494,6 +494,7 @@ public class GameManager {
     }
 
     public void resetGame() {
+        AudioManager.getInstance().stopOutcomeMusic();
         plants.clear(); zombies.clear(); projectiles.clear(); coins.clear();
         passiveSunTimer = 0;
         cancelAllTargetingModes();
@@ -600,6 +601,7 @@ public class GameManager {
                     // Thưởng Kim Cương khi thắng trọn vẹn màn chơi!
                     spawnCoin(getScreenWidth() / 2.0f, getScreenHeight() / 2.0f, CoinType.DIAMOND);
                     cancelAllTargetingModes();
+                    AudioManager.getInstance().playWinMusic();
                 }
                 state = GameState.GAMEWON; // Thắng!
             }
@@ -626,7 +628,9 @@ public class GameManager {
             if (p.isEnemy) {
                 for (Plant plant : plants) {
                     if (!plant.isDead() && plant.getBounds().intersects(pBounds)) {
-                        plant.takeDamage(p.damage); p.hit(); break;
+                        plant.takeDamage(p.damage);
+                        AudioManager.getInstance().playRockHitPlantSound();
+                        p.hit(); break;
                     }
                 }
             } else {
@@ -634,6 +638,7 @@ public class GameManager {
                     if (!z.isDead() && z.getBounds().intersects(pBounds)) {
                         z.takeDamage(p.damage);
                         if (p.isFreeze) z.applyFreeze();
+                        AudioManager.getInstance().playPeaHitSound(p.isFreeze);
                         p.hit(); break;
                     }
                 }
@@ -653,9 +658,12 @@ public class GameManager {
                 }
             }
             if (reachedEnd) {
+                if (state != GameState.GAMEOVER) {
+                    AudioManager.getInstance().playLoseMusic();
+                }
                 cancelAllTargetingModes();
                 state = GameState.GAMEOVER;
-                continue;
+                break;
             }
             if (z.attackTarget != null && (z.attackTarget.isDead() || !plants.contains(z.attackTarget))) {
                 z.attackTarget = null;
@@ -2001,9 +2009,11 @@ public class GameManager {
         } else if (state == GameState.GAMEOVER) {
             if (btnRestart.contains(mX, mY)) resetGame();
             else if (btnLevelSelectGW.contains(mX, mY)) {
+                AudioManager.getInstance().stopOutcomeMusic();
                 openLevelSelect();
             }
             else if (btnExitGO.contains(mX, mY)) {
+                AudioManager.getInstance().stopOutcomeMusic();
                 state = GameState.MENU;
                 if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
             }
@@ -2015,9 +2025,11 @@ public class GameManager {
             }
             else if (btnRestart.contains(mX, mY)) resetGame();
             else if (btnLevelSelectGW.contains(mX, mY)) {
+                AudioManager.getInstance().stopOutcomeMusic();
                 openLevelSelect();
             }
             else if (btnExitGO.contains(mX, mY)) {
+                AudioManager.getInstance().stopOutcomeMusic();
                 state = GameState.MENU;
                 if (panel != null) panel.resizeForLevel(Constants.COLS, Constants.ROWS);
             }
@@ -2170,6 +2182,10 @@ public class GameManager {
     }
 
     public void handleMouseWheel(int rotation, int mX, int mY) {
+        if (state == GameState.PAUSED) {
+            pauseDialog.handleMouseWheel(rotation, mX, mY);
+            return;
+        }
         if (state == GameState.PLAYING && needsCardScroll) {
             if (mY <= 85) {
                 cardScrollOffset = Math.max(0, Math.min(maxCardScroll, cardScrollOffset + rotation * 32));
@@ -2180,6 +2196,10 @@ public class GameManager {
     }
 
     public void handleMousePressed(int mX, int mY) {
+        if (state == GameState.PAUSED) {
+            pauseDialog.handleMousePressed(mX, mY);
+            return;
+        }
         if (state == GameState.LEVEL_SELECT && maxLevelScroll > 0) {
             if (levelScrollThumbRect != null && levelScrollThumbRect.contains(mX, mY)) {
                 isDraggingLevelScrollbar = true;
@@ -2190,6 +2210,10 @@ public class GameManager {
     }
 
     public void handleMouseDragged(int mX, int mY) {
+        if (state == GameState.PAUSED) {
+            pauseDialog.handleMouseDragged(mX, mY);
+            return;
+        }
         if (state == GameState.LEVEL_SELECT && isDraggingLevelScrollbar && maxLevelScroll > 0) {
             int deltaY = mY - dragStartY;
             int trackScrollableH = levelSelectScrollTrackH - levelScrollThumbRect.height;
@@ -2202,6 +2226,7 @@ public class GameManager {
 
     public void handleMouseReleased(int mX, int mY) {
         isDraggingLevelScrollbar = false;
+        pauseDialog.handleMouseReleased();
     }
 
     public void activateIceShroom() {
