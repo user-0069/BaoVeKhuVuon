@@ -41,7 +41,7 @@ public class LevelEditor extends JFrame {
         "4. WallNut (50 Sun)",
         "5. SnowPea R (150 Sun)",
         "6. CherryBomb (150 Sun)",
-        "7. Chomper (150 Sun)",
+        "7. Chomper (100 Sun)",
         "8. Peashooter L (50 Sun)",
         "9. Sniper L (100 Sun)",
         "10. SnowPea L (150 Sun)"

@@ -93,7 +93,7 @@ Chuẩn phong cách bia đá và biển gỗ nổi tiếng của Plants vs. Zomb
   - **ID 5:** SnowPea R (150 Sun): Đạn băng làm chậm quái sang PHẢI.
   - **ID 10:** SnowPea L (150 Sun): Đạn băng làm chậm quái sang TRÁI.
   - **ID 6:** CherryBomb (150 Sun): Nổ tiêu diệt zombie trong ô 3x3. Dùng 1 lần.
-  - **ID 7:** Chomper (150 Sun): Nuốt chửng 1 zombie, mất 10s nhai.
+  - **ID 7:** Chomper (100 Sun): Nuốt chửng 1 zombie, mất 10s nhai.
   - **ID 11:** Marigold (50 Sun): Cây hoa cúc tự động nhả xu bạc/vàng sau mỗi 24 giây.
 - **Thây ma (Zombies):**
   - **ID 1:** Red Zombie (5 HP): Quái thường đi theo đường, cắn cây ngáng đường.

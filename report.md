@@ -252,7 +252,7 @@ Theo mô tả trong Cửa hàng: *"Đào thu hồi cây được hoàn trả 50%
     - Cây Bắn Đậu 100 Sun (SniperPlant, giá 100): Hoàn lại **50 ☀️**.
     - Củ Khoai Tây (WallNut, giá 50): Hoàn lại **25 ☀️**.
     - Cây Bắn Băng (SnowPea, giá 150): Hoàn lại **75 ☀️**.
-    - Cây Ăn Thịt (Chomper, giá 150): Hoàn lại **75 ☀️**.
+    - Cây Ăn Thịt (Chomper, giá 100): Hoàn lại **50 ☀️**.
     - Bom Cherry (CherryBomb, giá 150): Hoàn lại **75 ☀️**.
     - Hoa Cúc Xu (Marigold, giá 50): Hoàn lại **25 ☀️**.
   - Mặt trời thu hồi được cộng dồn trực tiếp vào quỹ năng lượng mặt trời (`sun += refund`) để tái sử dụng ngay lập tức.

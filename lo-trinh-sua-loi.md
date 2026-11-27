@@ -11,7 +11,7 @@
 ```java
 // Thêm vào Constants.java
 public static final int COST_CHERRYBOMB = 150;
-public static final int COST_CHOMPER = 150;
+public static final int COST_CHOMPER = 100;
 
 // Sửa trong GameManager.java PlantCard constructor
 else if (id==6) { ... price = String.valueOf(Constants.COST_CHERRYBOMB); }

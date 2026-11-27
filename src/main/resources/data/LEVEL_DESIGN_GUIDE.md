@@ -22,7 +22,7 @@ Hoạt ảnh cây và zombie được nạp tự động từ `assets/reanim` th
 | 5  | SnowPea (R)| 150      | Đạn băng giảm 60% tốc độ quái trong 3s. Bắn hướng PHẢI. |
 | 10 | SnowPea (L)| 150      | Đạn băng giảm 60% tốc độ quái trong 3s. Bắn hướng TRÁI. |
 | 6  | CherryBomb| 150       | Nổ banh xác toàn bộ Zombie trong ô 3x3 quanh nó. Dùng 1 lần. |
-| 7  | Chomper   | 150       | Nuốt chửng 1 Zombie trong ô 3x3, mất 10s nhai (không thể đánh lúc nhai). |
+| 7  | Chomper   | 100       | Nuốt chửng 1 Zombie trong ô 3x3, mất 10s nhai (không thể đánh lúc nhai). |
 | 11 | Marigold  | 50        | Cây hoa cúc tự động nhả xu ngẫu nhiên sau mỗi 24s (85% Xu Bạc, 15% Xu Vàng). |
 
 Lưu ý về quy tắc trồng: Tất cả các cây (bao gồm WallNut) đều có thể trồng trên Chậu (Pot) hoặc Đường (Path).

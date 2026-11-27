@@ -69,7 +69,7 @@ public class Constants {
     public static final float RANGE_CHERRYBOMB = 1.5f; // Bán kính 1.5 ô (3x3)
 
     // --- CHOMPER STATS ---
-    public static final int COST_CHOMPER = 150;
+    public static final int COST_CHOMPER = 100;
     public static final int HP_CHOMPER = 5;
     public static final int COOLDOWN_CHOMPER = 600;  // 10 giây nhai (frames)
     public static final int DMG_CHOMPER = 1800;      // Nuốt chửng 1 phát
