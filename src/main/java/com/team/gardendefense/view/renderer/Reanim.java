@@ -135,8 +135,6 @@ public final class Reanim {
         if (fileName.equals("PeaShooter.reanim") || fileName.equals("SnowPea.reanim")
                 || fileName.equals("PeaShooterSingle.reanim")) {
             findClip("idle", "anim_full_idle");
-        } else if (fileName.equalsIgnoreCase("Wallnut.reanim")) {
-            clips.put("idle", new Clip(0, frameCount)); // Full loop with eye-rolls, blinks, and twitches
         } else if (fileName.equalsIgnoreCase("CherryBomb.reanim")) {
             findClip("explode", "anim_explode");
             findClip("idle", "anim_idle");
